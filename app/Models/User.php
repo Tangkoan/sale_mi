@@ -21,6 +21,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'theme_settings', // ១. បន្ថែមបន្ទាត់នេះ ដើម្បីឱ្យអាច Save ចូល Database បាន
     ];
 
     /**
@@ -43,6 +44,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'theme_settings' => 'array', // ២. បន្ថែមបន្ទាត់នេះ ដើម្បីឱ្យ Laravel ដឹងថាវាជា JSON (Array)
         ];
     }
 }

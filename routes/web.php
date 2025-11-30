@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\ThemeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -49,7 +50,11 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/user', [userController::class, 'userList'])->name('user.list');
 
+    Route::get('/admin/theme', function () {
+        return view('admin.theme');
+    })->name('admin.theme');
     
+    Route::post('/admin/theme/update', [ThemeController::class, 'update'])->name('admin.theme.update');
 });
 
 // require __DIR__.'/auth.php'; // បិទចោលសិន កុំអោយជាន់គ្នាជាមួយ Custom Auth របស់យើង
