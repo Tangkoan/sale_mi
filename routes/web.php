@@ -5,6 +5,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\ThemeController;
+use App\Http\Controllers\Admin\RoleController;
 
 /*
 |--------------------------------------------------------------------------
@@ -65,6 +66,23 @@ Route::middleware('auth')->group(function () {
     // Change Password
     Route::get('/password', [UserController::class, 'password'])->name('admin.password');
     Route::put('/password', [UserController::class, 'updatePassword'])->name('admin.password.update');
+
+    // User CRUD
+    // User Management Routes
+    Route::controller(UserController::class)->group(function () {
+        Route::get('/admin/users', 'index')->name('admin.users.index');
+        Route::get('/admin/users/fetch', 'fetchUsers')->name('admin.users.fetch'); // Ajax Load
+        Route::post('/admin/users', 'store')->name('admin.users.store');
+        Route::put('/admin/users/{id}', 'update')->name('admin.users.update');
+        Route::delete('/admin/users/{id}', 'destroy')->name('admin.users.destroy');
+    });
+
+    // Role Management
+    Route::get('/admin/roles', [RoleController::class, 'index'])->name('admin.roles.index');
+    Route::get('/admin/roles/fetch', [RoleController::class, 'fetchRoles'])->name('admin.roles.fetch');
+    Route::post('/admin/roles', [RoleController::class, 'store'])->name('admin.roles.store');
+    Route::put('/admin/roles/{id}', [RoleController::class, 'update'])->name('admin.roles.update');
+    Route::delete('/admin/roles/{id}', [RoleController::class, 'destroy'])->name('admin.roles.destroy');
 
 });
 

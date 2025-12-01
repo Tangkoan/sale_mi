@@ -28,8 +28,8 @@
             <span class="text-[11px] font-bold opacity-50 uppercase tracking-wider">Management</span>
         </div>
 
-        @php $isUserActive = request()->routeIs('user.*'); @endphp
-        
+        {{-- User --}}
+        @php $isUserActive = request()->routeIs('user.*') || request()->routeIs('admin.roles.*'); @endphp
         <div class="group relative ">
             <button onclick="toggleSubmenu(this)" 
                     class="sidebar-item w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer select-none menu-item-content
@@ -57,10 +57,16 @@
                         </a>
                     </li>
 
+                    {{-- Role --}}
                     <li>
-                        <a href="#" class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all pl-12 pr-4 opacity-80">
-                            <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg bg-gray-400"></span>
-                            <span>Create New</span>
+                        <a href="{{ route('admin.roles.index') }}" 
+                        class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
+                                {{ request()->routeIs('admin.roles.*') ? 'text-primary font-bold' : 'opacity-80' }}">
+                            
+                            <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
+                                        {{ request()->routeIs('admin.roles.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
+                            
+                            <span>Role & Permission</span>
                         </a>
                     </li>
                 </ul>
