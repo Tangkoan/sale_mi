@@ -1,111 +1,128 @@
 <aside id="sidebar" class="bg-sidebar-bg text-sidebar-text w-72 flex flex-col h-screen flex-shrink-0 z-50 relative border-r border-custom-border transition-colors duration-300">
     
-    <div class="h-20 flex items-center justify-center bg-sidebar-bg sticky top-0 z-20 border-b border-custom-border">
-        <div class="flex items-center gap-3 px-6 w-full">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+    <div class="h-20 flex items-center justify-center bg-sidebar-bg sticky top-0 z-20 border-b border-custom-border transition-colors duration-300">
+        <div class="flex items-center gap-3 w-full px-6 transition-all duration-300 menu-item-content">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg flex-shrink-0">
                 <i class="ri-store-2-fill text-xl"></i>
             </div>
-            <div class="flex flex-col overflow-hidden">
+            <div class="flex flex-col sidebar-text overflow-hidden whitespace-nowrap">
                 <span class="text-lg font-bold tracking-tight">Ice Cream</span>
                 <span class="text-[10px] font-semibold text-primary uppercase tracking-widest">Admin Panel</span>
             </div>
         </div>
     </div>
 
-    <nav class="flex-1 overflow-y-auto no-scrollbar py-6 px-4 space-y-1">
+    <nav class="flex-1 overflow-y-auto no-scrollbar py-6 px-4 space-y-2">
 
-        <a href="{{ route('admin.dashboard') }}" 
-           class="flex items-center px-4 py-3 rounded-xl transition-all duration-200 group mb-6
-                  {{ request()->routeIs('admin.dashboard') ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'text-sidebar-text hover:bg-black/5 dark:hover:bg-white/5' }}">
-            <i class="ri-dashboard-line text-xl mr-3 {{ request()->routeIs('admin.dashboard') ? 'text-white' : 'text-gray-400 group-hover:text-primary' }}"></i>
-            <span class="font-medium">Dashboard</span>
-        </a>
+        <div class="group relative">
+            <a href="{{ route('admin.dashboard') }}" 
+               class="sidebar-item flex items-center px-4 py-3 rounded-xl transition-all duration-200 menu-item-content
+                      {{ request()->routeIs('admin.dashboard') ? 'btn-primary shadow-lg' : '' }}">
+                <i class="ri-dashboard-line text-xl menu-icon mr-3"></i>
+                <span class="sidebar-text font-medium">Dashboard</span>
+            </a>
+            <div class="tooltip hidden absolute left-[100%] top-2 ml-4 bg-gray-900 text-white text-xs px-3 py-2 rounded shadow-xl z-50 whitespace-nowrap">Dashboard</div>
+        </div>
 
-        @if(auth()->user()->canany(['user-list', 'role-list', 'permission-list']) || auth()->user()->hasRole('Super Admin'))
+        {{-- ពិនិត្យមើលសិនថា តើ User មានសិទ្ធិមើល Menu ណាមួយក្នុង Group នេះឬអត់? --}}
+        @if(auth()->user()->can('user-list') || auth()->user()->can('role-list') || auth()->user()->can('permission-list') || auth()->user()->hasRole('Super Admin'))
             
-            <div class="px-4 mt-6 mb-2">
-                <span class="text-[11px] font-bold opacity-50 uppercase tracking-wider">Management</span>
+            <div class="px-4 mt-6 mb-2 sidebar-text">
+                <span class="text-[11px] font-bold opacity-50 uppercase tracking-wider">User Management</span>
             </div>
 
-            @php 
-                $isActiveUserMgmt = request()->routeIs('user.*') || request()->routeIs('admin.roles.*') || request()->routeIs('admin.permissions.*'); 
-            @endphp
+            @php $isUserActive = request()->routeIs('user.*') || request()->routeIs('admin.roles.*') || request()->routeIs('admin.permissions.*') ; @endphp
             
-            <div x-data="{ open: {{ $isActiveUserMgmt ? 'true' : 'false' }} }">
-                <button @click="open = !open" 
-                        class="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer 
-                               {{ $isActiveUserMgmt ? 'bg-black/5 dark:bg-white/5' : 'hover:bg-black/5 dark:hover:bg-white/5' }}">
+            <div class="group relative">
+                <button onclick="toggleSubmenu(this)" 
+                        class="sidebar-item w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer select-none menu-item-content
+                               {{ $isUserActive ? 'bg-black/5 dark:bg-white/10' : '' }}">
                     <div class="flex items-center">
-                        <div class="w-8 h-8 rounded-lg flex items-center justify-center mr-3 {{ $isActiveUserMgmt ? 'bg-primary/10 text-primary' : 'bg-gray-100 dark:bg-gray-800 text-gray-500' }}">
-                            <i class="ri-user-settings-line text-lg"></i>
-                        </div>
-                        <span class="font-medium">Users & Access</span>
+                        <i class="ri-user-settings-line text-xl menu-icon mr-3 {{ $isUserActive ? 'text-primary' : '' }}"></i>
+                        <span class="sidebar-text font-medium">Users & Access</span>
                     </div>
-                    <i class="ri-arrow-down-s-line transition-transform duration-300" :class="open ? 'rotate-180' : ''"></i>
+                    <i class="ri-arrow-down-s-line arrow-icon transition-transform duration-300 {{ $isUserActive ? 'rotate-180' : '' }}"></i>
                 </button>
 
-                <div x-show="open" x-collapse class="pl-4 mt-1 space-y-1">
-                    
-                    @can('user-list')
-                    <a href="{{ route('user.list') }}" 
-                       class="flex items-center px-4 py-2.5 rounded-lg text-sm transition-all duration-200 relative group/item
-                              {{ request()->routeIs('user.list') ? 'text-primary font-bold bg-primary/5' : 'text-gray-500 hover:text-sidebar-text' }}">
-                        <span class="absolute left-0 w-1 h-1 rounded-full bg-gray-300 group-hover/item:bg-primary transition-colors {{ request()->routeIs('user.list') ? 'bg-primary h-4 rounded-r-full' : '' }}"></span>
-                        <span class="ml-4">User List</span>
-                    </a>
-                    @endcan
+                <div class="submenu {{ $isUserActive ? '' : 'hidden' }} transition-all duration-300">
+                    <div class="tree-line absolute left-[26px] top-0 bottom-2 w-px bg-custom-border opacity-50"></div>
+                    <ul class="space-y-1 mt-1">
+                        
+                        {{-- 1. User List --}}
+                        @can('user-list')
+                        <li>
+                            <a href="{{ route('user.list') }}" 
+                               class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
+                                      {{ request()->routeIs('user.list') ? 'text-primary font-bold' : 'opacity-80' }}">
+                                <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
+                                             {{ request()->routeIs('user.list') ? 'bg-primary' : 'bg-gray-400' }}"></span>
+                                <span>User List</span>
+                            </a>
+                        </li>
+                        @endcan
 
-                    @can('role-list')
-                    <a href="{{ route('admin.roles.index') }}" 
-                       class="flex items-center px-4 py-2.5 rounded-lg text-sm transition-all duration-200 relative group/item
-                              {{ request()->routeIs('admin.roles.*') ? 'text-primary font-bold bg-primary/5' : 'text-gray-500 hover:text-sidebar-text' }}">
-                        <span class="absolute left-0 w-1 h-1 rounded-full bg-gray-300 group-hover/item:bg-primary transition-colors {{ request()->routeIs('admin.roles.*') ? 'bg-primary h-4 rounded-r-full' : '' }}"></span>
-                        <span class="ml-4">Roles & Permissions</span>
-                    </a>
-                    @endcan
+                        {{-- 2. Role & Permission --}}
+                        @can('role-list')
+                        <li>
+                            <a href="{{ route('admin.roles.index') }}" 
+                               class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
+                                      {{ request()->routeIs('admin.roles.*') ? 'text-primary font-bold' : 'opacity-80' }}">
+                                <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
+                                             {{ request()->routeIs('admin.roles.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
+                                <span>Role & Permission</span>
+                            </a>
+                        </li>
+                        @endcan
 
-                    @can('permission-list')
-                    <a href="{{ route('admin.permissions.index') }}" 
-                       class="flex items-center px-4 py-2.5 rounded-lg text-sm transition-all duration-200 relative group/item
-                              {{ request()->routeIs('admin.permissions.*') ? 'text-primary font-bold bg-primary/5' : 'text-gray-500 hover:text-sidebar-text' }}">
-                        <span class="absolute left-0 w-1 h-1 rounded-full bg-gray-300 group-hover/item:bg-primary transition-colors {{ request()->routeIs('admin.permissions.*') ? 'bg-primary h-4 rounded-r-full' : '' }}"></span>
-                        <span class="ml-4">Permissions List</span>
-                    </a>
-                    @endcan
+                        {{-- 3. Permission List --}}
+                        @can('permission-list')
+                        <li>
+                            <a href="{{ route('admin.permissions.index') }}" 
+                               class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
+                                      {{ request()->routeIs('admin.permissions.*') ? 'text-primary font-bold' : 'opacity-80' }}">
+                                <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
+                                             {{ request()->routeIs('admin.permissions.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
+                                <span>Permissions List</span>
+                            </a>
+                        </li>
+                        @endcan
 
+                    </ul>
                 </div>
+                <div class="tooltip hidden absolute left-[100%] top-2 ml-4 bg-gray-900 text-white text-xs px-3 py-2 rounded shadow-xl z-50 whitespace-nowrap">Users</div>
             </div>
         @endif
 
-        <div class="px-4 mt-6 mb-2">
-            <span class="text-[11px] font-bold opacity-50 uppercase tracking-wider">System</span>
+        <div class="px-4 mt-6 mb-2 sidebar-text">
+            <span class="text-[11px] font-bold opacity-50 uppercase tracking-wider">Settings</span>
         </div>
 
-        <a href="{{ route('admin.theme') }}" 
-           class="flex items-center px-4 py-3 rounded-xl transition-all duration-200 group
-                  {{ request()->routeIs('admin.theme') ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'text-sidebar-text hover:bg-black/5 dark:hover:bg-white/5' }}">
-            <i class="ri-palette-line text-xl mr-3 {{ request()->routeIs('admin.theme') ? 'text-white' : 'text-gray-400 group-hover:text-primary' }}"></i>
-            <span class="font-medium">Theme & Color</span>
-        </a>
+        <div class="group relative">
+            <a href="{{ route('admin.theme') }}" 
+               class="sidebar-item flex items-center px-4 py-3 rounded-xl transition-all duration-200 menu-item-content
+                      {{ request()->routeIs('admin.theme') ? 'btn-primary shadow-lg' : '' }}">
+                <i class="ri-palette-line text-xl menu-icon mr-3"></i>
+                <span class="sidebar-text font-medium">Theme & Color</span>
+            </a>
+            <div class="tooltip hidden absolute left-[100%] top-2 ml-4 bg-gray-900 text-white text-xs px-3 py-2 rounded shadow-xl z-50 whitespace-nowrap">Theme</div>
+        </div>
 
     </nav>
 
     <div class="p-4 border-t border-custom-border bg-black/5 dark:bg-black/20">
-        <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-white/10 transition-colors cursor-pointer">
+        <div class="sidebar-item flex items-center gap-3 p-2 rounded-xl transition-colors cursor-pointer menu-item-content">
             @if(Auth::user()->avatar)
-                <img src="{{ asset('storage/' . Auth::user()->avatar) }}" class="h-10 w-10 rounded-full object-cover border-2 border-white/20 shadow-sm">
+                <img src="{{ asset('storage/' . Auth::user()->avatar) }}" class="h-9 w-9 rounded-full object-cover border-2 border-custom-border flex-shrink-0">
             @else
-                <div class="h-10 w-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                <div class="h-9 w-9 rounded-full bg-primary flex items-center justify-center text-white font-bold text-xs border-2 border-custom-border flex-shrink-0">
                     {{ substr(Auth::user()->name, 0, 1) }}
                 </div>
             @endif
-            <div class="overflow-hidden">
-                <p class="text-sm font-bold truncate text-sidebar-text">{{ Auth::user()->name }}</p>
-                <p class="text-[11px] text-primary truncate font-medium bg-primary/10 px-2 py-0.5 rounded-full inline-block mt-0.5">
-                    {{ Auth::user()->roles->pluck('name')->first() ?? 'User' }}
-                </p>
+            
+            <div class="sidebar-text overflow-hidden">
+                <p class="text-sm font-semibold truncate">{{ Auth::user()->name }}</p>
+                <p class="text-xs opacity-60 truncate">{{ Auth::user()->roles->pluck('name')->first() ?? 'User' }}</p>
             </div>
         </div>
     </div>
-
 </aside>
