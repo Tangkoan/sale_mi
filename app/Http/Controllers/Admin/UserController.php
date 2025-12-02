@@ -21,8 +21,6 @@ class UserController extends Controller
     }
 
 
-     
-
     // 1. បង្ហាញផ្ទាំង User Info
     public function profile()
     {
