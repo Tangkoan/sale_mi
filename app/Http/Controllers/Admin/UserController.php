@@ -105,14 +105,25 @@ class UserController extends Controller
     // 2. ទទួលសំណើ AJAX ដើម្បីទាញយកទិន្នន័យ User (Real-time Search)
     public function fetchUsers(Request $request)
     {
-        $query = User::with('roles'); // Eager load roles
+        $query = User::with('roles');
 
+        // 1. Search Logic
         if ($request->keyword) {
-            $query->where('name', 'like', '%' . $request->keyword . '%')
+            $query->where(function($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->keyword . '%')
                   ->orWhere('email', 'like', '%' . $request->keyword . '%');
+            });
         }
 
-        $users = $query->latest()->paginate(10);
+        // 2. Pagination Size Logic (Show 10, 20, 50, 100, All)
+        $perPage = $request->input('per_page', 10);
+        
+        if ($perPage === 'all') {
+            // បើ All យើងដាក់ចំនួនច្រើនខ្លាំងដើម្បីអោយចេញទាំងអស់
+            $users = $query->latest()->paginate(999999); 
+        } else {
+            $users = $query->latest()->paginate((int)$perPage);
+        }
 
         return response()->json($users);
     }
@@ -181,5 +192,43 @@ class UserController extends Controller
         $user->delete();
 
         return response()->json(['message' => 'User deleted successfully!']);
+    }
+
+    // 1. Bulk Delete
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:users,id'
+        ]);
+
+        $users = User::whereIn('id', $request->ids)->get();
+
+        foreach ($users as $user) {
+            // លុបរូប Avatar ផងបើមាន
+            if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+            $user->delete();
+        }
+
+        return response()->json(['message' => count($request->ids) . ' users deleted successfully!']);
+    }
+
+    // 2. Bulk Edit (ឧទាហរណ៍៖ ប្តូរ Role អោយ User ច្រើនព្រមគ្នា)
+    public function bulkUpdate(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'role' => 'required|exists:roles,name'
+        ]);
+
+        $users = User::whereIn('id', $request->ids)->get();
+        
+        foreach($users as $user) {
+            $user->syncRoles([$request->role]);
+        }
+
+        return response()->json(['message' => 'Roles updated for ' . count($request->ids) . ' users!']);
     }
 }

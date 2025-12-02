@@ -10,9 +10,11 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @include('components.toast')
     
+    
     <link href="{{ asset('assets/remixicon/remixicon.css') }}" rel="stylesheet">
 
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
 
     <style>
         /* 1. បន្ថែម Class នេះដើម្បីបិទ Animation ពេលកំពុង Load */
@@ -115,93 +117,96 @@
     <style x-data x-text="$store.theme.css"></style>
 
     <script>
-    // Config ដើមរបស់អ្នក (រក្សាទុកដដែល)
-    const defaultThemeConfig = {
-        light: {
-            primary: '#3b82f6', primaryText: '#ffffff', secondary: '#64748b',
-            sidebarBg: '#ffffff', sidebarText: '#1e293b', sidebarHoverBg: '#f1f5f9', sidebarHoverText: '#0f172a',
-            headerBg: '#ffffff', pageBg: '#f3f4f6', cardBg: '#ffffff', inputBg: '#ffffff', border: '#e2e8f0',
-            primaryOpacity: 100, secondaryOpacity: 100, sidebarBgOpacity: 100, sidebarTextOpacity: 100, 
-            sidebarHoverBgOpacity: 100, headerBgOpacity: 100, pageBgOpacity: 100, cardBgOpacity: 100, inputBgOpacity: 100, borderOpacity: 100
-        },
-        dark: {
-            primary: '#60a5fa', primaryText: '#ffffff', secondary: '#94a3b8',
-            sidebarBg: '#0f172a', sidebarText: '#f8fafc', sidebarHoverBg: '#ffffff', sidebarHoverText: '#ffffff',
-            headerBg: '#1e293b', pageBg: '#020617', cardBg: '#1e293b', inputBg: '#0f172a', border: '#334155',
-            primaryOpacity: 100, secondaryOpacity: 100, sidebarBgOpacity: 100, sidebarTextOpacity: 100, 
-            sidebarHoverBgOpacity: 10, headerBgOpacity: 100, pageBgOpacity: 100, cardBgOpacity: 100, inputBgOpacity: 100, borderOpacity: 100
-        },
-        shadow: true
-    };
+        // Config ដើមរបស់អ្នក (រក្សាទុកដដែល)
+        const defaultThemeConfig = {
+            light: {
+                primary: '#3b82f6', primaryText: '#ffffff', secondary: '#64748b',
+                sidebarBg: '#ffffff', sidebarText: '#1e293b', sidebarHoverBg: '#f1f5f9', sidebarHoverText: '#0f172a',
+                headerBg: '#ffffff', pageBg: '#f3f4f6', cardBg: '#ffffff', inputBg: '#ffffff', border: '#e2e8f0',
+                primaryOpacity: 100, secondaryOpacity: 100, sidebarBgOpacity: 100, sidebarTextOpacity: 100, 
+                sidebarHoverBgOpacity: 100, headerBgOpacity: 100, pageBgOpacity: 100, cardBgOpacity: 100, inputBgOpacity: 100, borderOpacity: 100
+            },
+            dark: {
+                primary: '#60a5fa', primaryText: '#ffffff', secondary: '#94a3b8',
+                sidebarBg: '#0f172a', sidebarText: '#f8fafc', sidebarHoverBg: '#ffffff', sidebarHoverText: '#ffffff',
+                headerBg: '#1e293b', pageBg: '#020617', cardBg: '#1e293b', inputBg: '#0f172a', border: '#334155',
+                primaryOpacity: 100, secondaryOpacity: 100, sidebarBgOpacity: 100, sidebarTextOpacity: 100, 
+                sidebarHoverBgOpacity: 10, headerBgOpacity: 100, pageBgOpacity: 100, cardBgOpacity: 100, inputBgOpacity: 100, borderOpacity: 100
+            },
+            shadow: true
+        };
 
-    document.addEventListener('alpine:init', () => {
-        Alpine.store('theme', {
-            darkMode: localStorage.getItem('theme_mode') === 'dark',
-            isSaving: false,
-            settings: JSON.parse(JSON.stringify(defaultThemeConfig)),
+        document.addEventListener('alpine:init', () => {
+            Alpine.store('theme', {
+                darkMode: localStorage.getItem('theme_mode') === 'dark',
+                isSaving: false,
+                settings: JSON.parse(JSON.stringify(defaultThemeConfig)),
 
-            init() {
-                const dbSettings = @json(auth()->user()->theme_settings ?? null);
-                if (dbSettings) {
-                    if(dbSettings.light) this.settings.light = { ...this.settings.light, ...dbSettings.light };
-                    if(dbSettings.dark) this.settings.dark = { ...this.settings.dark, ...dbSettings.dark };
-                    if(dbSettings.shadow !== undefined) this.settings.shadow = dbSettings.shadow;
-                }
-                // លុប Class preload ចេញវិញពេល Alpine រួចរាល់
-                document.body.classList.remove('preload');
-                this.applyThemeClass();
-            },
+                init() {
+                    const dbSettings = @json(auth()->user()->theme_settings ?? null);
+                    if (dbSettings) {
+                        if(dbSettings.light) this.settings.light = { ...this.settings.light, ...dbSettings.light };
+                        if(dbSettings.dark) this.settings.dark = { ...this.settings.dark, ...dbSettings.dark };
+                        if(dbSettings.shadow !== undefined) this.settings.shadow = dbSettings.shadow;
+                    }
+                    // លុប Class preload ចេញវិញពេល Alpine រួចរាល់
+                    document.body.classList.remove('preload');
+                    this.applyThemeClass();
+                },
 
-            setMode(mode) { 
-                if ((mode === 'dark' && !this.darkMode) || (mode === 'light' && this.darkMode)) {
-                    this.darkMode = (mode === 'dark');
-                    this.finalizeMode();
+                setMode(mode) { 
+                    if ((mode === 'dark' && !this.darkMode) || (mode === 'light' && this.darkMode)) {
+                        this.darkMode = (mode === 'dark');
+                        this.finalizeMode();
+                    }
+                },
+                toggleMode() { this.darkMode = !this.darkMode; this.finalizeMode(); },
+                finalizeMode() { 
+                    localStorage.setItem('theme_mode', this.darkMode ? 'dark' : 'light'); 
+                    this.applyThemeClass(); 
+                },
+                applyThemeClass() {
+                    if (this.darkMode) document.documentElement.classList.add('dark');
+                    else document.documentElement.classList.remove('dark');
+                },
+                reset() {
+                    if(confirm('Reset all colors to default?')) {
+                        this.settings = JSON.parse(JSON.stringify(defaultThemeConfig));
+                    }
+                },
+                hexToRgb(hex) {
+                    let c;
+                    if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){
+                        c= hex.substring(1).split('');
+                        if(c.length== 3) c= [c[0], c[0], c[1], c[1], c[2], c[2]];
+                        c= '0x'+c.join('');
+                        return [(c>>16)&255, (c>>8)&255, c&255].join(' ');
+                    }
+                    return '0 0 0';
+                },
+                async save() {
+                    this.isSaving = true;
+                    try {
+                        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                        await axios.post("{{ route('admin.theme.update') }}", { theme: this.settings }, { headers: { 'X-CSRF-TOKEN': token } });
+                    } catch (error) { console.error(error); alert('Failed to save.'); } 
+                    finally { setTimeout(() => { this.isSaving = false; }, 500); }
+                },
+                get css() {
+                    // កូដបង្កើត CSS របស់អ្នក (ដូចដើម)
+                    const l = this.settings.light; const d = this.settings.dark;
+                    const shadowVal = this.settings.shadow ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' : 'none';
+                    return `:root { --color-primary: ${this.hexToRgb(l.primary)}; --color-primary-text: ${this.hexToRgb(l.primaryText)}; --color-secondary: ${this.hexToRgb(l.secondary)}; --sidebar-bg: ${this.hexToRgb(l.sidebarBg)}; --sidebar-text: ${this.hexToRgb(l.sidebarText)}; --sidebar-hover-bg: ${this.hexToRgb(l.sidebarHoverBg)}; --sidebar-hover-text: ${this.hexToRgb(l.sidebarHoverText)}; --sidebar-hover-opacity: ${l.sidebarHoverBgOpacity / 100}; --header-bg: ${this.hexToRgb(l.headerBg)}; --page-bg: ${this.hexToRgb(l.pageBg)}; --card-bg: ${this.hexToRgb(l.cardBg)}; --input-bg: ${this.hexToRgb(l.inputBg)}; --custom-border: ${this.hexToRgb(l.border)}; --custom-shadow: ${shadowVal}; } .dark { --color-primary: ${this.hexToRgb(d.primary)}; --color-primary-text: ${this.hexToRgb(d.primaryText)}; --color-secondary: ${this.hexToRgb(d.secondary)}; --sidebar-bg: ${this.hexToRgb(d.sidebarBg)}; --sidebar-text: ${this.hexToRgb(d.sidebarText)}; --sidebar-hover-bg: ${this.hexToRgb(d.sidebarHoverBg)}; --sidebar-hover-text: ${this.hexToRgb(d.sidebarHoverText)}; --sidebar-hover-opacity: ${d.sidebarHoverBgOpacity / 100}; --header-bg: ${this.hexToRgb(d.headerBg)}; --page-bg: ${this.hexToRgb(d.pageBg)}; --card-bg: ${this.hexToRgb(d.cardBg)}; --input-bg: ${this.hexToRgb(d.inputBg)}; --custom-border: ${this.hexToRgb(d.border)}; } .btn-primary { background-color: rgb(var(--color-primary)); color: rgb(var(--color-primary-text)); } .sidebar-item:hover { background-color: rgb(var(--sidebar-hover-bg) / var(--sidebar-hover-opacity)); color: rgb(var(--sidebar-hover-text)); }`;
                 }
-            },
-            toggleMode() { this.darkMode = !this.darkMode; this.finalizeMode(); },
-            finalizeMode() { 
-                localStorage.setItem('theme_mode', this.darkMode ? 'dark' : 'light'); 
-                this.applyThemeClass(); 
-            },
-            applyThemeClass() {
-                if (this.darkMode) document.documentElement.classList.add('dark');
-                else document.documentElement.classList.remove('dark');
-            },
-            reset() {
-                if(confirm('Reset all colors to default?')) {
-                    this.settings = JSON.parse(JSON.stringify(defaultThemeConfig));
-                }
-            },
-            hexToRgb(hex) {
-                let c;
-                if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){
-                    c= hex.substring(1).split('');
-                    if(c.length== 3) c= [c[0], c[0], c[1], c[1], c[2], c[2]];
-                    c= '0x'+c.join('');
-                    return [(c>>16)&255, (c>>8)&255, c&255].join(' ');
-                }
-                return '0 0 0';
-            },
-            async save() {
-                this.isSaving = true;
-                try {
-                    const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                    await axios.post("{{ route('admin.theme.update') }}", { theme: this.settings }, { headers: { 'X-CSRF-TOKEN': token } });
-                } catch (error) { console.error(error); alert('Failed to save.'); } 
-                finally { setTimeout(() => { this.isSaving = false; }, 500); }
-            },
-            get css() {
-                // កូដបង្កើត CSS របស់អ្នក (ដូចដើម)
-                const l = this.settings.light; const d = this.settings.dark;
-                const shadowVal = this.settings.shadow ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' : 'none';
-                return `:root { --color-primary: ${this.hexToRgb(l.primary)}; --color-primary-text: ${this.hexToRgb(l.primaryText)}; --color-secondary: ${this.hexToRgb(l.secondary)}; --sidebar-bg: ${this.hexToRgb(l.sidebarBg)}; --sidebar-text: ${this.hexToRgb(l.sidebarText)}; --sidebar-hover-bg: ${this.hexToRgb(l.sidebarHoverBg)}; --sidebar-hover-text: ${this.hexToRgb(l.sidebarHoverText)}; --sidebar-hover-opacity: ${l.sidebarHoverBgOpacity / 100}; --header-bg: ${this.hexToRgb(l.headerBg)}; --page-bg: ${this.hexToRgb(l.pageBg)}; --card-bg: ${this.hexToRgb(l.cardBg)}; --input-bg: ${this.hexToRgb(l.inputBg)}; --custom-border: ${this.hexToRgb(l.border)}; --custom-shadow: ${shadowVal}; } .dark { --color-primary: ${this.hexToRgb(d.primary)}; --color-primary-text: ${this.hexToRgb(d.primaryText)}; --color-secondary: ${this.hexToRgb(d.secondary)}; --sidebar-bg: ${this.hexToRgb(d.sidebarBg)}; --sidebar-text: ${this.hexToRgb(d.sidebarText)}; --sidebar-hover-bg: ${this.hexToRgb(d.sidebarHoverBg)}; --sidebar-hover-text: ${this.hexToRgb(d.sidebarHoverText)}; --sidebar-hover-opacity: ${d.sidebarHoverBgOpacity / 100}; --header-bg: ${this.hexToRgb(d.headerBg)}; --page-bg: ${this.hexToRgb(d.pageBg)}; --card-bg: ${this.hexToRgb(d.cardBg)}; --input-bg: ${this.hexToRgb(d.inputBg)}; --custom-border: ${this.hexToRgb(d.border)}; } .btn-primary { background-color: rgb(var(--color-primary)); color: rgb(var(--color-primary-text)); } .sidebar-item:hover { background-color: rgb(var(--sidebar-hover-bg) / var(--sidebar-hover-opacity)); color: rgb(var(--sidebar-hover-text)); }`;
-            }
+            });
         });
-    });
     </script>
 </head>
 
 <body class="bg-page-bg preload font-sans flex h-screen overflow-hidden text-gray-800 dark:text-gray-100 transition-colors duration-300">
+
+
+    
 
     @include('partials.sidebar')
 
@@ -210,6 +215,9 @@
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-page-bg p-6 transition-colors duration-300">
             @yield('content')
         </main>
+        {{-- Modal របស់ Delete --}}
+        @include('partials.confirm_modal')
+        
     </div>
 
     <div class="fixed bottom-6 right-6 flex flex-col gap-2 z-50">
