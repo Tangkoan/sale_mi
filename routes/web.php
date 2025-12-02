@@ -131,6 +131,13 @@ Route::middleware('auth')->group(function () {
             ->name('admin.roles.destroy')
             ->middleware('permission:role-delete');
 
+        // Role Routes
+        
+        Route::post('/admin/roles/bulk-delete','bulkDelete')
+            ->name('admin.roles.bulk_delete')
+            ->middleware('permission:role-delete');
+
+        
         
     });
 
@@ -178,6 +185,10 @@ Route::middleware('auth')->group(function () {
 
         Route::delete('/admin/permissions/{id}', 'destroy')
             ->name('admin.permissions.destroy')
+            ->middleware('permission:permission-delete');
+
+        Route::post('admin/permissions/bulk-delete',  'bulkDelete')
+            ->name('admin.permissions.bulk_delete')
             ->middleware('permission:permission-delete');
     });
 });

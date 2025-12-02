@@ -1,67 +1,41 @@
 @extends('admin.dashboard')
 
 @section('content')
-<div class="w-full h-full px-6 py-5" 
-     x-data="userManagement()" 
-     x-init="fetchUsers()">
+
+<div class="w-full h-full px-1 py-1" x-data="userManagement()">
     
-    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+    <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">
         <div>
             <h1 class="text-2xl font-bold text-text-color flex items-center gap-2">
                 <i class="ri-team-line text-primary"></i> User Management
             </h1>
-            <p class="text-sm text-secondary mt-1">Manage users, roles and permissions.</p>
         </div>
 
-        <button 
-            @can('user-create') @click="openModal('create')" @endcan
-            class="text-white font-bold py-2.5 px-6 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-primary/30
-            @can('user-create') bg-primary hover:opacity-90 @else bg-gray-400 cursor-not-allowed opacity-70 @endcan"
-            @cannot('user-create') disabled title="No Permission" @endcannot
-        >
-            <i class="ri-user-add-line"></i> 
-            <span class="hidden sm:inline">Add User</span>
-        </button>
-    </div>
-
-    <div class="bg-card-bg p-4 rounded-xl border border-border-color shadow-sm flex flex-col lg:flex-row gap-4 justify-between items-center mb-6">
-        
-        <div class="flex items-center gap-4 w-full lg:w-auto">
+        <div class="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
             
-            <div class="flex items-center gap-2">
-                <span class="text-sm text-secondary whitespace-nowrap">Show:</span>
-                <select x-model="perPage" @change="fetchUsers()" class="bg-page-bg border border-input-border text-text-color text-sm rounded-lg focus:ring-primary focus:border-primary block p-2 outline-none">
-                    <option value="1">1</option>
-                    <option value="10">10</option>
-                    <option value="20">20</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                    <option value="all">All</option>
-                </select>
-            </div>
-
-            <div x-show="selectedIds.length > 0" x-transition class="flex items-center gap-2 pl-4 border-l border-border-color">
-                <span class="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded" x-text="selectedIds.length + ' selected'"></span>
+            <div x-show="selectedIds.length > 0" x-transition.opacity.duration.300ms 
+                 class="flex items-center gap-2 mr-2 w-full sm:w-auto justify-between sm:justify-start bg-white dark:bg-gray-800 p-1 rounded-lg border border-border-color shadow-sm">
+                <span class="text-xs font-bold text-primary bg-primary/10 px-2 py-1.5 rounded ml-1" x-text="selectedIds.length + ' selected'"></span>
                 
-                @can('user-edit')
-                <button @click="startSequentialEdit()" class="text-sm font-bold text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg border border-transparent hover:border-blue-200 transition">
-                    <i class="ri-edit-circle-line mr-1"></i> Edit Sequence
-                </button>
-                @endcan
+                <div class="flex gap-1">
+                    @can('user-edit')
+                    <button @click="startSequentialEdit()" class="text-sm font-bold text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-md transition" title="Edit Sequence">
+                        <i class="ri-edit-circle-line"></i>
+                    </button>
+                    @endcan
 
-                @can('user-delete')
-                <button @click="confirmBulkDelete()" class="text-sm font-bold text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg border border-transparent hover:border-red-200 transition">
-                    <i class="ri-delete-bin-line mr-1"></i> Delete
-                </button>
-                @endcan
+                    @can('user-delete')
+                    <button @click="confirmBulkDelete()" class="text-sm font-bold text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-md transition" title="Delete Selected">
+                        <i class="ri-delete-bin-line"></i>
+                    </button>
+                    @endcan
+                </div>
             </div>
-        </div>
 
-        <div class="flex items-center gap-3 w-full lg:w-auto">
-            
-            <div class="relative" x-data="{ openCol: false }">
-                <button @click="openCol = !openCol" @click.outside="openCol = false" class="flex items-center gap-2 px-3 py-2 bg-page-bg border border-input-border rounded-lg text-text-color hover:bg-input-bg transition text-sm font-medium">
-                    <i class="ri-layout-column-line"></i> Columns
+            <div class="relative w-full sm:w-auto" x-data="{ openCol: false }">
+                <button @click="openCol = !openCol" @click.outside="openCol = false" 
+                        class="w-full sm:w-auto flex justify-center items-center gap-2 px-3 py-2.5 bg-card-bg border border-input-border rounded-xl text-text-color hover:bg-input-bg transition text-sm font-medium shadow-sm">
+                    <i class="ri-layout-column-line"></i> <span class="sm:hidden lg:inline">Columns</span>
                 </button>
                 <div x-show="openCol" class="absolute right-0 mt-2 w-48 bg-card-bg border border-border-color rounded-xl shadow-xl z-50 p-2" style="display: none;" x-transition>
                     <div class="space-y-1">
@@ -81,17 +55,26 @@
                 </div>
             </div>
 
-            <div class="relative flex-1 lg:w-64">
+            <div class="relative w-full sm:w-64">
                 <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-secondary">
                     <i class="ri-search-line"></i>
                 </span>
                 <input type="text" x-model="search" @keyup.debounce.500ms="fetchUsers()"
-                       class="w-full pl-10 pr-4 py-2 rounded-lg border border-input-border bg-page-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder-secondary text-sm"
+                       class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input-border bg-card-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder-secondary text-sm shadow-sm"
                        placeholder="Search users...">
             </div>
+
+            <button 
+                @can('user-create') @click="openModal('create')" @endcan
+                class="w-full sm:w-auto text-white font-bold py-2.5 px-6 rounded-xl flex justify-center items-center gap-2 transition-all shadow-lg shadow-primary/30 whitespace-nowrap
+                @can('user-create') bg-primary hover:opacity-90 @else bg-gray-400 cursor-not-allowed opacity-70 @endcan"
+                @cannot('user-create') disabled title="No Permission" @endcannot
+            >
+                <i class="ri-user-add-line"></i> 
+                <span>Add User</span>
+            </button>
         </div>
     </div>
-
     <div class="bg-card-bg rounded-xl shadow-custom border border-border-color overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
@@ -115,15 +98,7 @@
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-3">
-                                    <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold overflow-hidden border border-border-color">
-                                        <template x-if="user.avatar">
-                                            <img :src="'/storage/' + user.avatar" class="w-full h-full object-cover">
-                                        </template>
-                                        <template x-if="!user.avatar">
-                                            <span x-text="user.name.charAt(0)"></span>
-                                        </template>
-                                    </div>
-                                    <div>
+                                    <x-avatar /> <div>
                                         <p class="font-bold text-text-color" x-text="user.name"></p>
                                     </div>
                                 </div>
@@ -163,13 +138,7 @@
             </table>
         </div>
         
-        <div class="px-6 py-4 border-t border-border-color flex justify-between items-center" x-show="pagination.total > 0 && perPage !== 'all'">
-            <span class="text-sm text-secondary">Showing <span x-text="pagination.from"></span> to <span x-text="pagination.to"></span> of <span x-text="pagination.total"></span> results</span>
-            <div class="flex gap-2">
-                <button @click="changePage(pagination.prev_page_url)" :disabled="!pagination.prev_page_url" class="px-3 py-1 rounded border border-input-border text-text-color disabled:opacity-50 hover:bg-input-bg transition">Prev</button>
-                <button @click="changePage(pagination.next_page_url)" :disabled="!pagination.next_page_url" class="px-3 py-1 rounded border border-input-border text-text-color disabled:opacity-50 hover:bg-input-bg transition">Next</button>
-            </div>
-        </div>
+        <x-pagination x-model="perPage" @change="fetchUsers()" />
     </div>
 
     <div x-show="isModalOpen" style="display: none;" class="fixed inset-0 z-[100] flex items-center justify-center px-4" x-cloak>
@@ -190,6 +159,9 @@
                 <button @click="closeModal(true)" class="text-secondary hover:text-text-color"><i class="ri-close-line text-xl"></i></button>
             </div>
 
+
+
+            
             <form @submit.prevent="submitForm" class="p-6 space-y-4">
                 <div>
                     <label class="block text-sm font-bold text-text-color mb-1">Full Name</label>
@@ -223,7 +195,8 @@
                     <button type="button" x-show="isSequenceMode" @click="nextInSequence()" class="text-secondary hover:text-text-color text-sm font-bold px-2">
                         Skip this user <i class="ri-arrow-right-line align-middle"></i>
                     </button>
-                    <div x-show="!isSequenceMode"></div> <div class="flex gap-3">
+                    <div x-show="!isSequenceMode"></div> 
+                    <div class="flex gap-3">
                         <button type="button" @click="closeModal(true)" class="px-4 py-2 rounded-lg border border-input-border text-text-color hover:bg-page-bg transition">Cancel</button>
                         <button type="submit" class="bg-primary text-white px-6 py-2 rounded-lg hover:opacity-90 transition flex items-center gap-2" :disabled="isLoading">
                             <i x-show="isLoading" class="ri-loader-4-line animate-spin"></i>
@@ -246,13 +219,17 @@
             isLoading: false,
             pagination: {},
             
-            // New Feature Variables
             perPage: '10',
-            showCols: { role: true, email: true, created_at: true },
+
+            showCols: JSON.parse(localStorage.getItem('user_table_cols')) || { 
+                role: true, 
+                email: true, 
+                created_at: true 
+            },
+
             selectedIds: [],
             selectAll: false,
             
-            // Sequence Edit Variables
             isSequenceMode: false,
             sequenceQueue: [],
             currentSeqIndex: 0,
@@ -260,7 +237,13 @@
             form: { id: null, name: '', email: '', role: '', password: '' },
             errors: {},
 
-            // 1. Fetch Users
+            init() {
+                this.$watch('showCols', (value) => {
+                    localStorage.setItem('user_table_cols', JSON.stringify(value));
+                });
+                this.fetchUsers();
+            },
+
             async fetchUsers(url = "{{ route('admin.users.fetch') }}") {
                 const params = new URLSearchParams();
                 if(this.search) params.append('keyword', this.search);
@@ -280,7 +263,6 @@
                         next_page_url: data.next_page_url
                     };
                     
-                    // Reset Checkbox on page change
                     this.selectedIds = [];
                     this.selectAll = false;
                 } catch (error) { console.error(error); }
@@ -288,30 +270,23 @@
 
             changePage(url) { if(url) this.fetchUsers(url); },
 
-            // 2. Checkbox Logic
             toggleSelectAll() {
                 this.selectedIds = this.selectAll ? this.users.map(user => user.id) : [];
             },
 
-            // 3. Sequential Edit Logic (Upgrade)
-            // នៅក្នុងផ្នែក methods នៃ userManagement()
             startSequentialEdit() {
-                // ១. បម្លែង ID ទាំងអស់ក្នុង selectedIds ទៅជា String ដើម្បីធានា
                 const selectedIdsString = this.selectedIds.map(id => String(id));
-
-                // ២. Filter ដោយបម្លែង user.id ទៅជា String ដូចគ្នាពេលផ្ទៀងផ្ទាត់
                 this.sequenceQueue = this.users.filter(user => 
                     selectedIdsString.includes(String(user.id))
                 );
                 
                 if (this.sequenceQueue.length === 0) {
-                    alert("Please select users first (Error: ID Mismatch)"); // Debug message
+                    alert("Please select users first (Error: ID Mismatch)"); 
                     return;
                 }
 
                 this.isSequenceMode = true;
                 this.currentSeqIndex = 0;
-                
                 this.loadUserToForm(this.sequenceQueue[0]);
                 this.isModalOpen = true;
             },
@@ -321,7 +296,6 @@
                 if (this.currentSeqIndex < this.sequenceQueue.length) {
                     this.loadUserToForm(this.sequenceQueue[this.currentSeqIndex]);
                 } else {
-                    // Finished
                     this.isModalOpen = false;
                     this.isSequenceMode = false;
                     this.selectedIds = [];
@@ -342,20 +316,15 @@
             },
 
             closeModal(force = false) {
-                // 1. បើមិនមែនជាការ Force (force == false) និងកំពុងស្ថិតក្នុង Sequence Mode ចាំសួរ
-                // មានន័យថា បើ force == true (ចុចប៊ូតុង Cancel) វានឹងរំលងការសួរនេះ
                 if (!force && this.isSequenceMode && !confirm("Stop editing sequence?")) {
                     return;
                 }
-
-                // 2. បិទ Modal និង Reset ដូចដើម
                 this.isModalOpen = false;
                 this.isSequenceMode = false;
-                this.selectedIds = []; // (Optional) Clear selection ផង
+                this.selectedIds = []; 
                 this.fetchUsers();
             },
 
-            // 4. CRUD Operations
             openModal(mode, user = null) {
                 this.isSequenceMode = false;
                 this.isModalOpen = true;
@@ -398,19 +367,14 @@
             },
 
             async confirmDelete(id) {
-                // ហៅ Global Function មកប្រើ
                 askConfirm(async () => {
-                    // កូដនេះនឹងដំណើរការតែពេលគេចុច Yes ប៉ុណ្ណោះ
                     await this.performDelete([id]);
                 });
             },
 
             async confirmBulkDelete() {
-                // ត្រូវប្រាកដថាមានការ Select ជាមុនសិន
                 if (this.selectedIds.length === 0) return;
-
                 askConfirm(async () => {
-                    // កែពី [id] ទៅជា this.selectedIds, true
                     await this.performDelete(this.selectedIds, true);
                 });
             },
