@@ -116,13 +116,13 @@
                                             class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors
                                             @can('user-edit') bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-100 @else bg-gray-100 cursor-not-allowed @endcan"
                                             @cannot('user-edit') disabled @endcannot>
-                                        <i class="ri-pencil-line"></i>
+                                            <i class="ri-pencil-line"></i>
                                     </button>
                                     <button @can('user-delete') @click="confirmDelete(user.id)" @endcan
                                             class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors
                                             @can('user-delete') bg-red-50 dark:bg-red-900/20 text-red-600 hover:bg-red-100 @else bg-gray-100 cursor-not-allowed @endcan"
                                             @cannot('user-delete') disabled @endcannot>
-                                        <i class="ri-delete-bin-line"></i>
+                                            <i class="ri-delete-bin-line"></i>
                                     </button>
                                 </div>
                             </td>
@@ -158,9 +158,6 @@
                 </div>
                 <button @click="closeModal(true)" class="text-secondary hover:text-text-color"><i class="ri-close-line text-xl"></i></button>
             </div>
-
-
-
             
             <form @submit.prevent="submitForm" class="p-6 space-y-4">
                 <div>
@@ -352,8 +349,20 @@
                     const data = await response.json();
 
                     if (!response.ok) {
-                        if (response.status === 422) this.errors = data.errors;
+                        // [SECURITY FIX] Handle 403 Forbidden (If admin tries to hack role)
+                        if (response.status === 403) {
+                            window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: data.message } }));
+                            this.closeModal(true);
+                        }
+                        else if (response.status === 422) {
+                            this.errors = data.errors;
+                            window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Please fix the errors below.' } }));
+                        } 
+                        else {
+                            window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: data.message || 'Something went wrong!' } }));
+                        }
                     } else {
+                        // Success
                         window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: data.message } }));
                         if (this.isSequenceMode) {
                             this.nextInSequence();
@@ -393,13 +402,22 @@
                         },
                         body: body
                     });
+                    
+                    const data = await response.json();
+
                     if(response.ok) {
                         this.selectedIds = [];
                         this.selectAll = false;
                         this.fetchUsers();
-                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Deleted successfully' } }));
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: data.message || 'Deleted successfully' } }));
+                    } else {
+                        // [SECURITY FIX] Handle delete errors (e.g., trying to delete Super Admin)
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: data.message || 'Failed to delete.' } }));
                     }
-                } catch(e) { console.error(e); }
+                } catch(e) { 
+                    console.error(e); 
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Network Error' } }));
+                }
             }
         }
     }

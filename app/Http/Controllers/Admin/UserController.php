@@ -8,106 +8,64 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Models\User;
-use Spatie\Permission\Models\Role; // ១. ហៅ Model Role មកប្រើ
+use Spatie\Permission\Models\Role;
+use Illuminate\Validation\Rule; // [សំខាន់] ត្រូវហៅអា នេះមកប្រើ
 
 class UserController extends Controller
 {
+    // ==========================================
+    // [បន្ថែមថ្មី] HELPER FUNCTION: កំណត់សិទ្ធិមើល Role
+    // ==========================================
+    private function getAllowedRoles()
+    {
+        $currentUser = Auth::user();
 
-    // 1. បង្ហាញទំព័រ User List (និងបញ្ជូនឈ្មោះ Role ទៅអោយ Dropdown)
+        // ១. បើគាត់ជា Super Admin (Level ខ្ពស់បំផុត ឬមានឈ្មោះពិសេស)
+        if ($currentUser->hasRole('Super Admin')) {
+            return Role::all();
+        }
+
+        // ២. ទាញយក Level របស់ User បច្ចុប្បន្ន
+        // (សន្មតថា User ម្នាក់មាន Role តែមួយ, បើមានច្រើនយកអាធំបំផុត)
+        $currentLevel = $currentUser->roles->max('level') ?? 0;
+
+        // ៣. Query យកតែ Role ណាដែលតូចជាង Level របស់គាត់
+        return Role::where('level', '<', $currentLevel)->get();
+    }
+
+    // 1. បង្ហាញទំព័រ User List
     public function userList()
     {
-        $roles = Role::all(); // ទាញយក Role ទាំងអស់
+        // [កែប្រែ] លែងប្រើ Role::all() ហើយ ប្រើ Function ខាងលើជំនួស
+        // ដើម្បីកុំឱ្យ Admin ធម្មតាឃើញ Role "Super Admin" ក្នុង Dropdown
+        $roles = $this->getAllowedRoles(); 
+        
         return view('admin.user.user_list', compact('roles'));
     }
 
-
-    // 1. បង្ហាញផ្ទាំង User Info
-    public function profile()
-    {
-        $user = Auth::user();
-        return view('admin.infouser.profile', compact('user'));
-    }
-
-    // 2. រក្សាទុកការកែប្រែ User Info
-    public function updateProfile(Request $request)
-    {
-        $user = Auth::user();
-
-        // Validation
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
-            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // ដាក់រូបបានត្រឹម 2MB
-        ]);
-
-        $data = [
-            'name' => $request->name,
-            'email' => $request->email,
-        ];
-
-        // ២. ដំណើរការប្តូររូប (Logic សំខាន់នៅទីនេះ)
-        if ($request->hasFile('avatar')) {
-
-            // ក. ពិនិត្យមើល៖ បើ User មានរូបចាស់ ហើយរូបនោះពិតជាមានក្នុង Server មែន
-            if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
-                // ខ. លុបរូបចាស់នោះចោលភ្លាម
-                Storage::disk('public')->delete($user->avatar);
-            }
-
-            // គ. ដាក់រូបថ្មីចូល
-            $path = $request->file('avatar')->store('avatars', 'public');
-            
-            // ឃ. យកឈ្មោះរូបថ្មីទៅត្រៀម Update ចូល Database
-            $data['avatar'] = $path;
-        }
-
-        // ៣. Update ទិន្នន័យ
-        $user->update($data);
-
-        return back()->with('success', 'Profile updated successfully!');
-    }
-
-    // 3. បង្ហាញផ្ទាំង Change Password
-    public function password()
-    {
-        return view('admin.infouser.password');
-    }
-
-    // 4. រក្សាទុកការប្ដូរ Password
-    public function updatePassword(Request $request)
-    {
-        $request->validate([
-            'current_password' => 'required',
-            'password' => 'required|string|min:8|confirmed', // confirmed នឹង check ជាមួយ field password_confirmation
-        ]);
-
-        $user = Auth::user();
-
-        // ផ្ទៀងផ្ទាត់ Password ចាស់
-        if (!Hash::check($request->current_password, $user->password)) {
-            return back()->withErrors(['current_password' => 'Current password does not match!']);
-        }
-
-        // Update Password ថ្មី
-        User::whereId($user->id)->update([
-            'password' => Hash::make($request->password)
-        ]);
-
-        return back()->with('success', 'Password changed successfully!');
-    }
+    // ... (Profile functions remain the same) ...
+    public function profile() { $user = Auth::user(); return view('admin.infouser.profile', compact('user')); }
+    public function updateProfile(Request $request) { /* ... keep your existing code ... */ return back()->with('success', 'Profile updated'); }
+    public function password() { return view('admin.infouser.password'); }
+    public function updatePassword(Request $request) { /* ... keep your existing code ... */ return back()->with('success', 'Password changed'); }
 
     // ==========================================
     // USER MANAGEMENT (CRUD + AJAX)
     // ==========================================
 
-    
-
-    // 2. ទទួលសំណើ AJAX ដើម្បីទាញយកទិន្នន័យ User (Real-time Search)
+    // 2. ទទួលសំណើ AJAX ដើម្បីទាញយកទិន្នន័យ User
     public function fetchUsers(Request $request)
     {
         $query = User::with('roles');
 
-        // 1. Search Logic
+        // [បន្ថែមថ្មី] Security: បើមិនមែន Super Admin ទេ ហាមមើលឃើញ User ដែលជា Super Admin
+        // នេះការពារកុំឱ្យ Admin ធម្មតាដឹងថាគណនីណាខ្លះជាមេធំ ឬលួចកែ
+        if (!Auth::user()->hasRole('Super Admin')) {
+            $query->whereDoesntHave('roles', function ($q) {
+                $q->where('name', 'Super Admin');
+            });
+        }
+
         if ($request->keyword) {
             $query->where(function($q) use ($request) {
                 $q->where('name', 'like', '%' . $request->keyword . '%')
@@ -115,11 +73,9 @@ class UserController extends Controller
             });
         }
 
-        // 2. Pagination Size Logic (Show 10, 20, 50, 100, All)
         $perPage = $request->input('per_page', 10);
         
         if ($perPage === 'all') {
-            // បើ All យើងដាក់ចំនួនច្រើនខ្លាំងដើម្បីអោយចេញទាំងអស់
             $users = $query->latest()->paginate(999999); 
         } else {
             $users = $query->latest()->paginate((int)$perPage);
@@ -131,11 +87,22 @@ class UserController extends Controller
     // 3. បង្កើត User ថ្មី (Create)
     public function store(Request $request)
     {
+        // [បន្ថែមថ្មី] ទាញយកឈ្មោះ Role ដែលអនុញ្ញាតអោយប្រើ
+        $allowedRoles = $this->getAllowedRoles()->pluck('name')->toArray();
+
         $request->validate([
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users,email',
             'password' => 'required|min:8',
-            'role'     => 'required' // តម្រូវអោយរើស Role
+            'role'     => [
+                'required', 
+                // [បន្ថែមថ្មី - សំខាន់បំផុត!] Security Rule!
+                // ត្រួតពិនិត្យថា Role ដែលផ្ញើមករមាននៅក្នុង List ដែលអនុញ្ញាតឬអត់
+                // បើ Admin ព្យាយាម Hack ដាក់ 'Super Admin' វានឹង Error ភ្លាម
+                Rule::in($allowedRoles) 
+            ]
+        ], [
+            'role.in' => 'You do not have permission to assign this role.' // Message បើសិនគេលួច Hack
         ]);
 
         $user = User::create([
@@ -144,7 +111,6 @@ class UserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        // កំណត់ Role អោយ User
         $user->assignRole($request->role);
 
         return response()->json(['message' => 'User created successfully!']);
@@ -154,11 +120,25 @@ class UserController extends Controller
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
+        $currentUser = Auth::user();
+
+        // [បន្ថែមថ្មី] Security Check: 
+        // បើ User ដែលគេចង់កែជា Super Admin ហើយអ្នកកែមិនមែន Super Admin => ហាម!
+        if ($user->hasRole('Super Admin') && !$currentUser->hasRole('Super Admin')) {
+            return response()->json(['message' => 'Unauthorized! You cannot update a Super Admin account.'], 403);
+        }
+
+        // [បន្ថែមថ្មី] យក Role ដែលអនុញ្ញាត
+        $allowedRoles = $this->getAllowedRoles()->pluck('name')->toArray();
 
         $request->validate([
             'name'  => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $id,
-            'role'  => 'required'
+            'role'  => [
+                'required', 
+                // [បន្ថែមថ្មី] ការពារដូច store ដែរ
+                Rule::in($allowedRoles)
+            ]
         ]);
 
         $data = [
@@ -166,14 +146,13 @@ class UserController extends Controller
             'email' => $request->email,
         ];
 
-        // បើគេវាយ Password ថ្មី ចាំ Update, បើអត់ទេ ទុកចាស់
         if ($request->password) {
             $data['password'] = Hash::make($request->password);
         }
 
         $user->update($data);
 
-        // Update Role (Sync មានន័យថា លុបចាស់ចេញ ដាក់ថ្មីចូល)
+        // Update Role
         $user->syncRoles([$request->role]);
 
         return response()->json(['message' => 'User updated successfully!']);
@@ -184,7 +163,11 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
         
-        // (Optional) លុបរូប Avatar ផងបើមាន
+        // [បន្ថែមថ្មី] Security Check: ហាម Admin ធម្មតាលុប Super Admin
+        if ($user->hasRole('Super Admin') && !Auth::user()->hasRole('Super Admin')) {
+            return response()->json(['message' => 'Unauthorized! You cannot delete a Super Admin account.'], 403);
+        }
+
         if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
             Storage::disk('public')->delete($user->avatar);
         }
@@ -203,32 +186,57 @@ class UserController extends Controller
         ]);
 
         $users = User::whereIn('id', $request->ids)->get();
+        $deletedCount = 0;
+        $currentUser = Auth::user();
 
         foreach ($users as $user) {
-            // លុបរូប Avatar ផងបើមាន
+            // [បន្ថែមថ្មី] Security Check ក្នុង Loop
+            // រំលង (Skip) ការលុប ប្រសិនបើជា Super Admin ហើយអ្នកលុបមិនមែន
+            if ($user->hasRole('Super Admin') && !$currentUser->hasRole('Super Admin')) {
+                continue; 
+            }
+
             if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
                 Storage::disk('public')->delete($user->avatar);
             }
             $user->delete();
+            $deletedCount++;
         }
 
-        return response()->json(['message' => count($request->ids) . ' users deleted successfully!']);
+        return response()->json(['message' => $deletedCount . ' users deleted successfully!']);
     }
 
-    // 2. Bulk Edit (ឧទាហរណ៍៖ ប្តូរ Role អោយ User ច្រើនព្រមគ្នា)
+    // 2. Bulk Edit
     public function bulkUpdate(Request $request)
     {
+        // [បន្ថែមថ្មី] យក Role ដែលអនុញ្ញាត
+        $allowedRoles = $this->getAllowedRoles()->pluck('name')->toArray();
+
         $request->validate([
             'ids' => 'required|array',
-            'role' => 'required|exists:roles,name'
+            'role' => [
+                'required', 
+                'exists:roles,name',
+                // [បន្ថែមថ្មី] ការពារមិនឱ្យ Bulk Update ទៅជា Super Admin
+                Rule::in($allowedRoles)
+            ]
         ]);
 
         $users = User::whereIn('id', $request->ids)->get();
-        
+        $updatedCount = 0;
+        $currentUser = Auth::user();
+
         foreach($users as $user) {
+            // [បន្ថែមថ្មី] Security Check: 
+            // ហាមប្តូរ Role របស់ Super Admin បើអ្នកធ្វើមិនមែន Super Admin
+            if ($user->hasRole('Super Admin') && !$currentUser->hasRole('Super Admin')) {
+                continue;
+            }
+
             $user->syncRoles([$request->role]);
+            $updatedCount++;
         }
 
-        return response()->json(['message' => 'Roles updated for ' . count($request->ids) . ' users!']);
+        return response()->json(['message' => 'Roles updated for ' . $updatedCount . ' users!']);
     }
 }

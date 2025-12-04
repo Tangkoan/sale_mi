@@ -80,6 +80,7 @@
                             <input type="checkbox" @change="toggleSelectAll()" x-model="selectAll" class="rounded border-input-border text-primary focus:ring-primary h-4 w-4 cursor-pointer">
                         </th>
                         <th class="px-6 py-4 font-bold w-1/4">Role Name</th>
+                        <th class="px-6 py-4 font-bold">Level</th>
                         <th class="px-6 py-4 font-bold" x-show="showCols.permissions">Permissions Preview</th>
                         <th class="px-6 py-4 font-bold text-center" x-show="showCols.users_count">Users</th>
                         <th class="px-6 py-4 font-bold text-right w-40">Actions</th>
@@ -94,6 +95,11 @@
                             <td class="px-6 py-4 align-top">
                                 <span class="font-bold text-text-color text-lg" x-text="role.name"></span>
                             </td>
+
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-sm font-bold" x-text="role.level"></span>
+                            </td>
+
                             <td class="px-6 py-4" x-show="showCols.permissions">
                                 <div class="flex flex-wrap gap-2">
                                     <template x-if="role.permissions && role.permissions.length > 0">
@@ -170,12 +176,27 @@
                 </div>
                 <button @click="closeModal(true)" class="text-secondary hover:text-text-color"><i class="ri-close-line text-xl"></i></button>
             </div>
+
+
             <form @submit.prevent="submitForm" class="p-6 space-y-4">
                 <div>
                     <label class="block text-sm font-bold text-text-color mb-1">Role Name</label>
                     <input type="text" x-model="form.name" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" placeholder="e.g., Manager">
                     <p x-show="errors.name" x-text="errors.name" class="text-red-500 text-xs mt-1"></p>
                 </div>
+
+                <div>
+                    <div class="flex justify-between">
+                        <label class="block text-sm font-bold text-text-color mb-1">Role Level (Priority)</label>
+                        <span class="text-xs text-secondary">(Higher = More Power)</span>
+                    </div>
+                    <input type="number" x-model="form.level" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" placeholder="e.g., 10">
+                    <p class="text-xs text-secondary mt-1">
+                        Example: User=10, Manager=30, Admin=50.
+                    </p>
+                    <p x-show="errors.level" x-text="errors.level" class="text-red-500 text-xs mt-1"></p>
+                </div>
+
                 <div class="pt-4 flex justify-between items-center border-t border-border-color mt-2">
                     <button type="button" x-show="isSequenceMode" @click="nextInSequence()" class="text-secondary hover:text-text-color text-sm font-bold px-2">Skip <i class="ri-arrow-right-line align-middle"></i></button>
                     <div x-show="!isSequenceMode"></div> 
@@ -188,6 +209,8 @@
                     </div>
                 </div>
             </form>
+
+            
         </div>
     </div>
 
@@ -306,9 +329,17 @@
             openModal(mode, role = null) {
                 this.isSequenceMode = false; this.isModalOpen = true; this.errors = {};
                 if (mode === 'edit') this.loadRoleToForm(role);
-                else { this.editMode = false; this.form = { id: null, name: '' }; }
+                else { this.editMode = false;
+                    // បន្ថែម level: '' ឬ 0
+                    this.form = { id: null, name: '', level: 10 };
+                }
             },
-            loadRoleToForm(role) { this.editMode = true; this.form = { id: role.id, name: role.name }; this.errors = {}; },
+            loadRoleToForm(role) { 
+                this.editMode = true; 
+                // បន្ថែម role.level ចូល
+                this.form = { id: role.id, name: role.name, level: role.level }; 
+                this.errors = {}; 
+            },
             closeModal(force = false) {
                 if (!force && this.isSequenceMode && !confirm("Stop editing sequence?")) return;
                 this.isModalOpen = false; this.isSequenceMode = false; this.selectedIds = []; this.fetchRoles();

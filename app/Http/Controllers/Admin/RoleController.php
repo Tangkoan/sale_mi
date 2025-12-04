@@ -18,15 +18,22 @@ class RoleController extends Controller
 
     public function fetchRoles(Request $request)
     {
-        // withCount('users') គឺសំខាន់ណាស់ ដើម្បីដឹងថា Role នឹងមាន User ប៉ុន្មាននាក់
-        // វានឹងជួយបង្ហាញក្នុង Table និងងាយស្រួលពេល Frontend ចង់បង្ហាញ
         $query = Role::with('permissions')->withCount('users'); 
+
+        // ១. យក Level ខ្លួនឯង
+        $myLevel = auth()->user()->roles->max('level') ?? 0;
+
+        // ២. បើមិនមែន Super Admin (99) ទេ
+        // ឃើញតែ Role ណាដែល *តូចជាង* ខ្លួនឯង (Strictly Less Than)
+        if ($myLevel < 99) { 
+            $query->where('level', '<', $myLevel); 
+        }
+        // *សម្គាល់៖ បើគាត់ជា Super Admin (99) គាត់នឹងឃើញទាំងអស់ ព្រោះ Level ទាំងអស់តូចជាង 99
 
         if ($request->keyword) {
             $query->where('name', 'like', '%' . $request->keyword . '%');
         }
 
-        // Per Page អាចប្ដូរបានតាម request
         $perPage = $request->input('per_page', 10);
         $perPage = ($perPage == 'all') ? $query->count() : $perPage;
 
@@ -34,34 +41,57 @@ class RoleController extends Controller
         return response()->json($roles);
     }
 
+    // នៅក្នុង RoleController.php
     public function store(Request $request)
     {
-        // 1. Check Unique Name with Custom Message
+        // ១. រកមើល Level របស់អ្នកដែលកំពុង Login
+        // (សន្មតថា User ម្នាក់មាន Role តែមួយ បើច្រើនយកអាធំបំផុត)
+        $currentUserLevel = auth()->user()->roles->max('level') ?? 0;
+
+        // ២. Validate
         $request->validate([
-            'name' => 'required|unique:roles,name'
+            'name' => 'required|unique:roles,name',
+            'level' => [
+                'required', 
+                'integer', 
+                'min:0', 
+                // ហាមបង្កើត Role ដែលមាន Level ធំជាងខ្លួនឯង
+                'max:' . $currentUserLevel 
+            ]
         ], [
-            'name.unique' => 'This role has already been taken! Please choose another name.',
+            'level.max' => 'You cannot create a role with a level higher than your own (' . $currentUserLevel . ').',
         ]);
 
-        Role::create(['name' => $request->name]);
+        // ៣. បង្កើត Role
+        // (ត្រូវប្រាកដថាអ្នកបានដាក់ 'level' ក្នុង $fillable នៃ Role Model)
+        Role::create([
+            'name' => $request->name,
+            'level' => $request->level
+        ]);
         
         return response()->json(['message' => 'Role created successfully!']);
     }
 
     public function update(Request $request, $id)
     {
-        // 1. Check Unique Name (ignore current ID)
+        $role = Role::findOrFail($id);
+        $currentUserLevel = auth()->user()->roles->max('level') ?? 0;
+        
+
+        // ១. Security Check: ហាមកែ Role អ្នកធំ
+        if ($role->level > $currentUserLevel) {
+            return response()->json(['message' => 'Unauthorized: You cannot edit a role with a higher level than yours.'], 403);
+        }
+
         $request->validate([
-            'name' => [
-                'required', 
-                Rule::unique('roles', 'name')->ignore($id)
-            ]
-        ], [
-            'name.unique' => 'This role has already been taken! Please choose another name.',
+            'name' => ['required', Rule::unique('roles', 'name')->ignore($id)],
+            'level' => ['required', 'integer', 'min:0', 'max:' . $currentUserLevel]
         ]);
 
-        $role = Role::findOrFail($id);
-        $role->update(['name' => $request->name]);
+        $role->update([
+            'name' => $request->name,
+            'level' => $request->level
+        ]);
 
         return response()->json(['message' => 'Role updated successfully!']);
     }
@@ -69,12 +99,17 @@ class RoleController extends Controller
     public function destroy($id)
     {
         $role = Role::withCount('users')->findOrFail($id);
+        $currentUserLevel = auth()->user()->roles->max('level') ?? 0;
 
-        // 2. ការពារការលុប Role ដែលមាន User ប្រើ
+        // ១. Security Check: ហាមលុប Role អ្នកធំ
+        if ($role->level > $currentUserLevel) {
+            return response()->json(['message' => 'Unauthorized: You cannot delete a role with a higher level than yours.'], 403);
+        }
+
         if ($role->users_count > 0) {
             return response()->json([
                 'message' => "Cannot delete role '{$role->name}' because it has {$role->users_count} users assigned."
-            ], 422); // 422 Unprocessable Entity
+            ], 422);
         }
 
         $role->delete();
