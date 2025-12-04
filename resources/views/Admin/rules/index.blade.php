@@ -39,16 +39,31 @@
                         @endif
                     </td>
 
+                   
+
+
                     <td class="px-6 py-4 text-right">
-                        <a href="{{ route('admin.rules.edit', $role->id) }}" 
-                           class="inline-flex items-center gap-2 bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 px-4 py-2 rounded-lg font-medium transition-all shadow-sm">
-                            <i class="ri-settings-4-line"></i> Configure
-                        </a>
+                        {{-- ករណីមានសិទ្ធិ (Show Link) --}}
+                        @can('rule-edit')
+                            <a href="{{ route('admin.rules.edit', $role->id) }}" 
+                            class="inline-flex items-center gap-2 bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 px-4 py-2 rounded-lg font-medium transition-all shadow-sm">
+                                <i class="ri-settings-4-line"></i> Configure
+                            </a>
+                        @endcan
+
+                        {{-- ករណីគ្មានសិទ្ធិ (Show Disabled Button) --}}
+                        @cannot('rule-edit')
+                            <button disabled
+                            class="inline-flex items-center gap-2 bg-gray-100 text-gray-400 border border-gray-200 px-4 py-2 rounded-lg font-medium cursor-not-allowed shadow-sm">
+                                <i class="ri-settings-4-line"></i> Configure
+                            </button>
+                        @endcannot
                     </td>
+
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="3" class="px-6 py-12 text-center text-secondary">No roles found (except Super Admin).</td>
+                    <td colspan="3" class="px-6 py-12 text-center text-secondary">No roles found (except Admin).</td>
                 </tr>
                 @endforelse
             </tbody>

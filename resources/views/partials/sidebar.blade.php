@@ -50,56 +50,56 @@
                         
                         {{-- 1. User List --}}
                         @can('user-list')
-                        <li>
-                            <a href="{{ route('user.list') }}" 
-                               class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
-                                      {{ request()->routeIs('user.list') ? 'text-primary font-bold' : 'opacity-80' }}">
-                                <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
-                                             {{ request()->routeIs('user.list') ? 'bg-primary' : 'bg-gray-400' }}"></span>
-                                <span>User List</span>
-                            </a>
-                        </li>
+                            <li>
+                                <a href="{{ route('user.list') }}" 
+                                class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
+                                        {{ request()->routeIs('user.list') ? 'text-primary font-bold' : 'opacity-80' }}">
+                                    <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
+                                                {{ request()->routeIs('user.list') ? 'bg-primary' : 'bg-gray-400' }}"></span>
+                                    <span>User List</span>
+                                </a>
+                            </li>
                         @endcan
 
                         {{-- 2. Role & Permission --}}
                         @can('role-list')
-                        <li>
-                            <a href="{{ route('admin.roles.index') }}" 
-                               class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
-                                      {{ request()->routeIs('admin.roles.*') ? 'text-primary font-bold' : 'opacity-80' }}">
-                                <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
-                                             {{ request()->routeIs('admin.roles.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
-                                <span>Role & Permission</span>
-                            </a>
-                        </li>
+                            <li>
+                                <a href="{{ route('admin.roles.index') }}" 
+                                class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
+                                        {{ request()->routeIs('admin.roles.*') ? 'text-primary font-bold' : 'opacity-80' }}">
+                                    <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
+                                                {{ request()->routeIs('admin.roles.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
+                                    <span>Role & Permission</span>
+                                </a>
+                            </li>
                         @endcan
 
                         {{-- 3. Permission List --}}
                         @can('permission-list')
-                        <li>
-                            <a href="{{ route('admin.permissions.index') }}" 
-                               class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
-                                      {{ request()->routeIs('admin.permissions.*') ? 'text-primary font-bold' : 'opacity-80' }}">
-                                <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
-                                             {{ request()->routeIs('admin.permissions.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
-                                <span>Permissions List</span>
-                            </a>
-                        </li>
+                            <li>
+                                <a href="{{ route('admin.permissions.index') }}" 
+                                class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
+                                        {{ request()->routeIs('admin.permissions.*') ? 'text-primary font-bold' : 'opacity-80' }}">
+                                    <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
+                                                {{ request()->routeIs('admin.permissions.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
+                                    <span>Permissions List</span>
+                                </a>
+                            </li>
                         @endcan
 
 
-                         {{-- 4. Permission Assing --}}
-                        @role('Super Admin')
-                        <li>
-                            <a href="{{ route('admin.rules.index') }}" 
-                               class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
-                                      {{ request()->routeIs('admin.rules.*') ? 'text-primary font-bold' : 'opacity-80' }}">
-                                <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
-                                             {{ request()->routeIs('admin.rules.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
-                                <span>Rule List</span>
-                            </a>
-                        </li>
-                        @endrole
+                        {{-- 4. Permission Assing --}}
+                        @can('rule-list')
+                            <li>
+                                <a href="{{ route('admin.rules.index') }}" 
+                                class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
+                                        {{ request()->routeIs('admin.rules.*') ? 'text-primary font-bold' : 'opacity-80' }}">
+                                    <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
+                                                {{ request()->routeIs('admin.rules.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
+                                    <span>Rule List</span>
+                                </a>
+                            </li>
+                        @endcan
 
                     </ul>
                 </div>

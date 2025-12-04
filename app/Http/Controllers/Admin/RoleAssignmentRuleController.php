@@ -8,17 +8,29 @@ use App\Http\Controllers\Controller;
 use App\Models\Role; 
 use Spatie\Permission\Models\Permission;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class RoleAssignmentRuleController extends Controller
 {
     // 1. បង្ហាញតារាង Role (admin.rules.index)
     public function index()
     {
-        // ទាញយក Role ទាំងអស់ លើកលែងតែ Super Admin
-        // withCount('assignablePermissions') ដើម្បីបង្ហាញថា Role ហ្នឹងមានសិទ្ធិចែកចាយប៉ុន្មាន
-        $roles = Role::where('name', '!=', 'Super Admin')
-                     ->withCount('assignablePermissions') 
-                     ->get();
+        $query = Role::withCount('assignablePermissions');
+        
+        // ១. យក Level ខ្លួនឯង
+        $myLevel = Auth::user()->roles->max('level') ?? 0;
+
+        // ២. Logic បង្ហាញ Role
+        if ($myLevel >= 99) {
+            // បើជា Super Admin: ឃើញទាំងអស់ (ដកតែខ្លួនឯងចេញ)
+            $query->where('name', '!=', 'Super Admin');
+        } else {
+            // បើជា Admin ធម្មតា: ឃើញតែ Role ណាដែល *តូចជាង* ខ្លួនឯងដាច់ខាត (<)
+            // ហាមឃើញអ្នកធំជាង ឬ អ្នកស្មើ
+            $query->where('level', '<', $myLevel);
+        }
+
+        $roles = $query->get();
 
         return view('admin.rules.index', compact('roles'));
     }
@@ -26,26 +38,65 @@ class RoleAssignmentRuleController extends Controller
     // 2. បង្ហាញ Form កំណត់សិទ្ធិ (admin.rules.edit)
     public function edit($id)
     {
-        $role = Role::with('assignablePermissions')->findOrFail($id);
+        $targetRole = Role::with('assignablePermissions')->findOrFail($id);
+        $user = Auth::user();
+        $myLevel = $user->roles->max('level') ?? 0;
+
+        // ១. Security Check: ហាមកែ Role អ្នកធំជាង ឬស្មើ (បើមិនមែន Super Admin)
+        if ($myLevel < 99 && $targetRole->level >= $myLevel) {
+            return abort(403, 'Unauthorized action on high-level role.');
+        }
+
+        // ២. Logic ទាញយក Permission មកបង្ហាញក្នុង Checkbox
+        if ($myLevel >= 99) {
+            // បើជា Super Admin: អាចយក Permission ទាំងអស់ក្នុង System ទៅឱ្យគេបាន
+            $availablePermissions = Permission::all();
+        } else {
+            // [ចំណុចដែលអ្នកចង់បាន]: 
+            // Admin អាចផ្ដល់សិទ្ធិឱ្យគេ បានតែសិទ្ធិណាដែល *ខ្លួនឯងមាន* ប៉ុណ្ណោះ
+            // ឧទាហរណ៍: បើ Admin អត់មានសិទ្ធិ 'delete-user' ទេ គាត់មិនអាចដាក់សិទ្ធិនេះឱ្យ Manager បានទេ។
+            $availablePermissions = $user->getAllPermissions();
+        }
         
-        // Group permission តាមឈ្មោះខាងមុខ (ឧ. user-create, product-create -> Group 'User', 'Product')
-        // ដើម្បីងាយស្រួលមើលពេល Tick
-        $permissions = Permission::all()->groupBy(function($data) {
-            return explode('-', $data->name)[0]; // យកពាក្យដំបូងធ្វើជា Group Name
+        // Group permission តាមឈ្មោះខាងមុខ
+        $permissions = $availablePermissions->groupBy(function($data) {
+            return explode('-', $data->name)[0]; 
         });
 
-        return view('admin.rules.edit', compact('role', 'permissions'));
+        return view('admin.rules.edit', [
+            'role' => $targetRole,       // បញ្ជូន $targetRole ទៅជា $role
+            'permissions' => $permissions
+        ]);
     }
 
     // 3. Save ទិន្នន័យ (admin.rules.update)
     public function update(Request $request, $id)
     {
-        $role = Role::findOrFail($id);
+        $targetRole = Role::findOrFail($id);
+        $user = Auth::user();
+        $myLevel = $user->roles->max('level') ?? 0;
+
+        // ១. Security Check: ដូច Edit ដែរ
+        if ($myLevel < 99 && $targetRole->level >= $myLevel) {
+            return abort(403, 'Unauthorized action on high-level role.');
+        }
         
+        // ២. Security Check (Advanced): 
+        // ការពារករណី Hacker Inspect Element បន្ថែម Permission ID ដែល Admin ខ្លួនឯងអត់មាន
+        if ($myLevel < 99) {
+            $myPermissionIds = $user->getAllPermissions()->pluck('id')->toArray();
+            $submittedIds = $request->permissions ?? [];
+            
+            // បើមាន ID ណាដែលផ្ញើមក តែមិនមែនជារបស់ខ្លួនឯង => Error
+            if (!empty(array_diff($submittedIds, $myPermissionIds))) {
+                 return abort(403, 'Security Alert: You cannot grant permissions you do not possess.');
+            }
+        }
+
         // Sync ចូលក្នុង Table 'role_assignable_permissions'
-        $role->assignablePermissions()->sync($request->permissions ?? []);
+        $targetRole->assignablePermissions()->sync($request->permissions ?? []);
 
         return redirect()->route('admin.rules.index')
-                         ->with('success', "Rules for '{$role->name}' updated successfully!");
+                         ->with('success', "Rules for '{$targetRole->name}' updated successfully!");
     }
 }

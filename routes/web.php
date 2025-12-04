@@ -187,7 +187,8 @@ Route::middleware('auth')->group(function () {
         // ======================
         // ROLE ASSIGNMENT RULE (SUPER ADMIN ONLY)
         // ======================
-        Route::middleware('role:Super Admin')->group(function () {
+        // ប្រើ Permission ជំនួស Role ដើម្បីឱ្យ Admin ចូលបានដែរ (បើគាត់មានសិទ្ធិ)
+        Route::middleware(['auth', 'can:rule-list'])->group(function () {
             Route::resource('rules', RoleAssignmentRuleController::class)
                 ->only(['index', 'edit', 'update']);
         });
