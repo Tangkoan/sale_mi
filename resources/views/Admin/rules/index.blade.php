@@ -6,7 +6,9 @@
     <div class="flex justify-between items-center mb-6">
         <div>
             <h1 class="text-2xl font-bold text-text-color flex items-center gap-2">
-                <i class="ri-git-merge-line text-primary"></i> Assignment Rules
+                {{-- <i class="ri-git-merge-line text-primary"></i> --}}
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-line-squiggle-icon lucide-line-squiggle"><path d="M7 3.5c5-2 7 2.5 3 4C1.5 10 2 15 5 16c5 2 9-10 14-7s.5 13.5-4 12c-5-2.5.5-11 6-2"/></svg>
+                Assignment Rules
             </h1>
            
         </div>
