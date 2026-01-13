@@ -216,10 +216,13 @@
         return {
             users: [],
             search: '',
+            perPage: '10',
+            currentPage: 1, // តម្លៃដើម
+            pagination: { last_page: 1, total: 0 }, // តម្លៃដើមការពារ Error
             isModalOpen: false,
             editMode: false,
             isLoading: false,
-            pagination: {},
+            
             
             perPage: '10',
 
@@ -246,29 +249,57 @@
                 this.fetchUsers();
             },
 
-            async fetchUsers(url = "{{ route('admin.users.fetch') }}") {
-                const params = new URLSearchParams();
-                if(this.search) params.append('keyword', this.search);
-                params.append('per_page', this.perPage);
-                
-                url = url.split('?')[0] + '?' + params.toString();
+            
 
-                try {
-                    const response = await fetch(url);
-                    const data = await response.json();
-                    this.users = data.data;
-                    this.pagination = {
-                        total: data.total,
-                        from: data.from,
-                        to: data.to,
-                        prev_page_url: data.prev_page_url,
-                        next_page_url: data.next_page_url
-                    };
-                    
-                    this.selectedIds = [];
-                    this.selectAll = false;
-                } catch (error) { console.error(error); }
-            },
+async fetchUsers() {
+            let url = "{{ route('admin.users.fetch') }}";
+            const params = new URLSearchParams();
+            
+            if(this.search) params.append('keyword', this.search);
+            params.append('per_page', this.perPage);
+            
+            // [សំខាន់] បញ្ជូនលេខទំព័រទៅ Server
+            params.append('page', this.currentPage);
+
+            // បង្កើត URL
+            url = url.split('?')[0] + '?' + params.toString();
+
+            this.isLoading = true; // ដាក់ Loading បន្តិចមើលទៅល្អ
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                this.users = data.data;
+                
+                // Update Pagination Data ពី Server
+                this.pagination = {
+                    total: data.total,
+                    from: data.from,
+                    to: data.to,
+                    current_page: data.current_page,
+                    last_page: data.last_page, 
+                    prev_page_url: data.prev_page_url,
+                    next_page_url: data.next_page_url
+                };
+                
+                // ធានាថា currentPage ត្រូវគ្នាជាមួយ Server
+                this.currentPage = data.current_page;
+                
+            } catch (error) { 
+                console.error(error); 
+            } finally {
+                this.isLoading = false;
+            }
+        },
+        // [បន្ថែមថ្មី] Function សម្រាប់ប្ដូរទំព័រ
+        gotoPage(page) {
+            // ការពារកុំឱ្យចុចលើសទំព័រដែលមាន
+            if (page < 1 || (this.pagination.last_page && page > this.pagination.last_page)) return;
+            
+            // ដាក់លេខទំព័រថ្មី រួចហៅ API
+            this.currentPage = page;
+            this.fetchUsers(); 
+        },
 
             changePage(url) { if(url) this.fetchUsers(url); },
 

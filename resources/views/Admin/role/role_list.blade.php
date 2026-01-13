@@ -163,7 +163,54 @@
             </table>
         </div>
         
-        <x-pagination x-model="perPage" @change="fetchRoles()" />
+        <div class="px-6 py-4 border-t border-border-color flex flex-col sm:flex-row justify-between items-center gap-4" 
+     x-show="pagination.total > 0">
+    
+    {{-- Show Per Page Dropdown --}}
+    <div class="flex items-center gap-2">
+        <span class="text-sm text-secondary whitespace-nowrap">Show:</span>
+        <select x-model="perPage" 
+                @change="gotoPage(1)" 
+                class="w-24 bg-page-bg border border-input-border text-text-color text-sm rounded-lg focus:ring-primary focus:border-primary block p-2 outline-none cursor-pointer">
+            <option value="1">1</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="all">All</option>
+        </select>
+    </div>
+
+    {{-- Pagination Buttons --}}
+    <div class="flex items-center gap-1">
+        {{-- Previous --}}
+        <button 
+            @click="gotoPage(currentPage - 1)" 
+            :disabled="currentPage === 1"
+            class="px-3 py-1 text-sm border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-text-color border-input-border">
+            &laquo;
+        </button>
+
+        {{-- Page Numbers Loop --}}
+        <template x-for="page in pagination.last_page" :key="page">
+            <button 
+                x-show="page === 1 || page === pagination.last_page || (page >= currentPage - 2 && page <= currentPage + 2)"
+                @click="gotoPage(page)" 
+                x-text="page"
+                :class="currentPage === page ? 'bg-primary text-white border-primary' : 'text-text-color hover:bg-gray-100 border-input-border'"
+                class="px-3 py-1 text-sm border rounded transition-colors duration-200">
+            </button>
+        </template>
+
+        {{-- Next --}}
+        <button 
+            @click="gotoPage(currentPage + 1)" 
+            :disabled="currentPage === pagination.last_page"
+            class="px-3 py-1 text-sm border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-text-color border-input-border">
+            &raquo;
+        </button>
+    </div>
+</div>
     </div>
 
     <div x-show="isModalOpen" style="display: none;" class="fixed inset-0 z-[100] flex items-center justify-center px-4" x-cloak>
@@ -275,19 +322,23 @@
 <script>
     function roleManagement() {
         return {
-            roles: [], search: '', isLoading: false, pagination: {}, errors: {},
-            perPage: '10', selectedIds: [], selectAll: false,
+            roles: [], search: '', isLoading: false, 
+            errors: {}, perPage: '10', selectedIds: [], selectAll: false,
+            
+            // [កែសម្រួល] កំណត់តម្លៃដើមឱ្យ Pagination
+            currentPage: 1,
+            pagination: { last_page: 1, total: 0 }, 
             
             // Sequential Edit
             isSequenceMode: false, sequenceQueue: [], currentSeqIndex: 0,
             showCols: JSON.parse(localStorage.getItem('role_table_cols')) || { permissions: true, users_count: true },
 
             // Modal State
-            isModalOpen: false, editMode: false, form: { id: null, name: '' },
+            isModalOpen: false, editMode: false, form: { id: null, name: '', level: 10 },
             
-            // Permission Modal State (Updated)
+            // Permission Modal State
             isPermissionModalOpen: false, 
-            allAvailablePermissions: [], // New: Store list from API
+            allAvailablePermissions: [],
             permissionForm: { roleId: null, roleName: '', permissions: [] },
 
             init() {
@@ -295,25 +346,57 @@
                 this.fetchRoles();
             },
 
-            async fetchRoles(url = "{{ route('admin.roles.fetch') }}") {
+            // [កែសម្រួល] បន្ថែម page param ទៅក្នុង URL
+            async fetchRoles() {
+                let url = "{{ route('admin.roles.fetch') }}";
                 const params = new URLSearchParams();
+                
                 if(this.search) params.append('keyword', this.search);
                 params.append('per_page', this.perPage);
+                
+                // [ចំណុចសំខាន់] បញ្ជូនលេខទំព័រទៅ Server
+                params.append('page', this.currentPage);
+
                 url = url.split('?')[0] + '?' + params.toString();
 
+                this.isLoading = true;
                 try {
                     const res = await fetch(url);
                     const data = await res.json();
+                    
                     this.roles = data.data;
-                    this.pagination = { total: data.total, from: data.from, to: data.to, prev_page_url: data.prev_page_url, next_page_url: data.next_page_url };
+                    
+                    // Update Pagination Data
+                    this.pagination = { 
+                        total: data.total, 
+                        from: data.from, 
+                        to: data.to, 
+                        current_page: data.current_page,
+                        last_page: data.last_page, // យក last_page ពី server
+                        prev_page_url: data.prev_page_url, 
+                        next_page_url: data.next_page_url 
+                    };
+                    
+                    // Sync currentPage
+                    this.currentPage = data.current_page;
+
                     this.selectedIds = [];
                     this.selectAll = false;
-                } catch (e) { console.error(e); }
+                } catch (e) { console.error(e); } 
+                finally { this.isLoading = false; }
             },
             
-            changePage(url) { if(url) this.fetchRoles(url); },
+            // [បន្ថែមថ្មី] Function សម្រាប់ចុចប្ដូរទំព័រ
+            gotoPage(page) {
+                if (page < 1 || (this.pagination.last_page && page > this.pagination.last_page)) return;
+                this.currentPage = page;
+                this.fetchRoles();
+            },
+
             toggleSelectAll() { this.selectedIds = this.selectAll ? this.roles.map(role => role.id) : []; },
 
+            // ... (រក្សាទុកកូដ Edit, Delete, Permission Modal របស់អ្នកនៅដដែលខាងក្រោមនេះ) ...
+            
             // --- BULK EDIT ---
             startSequentialEdit() {
                 const selectedIdsString = this.selectedIds.map(id => String(id));
@@ -333,13 +416,11 @@
                 this.isSequenceMode = false; this.isModalOpen = true; this.errors = {};
                 if (mode === 'edit') this.loadRoleToForm(role);
                 else { this.editMode = false;
-                    // បន្ថែម level: '' ឬ 0
                     this.form = { id: null, name: '', level: 10 };
                 }
             },
             loadRoleToForm(role) { 
                 this.editMode = true; 
-                // បន្ថែម role.level ចូល
                 this.form = { id: role.id, name: role.name, level: role.level }; 
                 this.errors = {}; 
             },
@@ -389,21 +470,18 @@
                 } catch(e) { console.error(e); }
             },
 
-            // --- PERMISSION Logic (Updated) ---
+            // --- PERMISSION Logic ---
             async openPermissionModal(role) {
                 this.permissionForm.roleId = role.id;
                 this.permissionForm.roleName = role.name;
                 this.isPermissionModalOpen = true;
                 
-                // Clear old data
                 this.allAvailablePermissions = [];
                 this.permissionForm.permissions = [];
 
                 try {
                     const res = await fetch(`/admin/assign-permissions/${role.id}`);
                     const data = await res.json();
-                    
-                    // Assign Data from API
                     this.allAvailablePermissions = data.available_permissions;
                     this.permissionForm.permissions = data.checked_permissions; 
                 } catch (e) { console.error(e); }
