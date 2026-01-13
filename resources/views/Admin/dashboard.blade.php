@@ -6,6 +6,12 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>Ice Cream Admin</title>
+
+    @if(isset($shop) && $shop->fav)
+        <link rel="icon" type="image/png" href="{{ asset('storage/' . $shop->fav) }}">
+    @else
+        <link rel="icon" href="{{ asset('favicon.ico') }}">
+    @endif
     
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @include('components.toast')
@@ -232,32 +238,67 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // ... (រក្សាកូដ Sidebar របស់អ្នកនៅដដែល) ...
-            const body = document.body;
-            const sidebar = document.getElementById('sidebar');
-            const toggleBtn = document.getElementById('sidebarToggle');
-            const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
-            if (isCollapsed) {
-                body.classList.add('collapsed');
-                if(sidebar) { sidebar.classList.remove('w-72'); sidebar.classList.add('w-20'); }
-                document.querySelectorAll('.arrow-icon').forEach(el => el.classList.remove('rotate-180'));
-            }
-            if(toggleBtn){
-                toggleBtn.addEventListener('click', () => {
-                    body.classList.toggle('collapsed');
-                    const isNowCollapsed = body.classList.contains('collapsed');
-                    localStorage.setItem('sidebar-collapsed', isNowCollapsed);
-                    if(sidebar) {
-                        if (isNowCollapsed) {
-                            sidebar.classList.remove('w-72'); sidebar.classList.add('w-20');
-                            document.querySelectorAll('.arrow-icon').forEach(el => el.classList.remove('rotate-180'));
-                        } else {
-                            sidebar.classList.remove('w-20'); sidebar.classList.add('w-72');
-                        }
+    const body = document.body;
+    const sidebar = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('sidebarToggle');
+    const overlay = document.getElementById('sidebarOverlay'); // ចាប់យក Overlay ដែលបានបង្កើតខាងលើ
+
+    // Logic ដើមសម្រាប់ Desktop (រក្សាទុកការចងចាំ Collapse)
+    const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+    if (window.innerWidth >= 768 && isCollapsed) {
+        body.classList.add('collapsed');
+        if(sidebar) { sidebar.classList.remove('w-72'); sidebar.classList.add('w-20'); }
+        document.querySelectorAll('.arrow-icon').forEach(el => el.classList.remove('rotate-180'));
+    }
+
+    if(toggleBtn){
+        toggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // ការពារកុំអោយប៉ះពាល់ event ផ្សេង
+
+            // ឆែកមើលថាបើកលើ Mobile ឬ Desktop
+            if (window.innerWidth < 768) {
+                // === សម្រាប់ Mobile (Slide In/Out) ===
+                const isHidden = sidebar.classList.contains('-translate-x-full');
+                if (isHidden) {
+                    // បង្ហាញ Sidebar
+                    sidebar.classList.remove('-translate-x-full');
+                    // បង្ហាញ Overlay
+                    overlay.classList.remove('hidden');
+                    setTimeout(() => overlay.classList.remove('opacity-0'), 10); // Fade in effect
+                } else {
+                    // លាក់ Sidebar
+                    sidebar.classList.add('-translate-x-full');
+                    // លាក់ Overlay
+                    overlay.classList.add('opacity-0');
+                    setTimeout(() => overlay.classList.add('hidden'), 300);
+                }
+            } else {
+                // === សម្រាប់ Desktop (Collapse/Expand) ដូចកូដដើម ===
+                body.classList.toggle('collapsed');
+                const isNowCollapsed = body.classList.contains('collapsed');
+                localStorage.setItem('sidebar-collapsed', isNowCollapsed);
+                
+                if(sidebar) {
+                    if (isNowCollapsed) {
+                        sidebar.classList.remove('w-72'); sidebar.classList.add('w-20');
+                        document.querySelectorAll('.arrow-icon').forEach(el => el.classList.remove('rotate-180'));
+                    } else {
+                        sidebar.classList.remove('w-20'); sidebar.classList.add('w-72');
                     }
-                });
+                }
             }
         });
+    }
+
+    // Function សម្រាប់បិទ Sidebar ពេលចុចលើ Overlay (Mobile)
+    window.toggleMobileSidebar = function() {
+        if(sidebar && overlay) {
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.add('opacity-0');
+            setTimeout(() => overlay.classList.add('hidden'), 300);
+        }
+    }
+});
         function toggleSubmenu(button) {
             if (document.body.classList.contains('collapsed')) return;
             const submenu = button.nextElementSibling;
