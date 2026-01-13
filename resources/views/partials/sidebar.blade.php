@@ -2,11 +2,26 @@
     
     <div class="h-20 flex items-center justify-center bg-sidebar-bg sticky top-0 z-20 border-b border-custom-border transition-colors duration-300">
         <div class="flex items-center gap-3 w-full px-6 transition-all duration-300 menu-item-content">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg flex-shrink-0">
-                <i class="ri-store-2-fill text-xl"></i>
-            </div>
+            
+            {{-- ១. ផ្នែក Logo --}}
+            @if(isset($shop) && $shop->logo)
+                {{-- បើមាន Logo ក្នុង Database --}}
+                <img src="{{ asset('storage/' . $shop->logo) }}" 
+                     class="w-10 h-10 rounded-xl object-cover shadow-lg border border-white/10 flex-shrink-0 bg-white" 
+                     alt="Shop Logo">
+            @else
+                {{-- បើអត់មាន Logo ប្រើ Icon ដើម --}}
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg flex-shrink-0">
+                    <i class="ri-store-2-fill text-xl"></i>
+                </div>
+            @endif
+
+            {{-- ២. ផ្នែកឈ្មោះហាង --}}
             <div class="flex flex-col sidebar-text overflow-hidden whitespace-nowrap">
-                <span class="text-lg font-bold tracking-tight">Ice Cream</span>
+                {{-- បង្ហាញឈ្មោះហាង ឬដាក់ Default បើអត់ទាន់មាន --}}
+                <span class="text-lg font-bold tracking-tight text-text-color truncate">
+                    {{ $shop->shop_en ?? 'POS System' }}
+                </span>
                 <span class="text-[10px] font-semibold text-primary uppercase tracking-widest">Admin Panel</span>
             </div>
         </div>

@@ -10,7 +10,7 @@ use App\Http\Controllers\Admin\AssignPermissionController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RoleAssignmentRuleController;
 use App\Http\Controllers\Admin\ActivityLogController;
-
+use App\Http\Controllers\Admin\ShopInfoController;
 
 
 /*
@@ -73,7 +73,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/password', [UserController::class, 'password'])->name('password');
         Route::put('/password', [UserController::class, 'updatePassword'])->name('password.update');
 
-
+        
+        // ======================
+        // Shop Info CRUD
+        // ======================
+        Route::controller(ShopInfoController::class)->group(function () {
+            Route::get('/shop-info', [ShopInfoController::class, 'index'])->name('shop_info.index');
+            Route::post('/shop-info/save', [ShopInfoController::class, 'save'])->name('shop_info.save');
+        });
+        
         // ======================
         // USER CRUD
         // ======================
