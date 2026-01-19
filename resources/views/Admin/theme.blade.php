@@ -4,16 +4,12 @@
     /* សម្រាប់ Mobile (Default) */
     #actionBar {
         left: 1.5rem;
-        /* left-6 */
         right: 1.5rem;
-        /* right-6 */
         transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        /* Animation រលូន */
     }
 
     /* សម្រាប់ Desktop */
     @media (min-width: 768px) {
-
         /* ពេល Sidebar បើកធម្មតា (w-72 = 18rem, ទុកចន្លោះ 1rem = 19rem) */
         #actionBar {
             left: 19rem;
@@ -33,8 +29,8 @@
 
         <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
             <div>
-                <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Theme Customizer</h1>
-                <p class="text-gray-500 mt-2">Manage your color palette for both Light and Dark modes.</p>
+                <h1 class="text-3xl font-bold text-gray-800 dark:text-white">{{ __('messages.theme_customizer') }}</h1>
+                <p class="text-gray-500 mt-2">{{ __('messages.theme_desc') }}</p>
             </div>
 
             <div class="bg-gray-100 dark:bg-gray-800 p-1.5 rounded-xl flex shadow-inner">
@@ -42,14 +38,14 @@
                     :class="activeTab === 'light' ? 'bg-white text-blue-600 shadow-sm' :
                         'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'"
                     class="px-6 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2">
-                    <i class="ri-sun-line text-lg"></i> Light
+                    <i class="ri-sun-line text-lg"></i> {{ __('messages.mode_light') }}
                 </button>
 
                 <button @click="$store.theme.setMode('dark')"
                     :class="activeTab === 'dark' ? 'bg-gray-700 text-blue-400 shadow-sm' :
                         'text-gray-500 hover:text-gray-300'"
                     class="px-6 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2">
-                    <i class="ri-moon-line text-lg"></i> Dark
+                    <i class="ri-moon-line text-lg"></i> {{ __('messages.mode_dark') }}
                 </button>
             </div>
         </div>
@@ -62,16 +58,16 @@
                     <span class="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
                         <i class="ri-flag-fill"></i>
                     </span>
-                    Brand Identity
+                    {{ __('messages.brand_identity') }}
                 </h3>
 
-                @include('components.color-input', ['label' => 'Primary Background', 'key' => 'primary'])
+                @include('components.color-input', ['label' => __('messages.col_primary_bg'), 'key' => 'primary'])
                 @include('components.color-input', [
-                    'label' => 'Primary Text Color',
+                    'label' => __('messages.col_primary_text'),
                     'key' => 'primaryText',
                 ])
-                @include('components.color-input', ['label' => 'General Text Color', 'key' => 'textColor'])
-                @include('components.color-input', ['label' => 'Secondary Color', 'key' => 'secondary'])
+                @include('components.color-input', ['label' => __('messages.col_general_text'), 'key' => 'textColor'])
+                @include('components.color-input', ['label' => __('messages.col_secondary'), 'key' => 'secondary'])
             </div>
 
             <div class="bg-card-bg border border-border-color rounded-2xl p-6 shadow-custom transition-all duration-300">
@@ -80,24 +76,24 @@
                     <span class="p-2 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
                         <i class="ri-layout-masonry-fill"></i>
                     </span>
-                    Layout Structure
+                    {{ __('messages.layout_structure') }}
                 </h3>
-                @include('components.color-input', ['label' => 'Sidebar Background', 'key' => 'sidebarBg'])
-                @include('components.color-input', ['label' => 'Sidebar Text', 'key' => 'sidebarText'])
+                @include('components.color-input', ['label' => __('messages.col_sidebar_bg'), 'key' => 'sidebarBg'])
+                @include('components.color-input', ['label' => __('messages.col_sidebar_text'), 'key' => 'sidebarText'])
 
                 <div class="mt-4 pt-4 border-t border-dashed border-gray-200 dark:border-gray-700">
-                    <p class="text-xs font-bold text-gray-400 uppercase mb-3">Sidebar Hover State</p>
+                    <p class="text-xs font-bold text-gray-400 uppercase mb-3">{{ __('messages.sidebar_hover_state') }}</p>
                     @include('components.color-input', [
-                        'label' => 'Hover Background',
+                        'label' => __('messages.col_hover_bg'),
                         'key' => 'sidebarHoverBg',
                     ])
                     @include('components.color-input', [
-                        'label' => 'Hover Text',
+                        'label' => __('messages.col_hover_text'),
                         'key' => 'sidebarHoverText',
                     ])
                 </div>
 
-                @include('components.color-input', ['label' => 'Header Background', 'key' => 'headerBg'])
+                @include('components.color-input', ['label' => __('messages.col_header_bg'), 'key' => 'headerBg'])
             </div>
 
             <div
@@ -107,28 +103,28 @@
                     <span class="p-2 rounded-lg bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400">
                         <i class="ri-file-list-fill"></i>
                     </span>
-                    Content & Forms
+                    {{ __('messages.content_forms') }}
                 </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-                    @include('components.color-input', ['label' => 'Page Background', 'key' => 'pageBg'])
-                    @include('components.color-input', ['label' => 'Card Background', 'key' => 'cardBg'])
+                    @include('components.color-input', ['label' => __('messages.col_page_bg'), 'key' => 'pageBg'])
+                    @include('components.color-input', ['label' => __('messages.col_card_bg'), 'key' => 'cardBg'])
 
                     <div
                         class="col-span-1 md:col-span-2 mt-2 mb-2 pt-2 border-t border-dashed border-gray-200 dark:border-gray-700">
-                        <p class="text-xs font-bold text-gray-400 uppercase mb-3">Form Inputs</p>
+                        <p class="text-xs font-bold text-gray-400 uppercase mb-3">{{ __('messages.form_inputs') }}</p>
                     </div>
 
                     @include('components.color-input', [
-                        'label' => 'Input Background',
+                        'label' => __('messages.col_input_bg'),
                         'key' => 'inputBg',
                     ])
 
                     @include('components.color-input', [
-                        'label' => 'Input Border',
+                        'label' => __('messages.col_input_border'),
                         'key' => 'inputBorder',
                     ])
 
-                    @include('components.color-input', ['label' => 'Layout Borders', 'key' => 'border'])
+                    @include('components.color-input', ['label' => __('messages.col_layout_borders'), 'key' => 'border'])
                 </div>
             </div>
 
@@ -137,12 +133,12 @@
         <div id="actionBar"
             class="fixed bottom-6 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-2xl z-40 flex items-center justify-between transform hover:scale-[1.005] transition-transform duration-300">
 
-            {{-- ផ្នែកខាងឆ្វេង (ទុកចន្លោះ ឬដាក់ព័ត៌មាន) --}}
+            {{-- ផ្នែកខាងឆ្វេង --}}
             <div class="flex items-center gap-3">
                 <div class="hidden sm:flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                     <i class="ri-information-line text-lg text-blue-500"></i>
-                    <span x-show="!$store.theme.isSaving">Ready to update</span>
-                    <span x-show="$store.theme.isSaving" class="text-blue-500 font-medium">Processing...</span>
+                    <span x-show="!$store.theme.isSaving">{{ __('messages.status_ready') }}</span>
+                    <span x-show="$store.theme.isSaving" class="text-blue-500 font-medium">{{ __('messages.status_processing') }}</span>
                 </div>
             </div>
 
@@ -153,7 +149,7 @@
                     class="px-5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2 group">
                     <i
                         class="ri-restart-line group-hover:-rotate-180 transition-transform duration-500 text-gray-500 dark:text-gray-400"></i>
-                    <span>Reset</span>
+                    <span>{{ __('messages.btn_reset') }}</span>
                 </button>
 
                 <button type="button" @click="$store.theme.save()" :disabled="$store.theme.isSaving"
@@ -171,7 +167,7 @@
                         </path>
                     </svg>
 
-                    <span x-text="$store.theme.isSaving ? 'Saving...' : 'Save Changes'"></span>
+                    <span x-text="$store.theme.isSaving ? '{{ __('messages.btn_saving') }}' : '{{ __('messages.btn_save_changes') }}'"></span>
                 </button>
             </div>
         </div>

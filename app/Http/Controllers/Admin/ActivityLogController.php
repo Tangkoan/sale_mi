@@ -17,15 +17,14 @@ class ActivityLogController extends Controller
     // API: ទាញយកទិន្នន័យ JSON
     public function fetchLogs(Request $request)
     {
-
         // ១. យក Level របស់ User បច្ចុប្បន្ន
         $currentUser = auth()->user();
         $myLevel = $currentUser->roles->max('level') ?? 0;
         
         $query = Activity::with('causer')->latest();
 
-        // ២. [បន្ថែមថ្មី] Logic ការពារការមើលឃើញ Log របស់អ្នកធំ
-        if (!$currentUser->hasRole('Super Admin')) { // ឬ ($myLevel < 99)
+        // ២. Logic ការពារការមើលឃើញ Log របស់អ្នកធំ
+        if (!$currentUser->hasRole('Super Admin')) { 
             $query->where(function($q) use ($myLevel) {
                 // ក. ឃើញ Log របស់ System (គ្មាន causer)
                 $q->whereNull('causer_id')
@@ -53,7 +52,8 @@ class ActivityLogController extends Controller
         $logs->getCollection()->transform(function ($log) {
             return [
                 'id' => $log->id,
-                'causer_name' => $log->causer ? $log->causer->name : 'System',
+                // Translate 'System'
+                'causer_name' => $log->causer ? $log->causer->name : __('messages.system'),
                 'causer_email' => $log->causer ? $log->causer->email : '',
                 'causer_initial' => $log->causer ? substr($log->causer->name, 0, 2) : 'SY',
                 'description' => $log->description,
@@ -62,7 +62,7 @@ class ActivityLogController extends Controller
                 'created_at_date' => $log->created_at->format('d M Y, h:i A'),
                 'created_at_ago' => $log->created_at->diffForHumans(),
                 'badge_class' => $this->getBadgeClass($log->description),
-                // Format Changes HTML នៅទីនេះតែម្តង ដើម្បីកុំអោយស្មុគស្មាញនៅ JS
+                // Format Changes HTML នៅទីនេះតែម្តង
                 'changes_html' => $this->formatChanges($log) 
             ];
         });
@@ -74,17 +74,17 @@ class ActivityLogController extends Controller
     {
         $log = Activity::findOrFail($id);
         $log->delete();
-        return response()->json(['message' => 'Log deleted successfully!']);
+        return response()->json(['message' => __('messages.success_log_delete')]);
     }
 
     public function bulkDelete(Request $request)
     {
         $request->validate(['ids' => 'required|array']);
         Activity::whereIn('id', $request->ids)->delete();
-        return response()->json(['message' => 'Selected logs deleted successfully!']);
+        return response()->json(['message' => __('messages.success_bulk_log_delete')]);
     }
 
-    // Helper: កំណត់ពណ៌ Badge
+    // Helper: កំណត់ពណ៌ Badge (រក្សា String ដដែលដើម្បីកុំឱ្យខូច Logic CSS)
     private function getBadgeClass($description)
     {
         return match ($description) {
@@ -104,8 +104,9 @@ class ActivityLogController extends Controller
         $html = '<div class="text-xs font-mono bg-page-bg/50 p-2 rounded border border-border-color">';
 
         if ($log->description == 'logged in') {
-            $html .= '<p><span class="text-secondary">IP:</span> ' . ($log->properties['ip'] ?? '') . '</p>';
-            $html .= '<p><span class="text-secondary">Browser:</span> ' . Str::limit($log->properties['browser'] ?? '', 30) . '</p>';
+            // Translate IP and Browser labels
+            $html .= '<p><span class="text-secondary">' . __('messages.ip_address') . ':</span> ' . ($log->properties['ip'] ?? '') . '</p>';
+            $html .= '<p><span class="text-secondary">' . __('messages.browser') . ':</span> ' . Str::limit($log->properties['browser'] ?? '', 30) . '</p>';
         } 
         elseif (isset($log->properties['old']) && isset($log->properties['attributes'])) {
             foreach ($log->properties['attributes'] as $key => $newValue) {

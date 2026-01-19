@@ -44,7 +44,7 @@ class RoleAssignmentRuleController extends Controller
 
         // ១. Security Check: ហាមកែ Role អ្នកធំជាង ឬស្មើ (បើមិនមែន Super Admin)
         if ($myLevel < 99 && $targetRole->level >= $myLevel) {
-            return abort(403, 'Unauthorized action on high-level role.');
+            return abort(403, __('messages.error_unauthorized_high_level'));
         }
 
         // ២. Logic ទាញយក Permission មកបង្ហាញក្នុង Checkbox
@@ -54,7 +54,6 @@ class RoleAssignmentRuleController extends Controller
         } else {
             // [ចំណុចដែលអ្នកចង់បាន]: 
             // Admin អាចផ្ដល់សិទ្ធិឱ្យគេ បានតែសិទ្ធិណាដែល *ខ្លួនឯងមាន* ប៉ុណ្ណោះ
-            // ឧទាហរណ៍: បើ Admin អត់មានសិទ្ធិ 'delete-user' ទេ គាត់មិនអាចដាក់សិទ្ធិនេះឱ្យ Manager បានទេ។
             $availablePermissions = $user->getAllPermissions();
         }
         
@@ -78,7 +77,7 @@ class RoleAssignmentRuleController extends Controller
 
         // ១. Security Check: ដូច Edit ដែរ
         if ($myLevel < 99 && $targetRole->level >= $myLevel) {
-            return abort(403, 'Unauthorized action on high-level role.');
+            return abort(403, __('messages.error_unauthorized_high_level'));
         }
         
         // ២. Security Check (Advanced): 
@@ -89,7 +88,7 @@ class RoleAssignmentRuleController extends Controller
             
             // បើមាន ID ណាដែលផ្ញើមក តែមិនមែនជារបស់ខ្លួនឯង => Error
             if (!empty(array_diff($submittedIds, $myPermissionIds))) {
-                 return abort(403, 'Security Alert: You cannot grant permissions you do not possess.');
+                 return abort(403, __('messages.error_security_alert_grant'));
             }
         }
 
@@ -97,6 +96,6 @@ class RoleAssignmentRuleController extends Controller
         $targetRole->assignablePermissions()->sync($request->permissions ?? []);
 
         return redirect()->route('admin.rules.index')
-                         ->with('success', "Rules for '{$targetRole->name}' updated successfully!");
+                         ->with('success', __('messages.success_rules_updated', ['name' => $targetRole->name]));
     }
 }

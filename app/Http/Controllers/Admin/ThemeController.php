@@ -17,6 +17,6 @@ class ThemeController extends Controller
         $user->theme_settings = $request->theme; // Save JSON ទាំងអស់
         $user->save();
 
-        return response()->json(['message' => 'Theme updated successfully!']);
+        return response()->json(['message' => __('messages.theme_updated_success')]);
     }
 }

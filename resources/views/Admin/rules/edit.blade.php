@@ -6,12 +6,15 @@
     <div class="flex justify-between items-center mb-6">
         <div>
             <h1 class="text-2xl font-bold text-text-color flex items-center gap-2">
-                <i class="ri-settings-4-line text-primary"></i> Configure Rules: <span class="text-primary">{{ $role->name }}</span>
+                <i class="ri-settings-4-line text-primary"></i> {{ __('messages.configure_rules') }}: <span class="text-primary">{{ $role->name }}</span>
             </h1>
-            <p class="text-sm text-secondary mt-1">Select the permissions that <strong>{{ $role->name }}</strong> is allowed to assign to other users.</p>
+            {{-- ប្រើ {!! !!} ដើម្បីអនុញ្ញាតឱ្យប្រើ Tag <strong> នៅក្នុងអក្សរបាន --}}
+            <p class="text-sm text-secondary mt-1">
+                {!! __('messages.rule_configure_desc', ['name' => '<strong>' . $role->name . '</strong>']) !!}
+            </p>
         </div>
         <a href="{{ route('admin.rules.index') }}" class="text-secondary hover:text-text-color flex items-center gap-1">
-            <i class="ri-arrow-left-line"></i> Back
+            <i class="ri-arrow-left-line"></i> {{ __('messages.btn_back') }}
         </a>
     </div>
 
@@ -45,9 +48,9 @@
             </div>
 
             <div class="mt-8 flex justify-end gap-3 border-t border-border-color pt-6">
-                <a href="{{ route('admin.rules.index') }}" class="px-6 py-2.5 rounded-xl border border-input-border text-text-color hover:bg-page-bg transition">Cancel</a>
+                <a href="{{ route('admin.rules.index') }}" class="px-6 py-2.5 rounded-xl border border-input-border text-text-color hover:bg-page-bg transition">{{ __('messages.cancel') }}</a>
                 <button type="submit" class="bg-primary text-white px-8 py-2.5 rounded-xl hover:opacity-90 transition shadow-lg shadow-primary/30 font-bold">
-                    Save Changes
+                    {{ __('messages.save_changes') }}
                 </button>
             </div>
         </div>

@@ -7,9 +7,7 @@ use Illuminate\Http\Request;
 // use Spatie\Permission\Models\Permission;
 use App\Models\Permission; // <--- ដាក់អាថ្មីរបស់អ្នកចូល
 use Illuminate\Validation\Rule;
-
 use Spatie\Permission\Models\Role;
-
 
 class PermissionController extends Controller
 {
@@ -21,7 +19,6 @@ class PermissionController extends Controller
     public function fetchPermissions(Request $request)
     {
         // បន្ថែម withCount('roles') ដើម្បីរាប់ចំនួន Role ដែលប្រើ Permission នេះ
-        // (យើងអាចយកចំនួននេះទៅបង្ហាញនៅ Table ខាងមុខបានបើចង់)
         $query = Permission::withCount('roles');
 
         if ($request->keyword) {
@@ -41,12 +38,12 @@ class PermissionController extends Controller
         $request->validate([
             'name' => 'required|unique:permissions,name'
         ], [
-            'name.unique' => 'This permission name has already been taken.',
+            'name.unique' => __('messages.error_permission_taken'),
         ]);
 
         Permission::create(['name' => $request->name]);
 
-        return response()->json(['message' => 'Permission created successfully!']);
+        return response()->json(['message' => __('messages.success_permission_create')]);
     }
 
     public function update(Request $request, $id)
@@ -54,13 +51,13 @@ class PermissionController extends Controller
         $request->validate([
             'name' => ['required', Rule::unique('permissions', 'name')->ignore($id)]
         ], [
-            'name.unique' => 'This permission name has already been taken.',
+            'name.unique' => __('messages.error_permission_taken'),
         ]);
 
         $permission = Permission::findOrFail($id);
         $permission->update(['name' => $request->name]);
 
-        return response()->json(['message' => 'Permission updated successfully!']);
+        return response()->json(['message' => __('messages.success_permission_update')]);
     }
 
     // --- កន្លែងកែប្រែសំខាន់ទី ១ (Single Delete) ---
@@ -71,13 +68,13 @@ class PermissionController extends Controller
 
         if ($permission->roles_count > 0) {
             return response()->json([
-                'message' => "Cannot delete '{$permission->name}' because it is assigned to {$permission->roles_count} role(s)."
+                'message' => __('messages.error_permission_in_use', ['name' => $permission->name, 'count' => $permission->roles_count])
             ], 422);
         }
 
         $permission->delete();
 
-        return response()->json(['message' => 'Permission deleted successfully!']);
+        return response()->json(['message' => __('messages.success_permission_delete')]);
     }
 
 
@@ -98,13 +95,13 @@ class PermissionController extends Controller
         if (!empty($permissionsInUse)) {
             $names = implode(', ', $permissionsInUse);
             return response()->json([
-                'message' => "Cannot delete selected permissions. The following are assigned to roles: {$names}."
+                'message' => __('messages.error_bulk_permission_in_use', ['names' => $names])
             ], 422);
         }
 
         // ៣. បើគ្មានជាប់ទេ លុបទាំងអស់
         Permission::whereIn('id', $ids)->delete();
 
-        return response()->json(['message' => 'Selected permissions deleted successfully!']);
+        return response()->json(['message' => __('messages.success_bulk_permission_delete')]);
     }
 }

@@ -7,9 +7,8 @@
     <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">
         <div>
             <h1 class="text-2xl font-bold text-text-color flex items-center gap-2">
-                {{-- <i class="ri-history-line text-primary"></i> --}}
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-ban-icon lucide-shield-ban"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m4.243 5.21 14.39 12.472"/></svg>
-                Activity Logs
+                {{ __('messages.activity_logs') }}
             </h1>
         </div>
 
@@ -17,11 +16,13 @@
             
             <div x-show="selectedIds.length > 0" x-transition.opacity.duration.300ms 
                  class="flex items-center gap-2 mr-2 w-full sm:w-auto justify-between sm:justify-start bg-white dark:bg-gray-800 p-1 rounded-lg border border-border-color shadow-sm">
-                <span class="text-xs font-bold text-primary bg-primary/10 px-2 py-1.5 rounded ml-1" x-text="selectedIds.length + ' selected'"></span>
+                <span class="text-xs font-bold text-primary bg-primary/10 px-2 py-1.5 rounded ml-1">
+                    <span x-text="selectedIds.length"></span> {{ __('messages.selected') }}
+                </span>
                 
                 <div class="flex gap-1">
                     @can('activity-delete')
-                    <button @click="confirmBulkDelete()" class="text-sm font-bold text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-md transition" title="Delete Selected">
+                    <button @click="confirmBulkDelete()" class="text-sm font-bold text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-md transition" title="{{ __('messages.delete') }}">
                         <i class="ri-delete-bin-line"></i>
                     </button>
                     @endcan
@@ -31,25 +32,25 @@
             <div class="relative w-full sm:w-auto" x-data="{ openCol: false }">
                 <button @click="openCol = !openCol" @click.outside="openCol = false" 
                         class="w-full sm:w-auto flex justify-center items-center gap-2 px-3 py-2.5 bg-card-bg border border-input-border rounded-xl text-text-color hover:bg-input-bg transition text-sm font-medium shadow-sm">
-                    <i class="ri-layout-column-line"></i> <span class="sm:hidden lg:inline">Columns</span>
+                    <i class="ri-layout-column-line"></i> <span class="sm:hidden lg:inline">{{ __('messages.columns') }}</span>
                 </button>
                 <div x-show="openCol" class="absolute right-0 mt-2 w-48 bg-card-bg border border-border-color rounded-xl shadow-xl z-50 p-2" style="display: none;" x-transition>
                     <div class="space-y-1">
                         <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-page-bg rounded cursor-pointer select-none">
                             <input type="checkbox" x-model="showCols.causer" class="rounded text-primary focus:ring-primary border-input-border">
-                            <span class="text-sm text-text-color">User</span>
+                            <span class="text-sm text-text-color">{{ __('messages.user_actor') }}</span>
                         </label>
                         <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-page-bg rounded cursor-pointer select-none">
                             <input type="checkbox" x-model="showCols.subject" class="rounded text-primary focus:ring-primary border-input-border">
-                            <span class="text-sm text-text-color">Subject</span>
+                            <span class="text-sm text-text-color">{{ __('messages.subject') }}</span>
                         </label>
                         <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-page-bg rounded cursor-pointer select-none">
                             <input type="checkbox" x-model="showCols.changes" class="rounded text-primary focus:ring-primary border-input-border">
-                            <span class="text-sm text-text-color">Changes</span>
+                            <span class="text-sm text-text-color">{{ __('messages.changes') }}</span>
                         </label>
                         <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-page-bg rounded cursor-pointer select-none">
                             <input type="checkbox" x-model="showCols.date" class="rounded text-primary focus:ring-primary border-input-border">
-                            <span class="text-sm text-text-color">Date</span>
+                            <span class="text-sm text-text-color">{{ __('messages.date') }}</span>
                         </label>
                     </div>
                 </div>
@@ -61,7 +62,7 @@
                 </span>
                 <input type="text" x-model="search" @keyup.debounce.500ms="fetchLogs()"
                        class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input-border bg-card-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder-secondary text-sm shadow-sm"
-                       placeholder="Search logs...">
+                       placeholder="{{ __('messages.search_placeholder_log') }}">
             </div>
         </div>
     </div>
@@ -74,13 +75,13 @@
                         <th class="px-6 py-4 w-4">
                             <input type="checkbox" @change="toggleSelectAll()" x-model="selectAll" class="rounded border-input-border text-primary focus:ring-primary h-4 w-4">
                         </th>
-                        <th class="px-6 py-4 font-bold" x-show="showCols.causer">User (Actor)</th>
-                        <th class="px-6 py-4 font-bold">Action</th>
-                        <th class="px-6 py-4 font-bold" x-show="showCols.subject">Subject</th>
-                        <th class="px-6 py-4 font-bold w-1/3" x-show="showCols.changes">Changes</th>
-                        <th class="px-6 py-4 font-bold text-right" x-show="showCols.date">Date</th>
+                        <th class="px-6 py-4 font-bold" x-show="showCols.causer">{{ __('messages.user_actor') }}</th>
+                        <th class="px-6 py-4 font-bold">{{ __('messages.action') }}</th>
+                        <th class="px-6 py-4 font-bold" x-show="showCols.subject">{{ __('messages.subject') }}</th>
+                        <th class="px-6 py-4 font-bold w-1/3" x-show="showCols.changes">{{ __('messages.changes') }}</th>
+                        <th class="px-6 py-4 font-bold text-right" x-show="showCols.date">{{ __('messages.date') }}</th>
                         @can('activity-delete')
-                        <th class="px-6 py-4 font-bold text-right w-20">Action</th>
+                        <th class="px-6 py-4 font-bold text-right w-20">{{ __('messages.actions') }}</th>
                         @endcan
                     </tr>
                 </thead>
@@ -89,7 +90,7 @@
                         <tr>
                             <td colspan="7" class="px-6 py-12 text-center text-secondary">
                                 <i class="ri-loader-4-line text-3xl animate-spin inline-block mb-2"></i>
-                                <p>Loading activity logs...</p>
+                                <p>{{ __('messages.loading_logs') }}</p>
                             </td>
                         </tr>
                     </template>
@@ -144,7 +145,7 @@
                                 <button @click="confirmDelete(log.id)" 
                                         class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors ml-auto
                                                bg-red-50 dark:bg-red-900/20 text-red-600 hover:bg-red-100 border border-transparent hover:border-red-200" 
-                                        title="Delete Log">
+                                        title="{{ __('messages.delete') }}">
                                     <i class="ri-delete-bin-line"></i>
                                 </button>
                             </td>
@@ -155,7 +156,7 @@
                     <tr x-show="!isLoading && logs.length === 0">
                         <td colspan="7" class="px-6 py-12 text-center text-secondary">
                             <i class="ri-ghost-line text-4xl mb-2 inline-block"></i>
-                            <p>No activity logs found.</p>
+                            <p>{{ __('messages.no_logs_found') }}</p>
                         </td>
                     </tr>
                 </tbody>
@@ -180,7 +181,6 @@
             search: '',
             isLoading: false,
             
-            // [កែសម្រួល ១] កំណត់ Variable សម្រាប់ Pagination
             perPage: '10',
             currentPage: 1, 
             pagination: { last_page: 1, total: 0 }, 
@@ -188,7 +188,6 @@
             selectedIds: [],
             selectAll: false,
             
-            // Column Visibility State
             showCols: JSON.parse(localStorage.getItem('log_table_cols')) || { 
                 causer: true, subject: true, changes: true, date: true 
             },
@@ -200,15 +199,12 @@
                 this.fetchLogs();
             },
 
-            // [កែសម្រួល ២] Function ទាញទិន្នន័យ (កែសម្រួល logic)
             async fetchLogs() {
                 this.isLoading = true;
                 const params = new URLSearchParams();
                 
                 if(this.search) params.append('keyword', this.search);
                 params.append('per_page', this.perPage);
-                
-                // [ចំណុចសំខាន់] បញ្ជូនលេខទំព័រទៅ Server
                 params.append('page', this.currentPage); 
                 
                 let url = "{{ route('admin.activity_logs.fetch') }}";
@@ -220,31 +216,28 @@
                     
                     this.logs = data.data;
                     
-                    // Update Pagination Data
                     this.pagination = { 
                         total: data.total, 
                         from: data.from, 
                         to: data.to, 
                         current_page: data.current_page,
-                        last_page: data.last_page, // យក last_page ពី server
+                        last_page: data.last_page, 
                         prev_page_url: data.prev_page_url, 
                         next_page_url: data.next_page_url 
                     };
                     
-                    // Sync currentPage
                     this.currentPage = data.current_page;
 
                     this.selectedIds = [];
                     this.selectAll = false;
                 } catch (e) { 
                     console.error(e); 
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Failed to load data' } }));
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "{{ __('messages.failed_load_data') }}" } }));
                 } finally { 
                     this.isLoading = false; 
                 }
             },
 
-            // [កែសម្រួល ៣] បន្ថែម Function gotoPage សម្រាប់ Component Pagination
             gotoPage(page) {
                 if (page < 1 || (this.pagination.last_page && page > this.pagination.last_page)) return;
                 this.currentPage = page;
@@ -255,7 +248,6 @@
                 this.selectedIds = this.selectAll ? this.logs.map(log => log.id) : [];
             },
 
-            // --- Delete Logic (រក្សាទុកដដែល) ---
             async confirmDelete(id) {
                 askConfirm(async () => { await this.performDelete([id]); });
             },
@@ -291,11 +283,11 @@
                         this.fetchLogs();
                         window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: data.message } }));
                     } else {
-                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Failed to delete.' } }));
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "{{ __('messages.failed_delete') }}" } }));
                     }
                 } catch(e) { 
                     console.error(e); 
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Network Error' } }));
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "{{ __('messages.network_error') }}" } }));
                 }
             }
         }
