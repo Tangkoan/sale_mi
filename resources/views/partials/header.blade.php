@@ -6,7 +6,7 @@
        1. ប្រើ bg-header-bg (ជំនួសឱ្យ bg-white dark:bg-gray-900) ដើម្បីឱ្យវាចាប់យកពណ៌ពី var(--header-bg)
        2. ប្រើ border-border-color (ជំនួសឱ្យ border-gray-200) ដើម្បីឱ្យបន្ទាត់បាតចាប់យកពណ៌ពី var(--custom-border) ផងដែរ
     --}}
-    class="bg-header-bg border-b border-border-color h-16 flex items-center justify-between px-6 shadow-sm z-10 sticky top-0 transition-colors duration-300">
+    class="bg-header-bg border-b border-bor-color h-16 flex items-center justify-between px-6 shadow-sm z-10 sticky top-0 transition-colors duration-300">
 
     <button id="sidebarToggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors">
         <i class="ri-menu-2-line text-xl"></i>

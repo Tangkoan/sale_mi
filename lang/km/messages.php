@@ -243,4 +243,43 @@ return [
     'error_delete_generic' => 'មិនអាចលុបបានទេ។',
     'created_at' => 'បានបង្កើតនៅ',
     'updated_at' => 'បានកែប្រែនៅ',
+
+    // Password Page
+    'change_password' => 'ប្ដូរពាក្យសម្ងាត់',
+    'secure_account' => 'សុវត្ថិភាពគណនី',
+    'secure_account_desc' => 'ដើម្បីរក្សាសុវត្ថិភាពគណនី យើងណែនាំឱ្យប្រើពាក្យសម្ងាត់ដែលខ្លាំង និងមិនធ្លាប់ប្រើនៅកន្លែងផ្សេង។',
+    'password_requirements' => 'តម្រូវការពាក្យសម្ងាត់',
+    'req_min_chars' => 'យ៉ាងតិច ៨ តួអក្សរ',
+    'req_special_char' => 'មាននិមិត្តសញ្ញាពិសេសយ៉ាងតិច ១',
+    'req_number' => 'មានលេខយ៉ាងតិច ១',
+    'req_not_same' => 'មិនអាចដូចពាក្យសម្ងាត់ចាស់',
+    
+    'current_password' => 'ពាក្យសម្ងាត់បច្ចុប្បន្ន',
+    'new_password' => 'ពាក្យសម្ងាត់ថ្មី',
+    'confirm_new_password' => 'បញ្ជាក់ពាក្យសម្ងាត់ថ្មី',
+    'update_password' => 'ប្ដូរពាក្យសម្ងាត់',
+    'updating' => 'កំពុងប្ដូរ...',
+    
+    'placeholder_current_password' => 'បញ្ចូលពាក្យសម្ងាត់បច្ចុប្បន្ន',
+    'placeholder_new_password' => 'បញ្ចូលពាក្យសម្ងាត់ថ្មី',
+    'placeholder_retype_password' => 'បញ្ចូលពាក្យសម្ងាត់ថ្មីម្ដងទៀត',
+    
+    'current_password_required' => 'សូមបញ្ចូលពាក្យសម្ងាត់បច្ចុប្បន្ន។',
+    'new_password_required' => 'សូមបញ្ចូលពាក្យសម្ងាត់ថ្មី។',
+    'password_confirmed_error' => 'ការបញ្ជាក់ពាក្យសម្ងាត់ថ្មីមិនត្រឹមត្រូវ។',
+    'current_password_incorrect' => 'ពាក្យសម្ងាត់បច្ចុប្បន្នមិនត្រឹមត្រូវទេ។',
+    'password_changed_success' => 'ពាក្យសម្ងាត់ត្រូវបានផ្លាស់ប្តូរដោយជោគជ័យ!',
+    
+    'profile_updated' => 'ព័ត៌មានគណនីត្រូវបានកែប្រែដោយជោគជ័យ!',
+
+    // User Profile
+    'user_information' => 'ព័ត៌មានអ្នកប្រើប្រាស់',
+    'profile_picture' => 'រូបភាពប្រវត្តិរូប',
+    'select_new_photo' => 'ជ្រើសរើសរូបភាពថ្មី',
+    'username' => 'ឈ្មោះអ្នកប្រើប្រាស់',
+    'email' => 'អ៊ីមែល',
+    'placeholder_username' => 'បញ្ចូលឈ្មោះអ្នកប្រើប្រាស់',
+    'placeholder_email' => 'បញ្ចូលអាសយដ្ឋានអ៊ីមែល',
+    'saving' => 'កំពុងរក្សាទុក...',
+    'save_changes' => 'រក្សាទុកការកែប្រែ',
 ];

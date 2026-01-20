@@ -243,4 +243,44 @@ return [
     'error_delete_generic' => 'Cannot delete.',
     'created_at' => 'Created At',
     'updated_at' => 'Updated At',
+
+
+    // Password Page
+    'change_password' => 'Change Password',
+    'secure_account' => 'Secure Your Account',
+    'secure_account_desc' => 'To keep your account safe, we recommend using a strong password that you don\'t use elsewhere.',
+    'password_requirements' => 'Password Requirements',
+    'req_min_chars' => 'Min 8 characters',
+    'req_special_char' => 'At least one special character',
+    'req_number' => 'At least one number',
+    'req_not_same' => 'Can\'t be same as previous',
+    
+    'current_password' => 'Current Password',
+    'new_password' => 'New Password',
+    'confirm_new_password' => 'Confirm New Password',
+    'update_password' => 'Update Password',
+    'updating' => 'Updating...',
+    
+    'placeholder_current_password' => 'Enter current password',
+    'placeholder_new_password' => 'Enter new password',
+    'placeholder_retype_password' => 'Retype new password',
+    
+    'current_password_required' => 'Please enter your current password.',
+    'new_password_required' => 'Please enter a new password.',
+    'password_confirmed_error' => 'New password confirmation does not match.',
+    'current_password_incorrect' => 'Current password is incorrect.',
+    'password_changed_success' => 'Password changed successfully!',
+    
+    'profile_updated' => 'Profile updated successfully!',
+
+    // User Profile
+    'user_information' => 'User Information',
+    'profile_picture' => 'Profile Picture',
+    'select_new_photo' => 'Select New Photo',
+    'username' => 'Username',
+    'email' => 'Email',
+    'placeholder_username' => 'Enter username',
+    'placeholder_email' => 'Enter email address',
+    'saving' => 'Saving...',
+    'save_changes' => 'Save Changes',
 ];

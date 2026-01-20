@@ -8,7 +8,7 @@
         <div class="px-8 py-6 border-b border-border-color">
             <h2 class="text-xl font-bold text-text-color flex items-center gap-2">
                 <i class="ri-lock-password-line text-primary text-2xl"></i> 
-                Change Password
+                {{ __('messages.change_password') }}
             </h2>
         </div>
 
@@ -19,25 +19,25 @@
                     <div class="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                         <i class="ri-shield-keyhole-line text-3xl text-primary"></i>
                     </div>
-                    <h3 class="text-lg font-bold text-text-color mb-2">Secure Your Account</h3>
+                    <h3 class="text-lg font-bold text-text-color mb-2">{{ __('messages.secure_account') }}</h3>
                     <p class="text-sm text-secondary mb-6 leading-relaxed">
-                        To keep your account safe, we recommend using a strong password that you don't use elsewhere.
+                        {{ __('messages.secure_account_desc') }}
                     </p>
                     
                     <div class="text-left w-full space-y-3">
-                        <p class="text-xs font-bold text-text-color uppercase tracking-wider">Password Requirements:</p>
+                        <p class="text-xs font-bold text-text-color uppercase tracking-wider">{{ __('messages.password_requirements') }}:</p>
                         <ul class="text-sm text-secondary space-y-2">
                             <li class="flex items-center gap-2">
-                                <i class="ri-checkbox-circle-fill text-green-500"></i> Min 8 characters
+                                <i class="ri-checkbox-circle-fill text-green-500"></i> {{ __('messages.req_min_chars') }}
                             </li>
                             <li class="flex items-center gap-2">
-                                <i class="ri-checkbox-circle-fill text-green-500"></i> At least one special character
+                                <i class="ri-checkbox-circle-fill text-green-500"></i> {{ __('messages.req_special_char') }}
                             </li>
                             <li class="flex items-center gap-2">
-                                <i class="ri-checkbox-circle-fill text-green-500"></i> At least one number
+                                <i class="ri-checkbox-circle-fill text-green-500"></i> {{ __('messages.req_number') }}
                             </li>
                             <li class="flex items-center gap-2">
-                                <i class="ri-checkbox-circle-fill text-green-500"></i> Can't be same as previous
+                                <i class="ri-checkbox-circle-fill text-green-500"></i> {{ __('messages.req_not_same') }}
                             </li>
                         </ul>
                     </div>
@@ -56,7 +56,7 @@
                     <div class="space-y-6 max-w-lg">
                         
                         <div x-data="{ show: false }">
-                            <label class="block text-sm font-medium text-text-color mb-2">Current Password</label>
+                            <label class="block text-sm font-medium text-text-color mb-2">{{ __('messages.current_password') }}</label>
                             <div class="relative">
                                 <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-secondary">
                                     <i class="ri-key-2-line"></i>
@@ -64,7 +64,7 @@
                                 
                                 <input :type="show ? 'text' : 'password'" name="current_password" 
                                        class="w-full pl-11 pr-12 py-3 rounded-xl border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder-secondary"
-                                       placeholder="Enter current password">
+                                       placeholder="{{ __('messages.placeholder_current_password') }}">
 
                                 <button type="button" @click="show = !show" class="absolute inset-y-0 right-0 pr-4 flex items-center text-secondary hover:text-text-color cursor-pointer transition-colors focus:outline-none">
                                     <i :class="show ? 'ri-eye-line' : 'ri-eye-off-line'"></i>
@@ -74,7 +74,7 @@
                         </div>
 
                         <div x-data="{ show: false }">
-                            <label class="block text-sm font-medium text-text-color mb-2">New Password</label>
+                            <label class="block text-sm font-medium text-text-color mb-2">{{ __('messages.new_password') }}</label>
                             <div class="relative">
                                 <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-secondary">
                                     <i class="ri-lock-line"></i>
@@ -82,7 +82,7 @@
                                 
                                 <input :type="show ? 'text' : 'password'" name="password" 
                                        class="w-full pl-11 pr-12 py-3 rounded-xl border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder-secondary"
-                                       placeholder="Enter new password">
+                                       placeholder="{{ __('messages.placeholder_new_password') }}">
 
                                 <button type="button" @click="show = !show" class="absolute inset-y-0 right-0 pr-4 flex items-center text-secondary hover:text-text-color cursor-pointer transition-colors focus:outline-none">
                                     <i :class="show ? 'ri-eye-line' : 'ri-eye-off-line'"></i>
@@ -92,7 +92,7 @@
                         </div>
 
                         <div x-data="{ show: false }">
-                            <label class="block text-sm font-medium text-text-color mb-2">Confirm New Password</label>
+                            <label class="block text-sm font-medium text-text-color mb-2">{{ __('messages.confirm_new_password') }}</label>
                             <div class="relative">
                                 <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-secondary">
                                     <i class="ri-lock-check-line"></i>
@@ -100,7 +100,7 @@
                                 
                                 <input :type="show ? 'text' : 'password'" name="password_confirmation" 
                                        class="w-full pl-11 pr-12 py-3 rounded-xl border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder-secondary"
-                                       placeholder="Retype new password">
+                                       placeholder="{{ __('messages.placeholder_retype_password') }}">
 
                                 <button type="button" @click="show = !show" class="absolute inset-y-0 right-0 pr-4 flex items-center text-secondary hover:text-text-color cursor-pointer transition-colors focus:outline-none">
                                     <i :class="show ? 'ri-eye-line' : 'ri-eye-off-line'"></i>
@@ -114,10 +114,8 @@
                                     :disabled="isLoading">
                                 <i class="ri-key-2-line text-lg" x-show="!isLoading"></i>
                                 <i class="ri-loader-4-line text-lg animate-spin" x-show="isLoading" style="display: none;"></i>
-                                <span x-text="isLoading ? 'Updating...' : 'Update Password'"></span>
+                                <span x-text="isLoading ? '{{ __('messages.updating') }}' : '{{ __('messages.update_password') }}'"></span>
                             </button>
-                            
-                            
                         </div>
 
                     </div>

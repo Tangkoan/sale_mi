@@ -8,7 +8,7 @@
         <div class="px-8 py-6 border-b border-border-color">
             <h2 class="text-xl font-bold text-text-color flex items-center gap-2">
                 <i class="ri-user-settings-line text-primary text-2xl"></i> 
-                User Information
+                {{ __('messages.user_information') }}
             </h2>
         </div>
 
@@ -26,14 +26,14 @@
                     <div x-data="{ photoName: null, photoPreview: null }" class="text-center w-full flex flex-col items-center">
                         
                         <input type="file" class="hidden" x-ref="photo" name="avatar"
-                                x-on:change="
+                               x-on:change="
                                     photoName = $refs.photo.files[0].name;
                                     const reader = new FileReader();
                                     reader.onload = (e) => { photoPreview = e.target.result; };
                                     reader.readAsDataURL($refs.photo.files[0]);
-                                ">
+                               ">
 
-                        <label class="block text-sm font-bold text-text-color mb-4">Profile Picture</label>
+                        <label class="block text-sm font-bold text-text-color mb-4">{{ __('messages.profile_picture') }}</label>
 
                         <div class="relative mx-auto w-40 h-40 rounded-full ring-primary ring-4 border-4 border-border-color overflow-hidden cursor-pointer shadow-md group transition-all duration-300 hover:ring-primary/50"
                                 x-on:click.prevent="$refs.photo.click()">
@@ -59,7 +59,7 @@
 
                         <button type="button" x-on:click.prevent="$refs.photo.click()" 
                                 class="mt-6 py-2 px-4 bg-input-bg border border-input-border rounded-lg shadow-sm text-sm font-medium text-text-color hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                            Select New Photo
+                            {{ __('messages.select_new_photo') }}
                         </button>
                         
                         @error('avatar') <p class="text-red-500 text-xs mt-2">{{ $message }}</p> @enderror
@@ -69,33 +69,33 @@
                 <div class="lg:col-span-2 space-y-6 flex flex-col justify-center">
                     
                     <div>
-                        <label class="block text-sm font-medium text-text-color mb-2">Username</label>
+                        <label class="block text-sm font-medium text-text-color mb-2">{{ __('messages.username') }}</label>
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-secondary">
                                 <i class="ri-user-line"></i>
                             </span>
                             <input type="text" name="name" value="{{ old('name', $user->name) }}" 
                                    class="w-full pl-11 pr-4 py-3 rounded-xl border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder-secondary"
-                                   placeholder="Enter username">
+                                   placeholder="{{ __('messages.placeholder_username') }}">
                         </div>
                         @error('name') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-text-color mb-2">Email</label>
+                        <label class="block text-sm font-medium text-text-color mb-2">{{ __('messages.email') }}</label>
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-secondary">
                                 <i class="ri-mail-line"></i>
                             </span>
                             <input type="email" name="email" value="{{ old('email', $user->email) }}" 
                                    class="w-full pl-11 pr-4 py-3 rounded-xl border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder-secondary"
-                                   placeholder="Enter email address">
+                                   placeholder="{{ __('messages.placeholder_email') }}">
                         </div>
                         @error('email') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                     </div>
 
                     <div class="pt-4 flex items-center justify-end gap-3">
-                         
+                          
                         <button type="submit" 
                                 class="bg-primary hover:opacity-90 text-white font-medium py-2.5 px-8 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-blue-500/30 disabled:opacity-70 disabled:cursor-not-allowed"
                                 :disabled="isLoading">
@@ -103,7 +103,7 @@
                             <i class="ri-save-line text-lg" x-show="!isLoading"></i>
                             <i class="ri-loader-4-line text-lg animate-spin" x-show="isLoading" style="display: none;"></i>
                             
-                            <span x-text="isLoading ? 'Saving...' : 'Save Changes'"></span>
+                            <span x-text="isLoading ? '{{ __('messages.saving') }}' : '{{ __('messages.save_changes') }}'"></span>
                         </button>
 
                     </div>

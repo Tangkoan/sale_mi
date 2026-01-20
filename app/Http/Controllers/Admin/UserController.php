@@ -122,6 +122,78 @@ class UserController extends Controller
         });
     }
 
+    public function profile() { $user = Auth::user(); return view('admin.infouser.profile', compact('user')); }
+    
+    // ==========================================
+    // PROFILE UPDATE (កូដដែលត្រូវកែ)
+    // ==========================================
+    public function updateProfile(Request $request) 
+    { 
+        $user = Auth::user();
+
+        // 1. Validation
+        $request->validate([
+            'name'   => 'required|string|max:255',
+            'email'  => 'required|email|unique:users,email,' . $user->id, // unique តែអនុញ្ញាតសម្រាប់ ID ខ្លួនឯង
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048' // កំណត់ប្រភេទរូបភាព
+        ]);
+
+        // 2. ការប្តូររូបភាព (Avatar)
+        if ($request->hasFile('avatar')) {
+            // លុបរូបចាស់ចោល បើមាន
+            if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+
+            // ដាក់រូបថ្មីចូល
+            $path = $request->file('avatar')->store('avatars', 'public');
+            $user->avatar = $path;
+        }
+
+        // 3. Update ឈ្មោះ និង អ៊ីមែល
+        $user->name = $request->name;
+        $user->email = $request->email;
+        $user->save();
+
+        // 4. Return ត្រឡប់ទៅវិញ
+        return back()->with('success', __('messages.profile_updated')); 
+    }
+    
+    public function password() { return view('admin.infouser.password'); }
+    
+    // ==========================================
+    // PASSWORD UPDATE (កូដពេញលេញ)
+    // ==========================================
+    public function updatePassword(Request $request)
+    {
+        // 1. Validation
+        $request->validate([
+            'current_password' => 'required',
+            'password' => 'required|min:8|confirmed', // ត្រូវតែមាន password_confirmation field ក្នុង form
+        ], [
+            'current_password.required' => __('messages.current_password_required'),
+            'password.required' => __('messages.new_password_required'),
+            'password.min' => __('messages.password_min'),
+            'password.confirmed' => __('messages.password_confirmed_error'),
+        ]);
+
+        $user = Auth::user();
+
+        // 2. ពិនិត្យមើលថាពាក្យសម្ងាត់ចាស់ត្រឹមត្រូវឬអត់?
+        if (!Hash::check($request->current_password, $user->password)) {
+            // បើខុស Return ទៅវិញជាមួយ Error
+            return back()->withErrors(['current_password' => __('messages.current_password_incorrect')]);
+        }
+
+        // 3. Update ពាក្យសម្ងាត់ថ្មី
+        $user->update([
+            'password' => Hash::make($request->password)
+        ]);
+
+        // 4. Return Success
+        return back()->with('success', __('messages.password_changed_success'));
+    }
+    
     // ==========================================
     // 3. UPDATE (PUT/PATCH)
     // ==========================================

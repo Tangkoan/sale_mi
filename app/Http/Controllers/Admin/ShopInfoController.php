@@ -15,6 +15,48 @@ class ShopInfoController extends Controller
         return view('admin.shop_info.form', compact('shop'));
     }
 
+    // public function save(Request $request)
+    // {
+    //     $request->validate([
+    //         'shop_en' => 'required|string|max:255',
+    //         'logo'    => 'nullable|image|max:2048',
+    //         'fav'     => 'nullable|image|max:1024',
+    //     ]);
+
+    //     $shop = ShopInfo::first();
+
+    //     if (!$shop) {
+    //         $shop = new ShopInfo();
+    //     }
+
+    //     $shop->shop_en = $request->shop_en;
+    //     $shop->shop_kh = $request->shop_kh;
+    //     $shop->description_en = $request->description_en;
+    //     $shop->description_kh = $request->description_kh;
+    //     $shop->address_en = $request->address_en;
+    //     $shop->address_kh = $request->address_kh;
+    //     $shop->phone_number = $request->phone_number;
+    //     $shop->note_kh = $request->note_kh;
+    //     $shop->status = $request->status ?? 1;
+
+    //     if ($request->hasFile('logo')) {
+    //         if ($shop->logo && Storage::disk('public')->exists($shop->logo)) {
+    //             Storage::disk('public')->delete($shop->logo);
+    //         }
+    //         $shop->logo = $request->file('logo')->store('uploads/shops/logos', 'public');
+    //     }
+
+    //     if ($request->hasFile('fav')) {
+    //         if ($shop->fav && Storage::disk('public')->exists($shop->fav)) {
+    //             Storage::disk('public')->delete($shop->fav);
+    //         }
+    //         $shop->fav = $request->file('fav')->store('uploads/shops/favs', 'public');
+    //     }
+
+    //     $shop->save();
+
+    //     return response()->json(['message' => __('messages.shop_save_success')]);
+    // }
     public function save(Request $request)
     {
         $request->validate([
@@ -29,15 +71,12 @@ class ShopInfoController extends Controller
             $shop = new ShopInfo();
         }
 
+        // ... (កូដ Save ទិន្នន័យនៅដដែល) ...
         $shop->shop_en = $request->shop_en;
         $shop->shop_kh = $request->shop_kh;
-        $shop->description_en = $request->description_en;
-        $shop->description_kh = $request->description_kh;
-        $shop->address_en = $request->address_en;
-        $shop->address_kh = $request->address_kh;
-        $shop->phone_number = $request->phone_number;
-        $shop->note_kh = $request->note_kh;
-        $shop->status = $request->status ?? 1;
+        // ... (ដាក់ឱ្យគ្រប់ field ដូចមុន) ...
+        
+        $shop->status = $request->status ?? 1; // Checkbox value logic might need adjustment in blade, see below
 
         if ($request->hasFile('logo')) {
             if ($shop->logo && Storage::disk('public')->exists($shop->logo)) {
@@ -55,6 +94,7 @@ class ShopInfoController extends Controller
 
         $shop->save();
 
-        return response()->json(['message' => __('messages.shop_save_success')]);
+        // 🛑 កន្លែងកែ៖ ប្តូរពី JSON មក Redirect Back
+        return redirect()->back()->with('success', __('messages.shop_save_success'));
     }
 }

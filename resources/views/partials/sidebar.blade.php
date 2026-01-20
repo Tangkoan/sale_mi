@@ -1,9 +1,9 @@
 <aside id="sidebar" class="bg-sidebar-bg text-sidebar-text w-72 h-screen flex flex-col flex-shrink-0 z-50 
               fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-all duration-300
-              border-r border-custom-border">
+              border-r border-bor-color">
 
 
-    <div class="h-20 flex items-center justify-center bg-sidebar-bg sticky top-0 z-20 border-b border-custom-border transition-colors duration-300">
+    <div class="h-20 flex items-center justify-center bg-sidebar-bg sticky top-0 z-20 border-b border-bor-color transition-colors duration-300">
         <div class="flex items-center gap-3 w-full px-6 transition-all duration-300 menu-item-content">
             
             {{-- ១. ផ្នែក Logo --}}
@@ -246,7 +246,7 @@
 
     
 
-    <div class="p-1 border-t border-custom-border bg-black/5 dark:bg-black/20">
+    <div class="p-1 border-t border-bor-color bg-black/5 dark:bg-black/20">
         <a href="https://t.me/Vannchinh11" target="_blank" class="sidebar-item flex items-center gap-3 p-2 rounded-xl transition-colors cursor-pointer menu-item-content hover:bg-black/5 dark:hover:bg-white/5">
             
             <img src="{{ asset('storage/creater/kuytangkoan.jpg') }}" 
