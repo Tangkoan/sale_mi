@@ -225,13 +225,20 @@
 
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
         @include('partials.header')
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-page-bg p-6 transition-colors duration-300">
+        {{-- <main class="flex-1 overflow-x-hidden overflow-y-auto bg-page-bg p-6 transition-colors duration-300">
+            @yield('content')
+        </main> --}}
+        {{-- កែប្រែត្រង់នេះ៖ បន្ថែម pb-24 ដើម្បីទុកចន្លោះខាងក្រោមសម្រាប់ Bottom Bar --}}
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-page-bg p-6 md:pb-6 pb-24 transition-colors duration-300">
             @yield('content')
         </main>
         {{-- Modal របស់ Delete --}}
         @include('partials.confirm_modal')
         
     </div>
+
+    {{-- ហៅ Component មកប្រើនៅទីនេះ --}}
+    @include('partials.bottom_nav')
 
     {{-- <div class="fixed bottom-6 right-6 flex flex-col gap-2 z-50">
         <a href="https://t.me/Vannchinh11" 
