@@ -283,4 +283,10 @@ return [
     'placeholder_email' => 'Enter email address',
     'saving' => 'Saving...',
     'save_changes' => 'Save Changes',
+
+    'dashboard' => 'Home',
+    'menu'      => 'Menu',
+    'sale'      => 'Sale',
+    'report'    => 'Report',
+    'account'   => 'Account',
 ];
