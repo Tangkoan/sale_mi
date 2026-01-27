@@ -289,5 +289,18 @@ return [
     'sale'      => 'លក់',
     'report'    => 'របាយការណ៍',
     'account'   => 'គណនី',
+
+    // សម្រាប់ Category CRUD (សំណូមពរសម្រាប់ពេលក្រោយ)
+    'category_management' => 'ការគ្រប់គ្រងប្រភេទ',
+    'category_name' => 'ឈ្មោះប្រភេទ',
+    'description' => 'ការពិពណ៌នា',
+    'image' => 'រូបភាព',
+    'status' => 'ស្ថានភាព',
+    'active' => 'សកម្ម',
+    'inactive' => 'អសកម្ម',
+    'add_category' => 'បន្ថែមប្រភេទ',
+    'category_created' => 'ប្រភេទត្រូវបានបង្កើតដោយជោគជ័យ។',
+    'category_updated' => 'ប្រភេទត្រូវបានធ្វើបច្ចុប្បន្នភាពដោយជោគជ័យ។',
+    'category_deleted' => 'ប្រភេទត្រូវបានលុបដោយជោគជ័យ។',
     
 ];

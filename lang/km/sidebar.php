@@ -17,5 +17,12 @@ return [
     'shop_info' => 'ព័ត៌មានហាង',
     'created_by' => 'បង្កើតដោយ',
     'staff_member' => 'បុគ្គលិក',
+
+    'product_management' => 'ការគ្រប់គ្រងផលិតផល',
+    'product_data' => 'ទិន្នន័យផលិតផល',
+    'category_list' => 'បញ្ជីប្រភេទ',
+    'table_list' => 'បញ្ជីតុ',
+    'addon_list' => 'បញ្ជីបន្ថែម (Addons)',
+    'product_list' => 'បញ្ជីមុខម្ហូប',
     // end
 ];

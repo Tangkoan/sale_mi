@@ -289,4 +289,17 @@ return [
     'sale'      => 'Sale',
     'report'    => 'Report',
     'account'   => 'Account',
+
+    // For Future Category CRUD (Suggestion)
+    'category_management' => 'Category Management',
+    'category_name' => 'Category Name',
+    'description' => 'Description',
+    'image' => 'Image',
+    'status' => 'Status',
+    'active' => 'Active',
+    'inactive' => 'Inactive',
+    'add_category' => 'Add Category',
+    'category_created' => 'Category created successfully.',
+    'category_updated' => 'Category updated successfully.',
+    'category_deleted' => 'Category deleted successfully.',
 ];

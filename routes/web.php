@@ -12,6 +12,8 @@ use App\Http\Controllers\Admin\RoleAssignmentRuleController;
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\ShopInfoController;
 
+use App\Http\Controllers\Admin\CategoryController;
+
 use Illuminate\Support\Facades\Session;
 
 
@@ -237,6 +239,24 @@ Route::middleware('auth')->group(function () {
                 Route::post('/activity-logs/bulk-delete', [ActivityLogController::class, 'bulkDelete'])
                     ->name('activity_logs.bulk_delete');
             });
+        });
+
+        // ======================
+        // CATEGORY CRUD
+        // ======================
+        Route::controller(CategoryController::class)->group(function () { 
+            // 1. Route ធម្មតា និង Bulk Action (ដាក់នៅពីលើគេ)
+            Route::get('/categories', 'index')->name('categories.index');
+            Route::get('/categories/fetch', 'fetchCategories')->name('categories.fetch');
+            Route::post('/categories', 'store')->name('categories.store');
+
+            // !!! សំខាន់៖ ដាក់ Bulk Delete នៅពីលើ Route {id} !!!
+            Route::post('/categories/bulk-delete', 'bulkDelete')->name('categories.bulk_delete');
+
+            // 2. Route ដែលមាន ID (ដាក់នៅខាងក្រោម)
+            // Update (ប្រើ POST ជំនួស PUT សម្រាប់ File Upload)
+            Route::post('/categories/{id}', 'update')->name('categories.update');
+            Route::delete('/categories/{id}', 'destroy')->name('categories.destroy');
         });
 
         

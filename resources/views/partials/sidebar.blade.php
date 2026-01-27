@@ -158,6 +158,107 @@
             </div>
         @endif
 
+        {{-- ============================================================== --}}
+{{-- PRODUCT MANAGEMENT SECTION                                     --}}
+{{-- ============================================================== --}}
+
+{{-- ពិនិត្យមើលសិនថា តើ User មានសិទ្ធិមើល Menu ណាមួយក្នុង Group នេះឬអត់? --}}
+@if(auth()->user()->can('category-list') || auth()->user()->can('table-list') || auth()->user()->can('addon-list') || auth()->user()->can('product-list') || auth()->user()->hasRole('Super Admin'))
+
+    <div class="px-4 mt-6 mb-2 sidebar-text">
+        <span class="text-[11px] font-bold opacity-50 uppercase tracking-wider">{{ __('sidebar.product_management') }}</span>
+    </div>
+
+    {{-- កំណត់ Active State សម្រាប់ Group ទាំងមូល --}}
+    @php 
+        $isProductActive = request()->routeIs('admin.categories.*') || 
+                           request()->routeIs('admin.tables.*') || 
+                           request()->routeIs('admin.addons.*') || 
+                           request()->routeIs('admin.products.*'); 
+    @endphp 
+
+    <div class="group relative">
+        <button onclick="toggleSubmenu(this)" 
+                class="sidebar-item w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer select-none menu-item-content
+                       {{ $isProductActive ? 'bg-black/5 dark:bg-white/10' : '' }}">
+            <div class="flex items-center">
+                {{-- Icon: Store / Shop --}}
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016c.896 0 1.7-.393 2.25-1.015a3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19A1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72m-13.5 8.65h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .415.336.75.75.75Z" />
+                </svg>
+
+                <span class="sidebar-text font-medium px-2">{{ __('sidebar.product_data') }}</span>
+            </div>
+            <i class="ri-arrow-down-s-line arrow-icon transition-transform duration-300 {{ $isProductActive ? 'rotate-180' : '' }}"></i>
+        </button>
+
+        <div class="submenu {{ $isProductActive ? '' : 'hidden' }} transition-all duration-300">
+            <div class="tree-line absolute left-[26px] top-0 bottom-2 w-px bg-custom-border opacity-50"></div>
+            <ul class="space-y-1 mt-1">
+                
+                {{-- 1. Category --}}
+                @can('category-list')
+                    <li>
+                        <a href="{{ route('admin.categories.index') }}" 
+                        class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
+                                        {{ request()->routeIs('admin.categories.*') ? 'text-primary font-bold' : 'opacity-80' }}">
+                            <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
+                                            {{ request()->routeIs('admin.categories.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
+                            <span>{{ __('sidebar.category_list') }}</span>
+                        </a>
+                    </li>
+                @endcan
+
+                {{-- 2. Table --}}
+                @can('table-list')
+                    <li>
+                        {{-- សូមប្រាកដថាអ្នកបានបង្កើត Route: admin.tables.index រួចហើយ --}}
+                        <a href="#" 
+                        class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
+                                        {{ request()->routeIs('admin.tables.*') ? 'text-primary font-bold' : 'opacity-80' }}">
+                            <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
+                                            {{ request()->routeIs('admin.tables.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
+                            <span>{{ __('sidebar.table_list') }}</span>
+                        </a>
+                    </li>
+                @endcan
+
+                {{-- 3. Addon --}}
+                @can('addon-list')
+                    <li>
+                        {{-- សូមប្រាកដថាអ្នកបានបង្កើត Route: admin.addons.index រួចហើយ --}}
+                        <a href="#" 
+                        class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
+                                        {{ request()->routeIs('admin.addons.*') ? 'text-primary font-bold' : 'opacity-80' }}">
+                            <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
+                                            {{ request()->routeIs('admin.addons.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
+                            <span>{{ __('sidebar.addon_list') }}</span>
+                        </a>
+                    </li>
+                @endcan
+
+                {{-- 4. Product --}}
+                @can('product-list')
+                    <li>
+                        {{-- សូមប្រាកដថាអ្នកបានបង្កើត Route: admin.products.index រួចហើយ --}}
+                        <a href="#" 
+                        class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
+                                        {{ request()->routeIs('admin.products.*') ? 'text-primary font-bold' : 'opacity-80' }}">
+                            <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
+                                            {{ request()->routeIs('admin.products.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
+                            <span>{{ __('sidebar.product_list') }}</span>
+                        </a>
+                    </li>
+                @endcan
+
+            </ul>
+        </div>
+        <div class="tooltip hidden absolute left-[100%] top-2 ml-4 bg-gray-900 text-white text-xs px-3 py-2 rounded shadow-xl z-50 whitespace-nowrap">
+            {{ __('sidebar.product_data') }}
+        </div>
+    </div>
+@endif
+
 
         {{-- <div class="px-4 mt-6 mb-2 sidebar-text">
             <span class="text-[11px] font-bold opacity-50 uppercase tracking-wider">Settings</span>

@@ -17,5 +17,13 @@ return [
     'shop_info' => 'Shop Info',
     'created_by' => 'Created By',
     'staff_member' => 'Staff Member',
+
+
+    'product_management' => 'Product Management',
+    'product_data' => 'Product Data',
+    'category_list' => 'Category List',
+    'table_list' => 'Table List',
+    'addon_list' => 'Addon List',
+    'product_list' => 'Product List',
     // end 
 ];
