@@ -328,4 +328,9 @@ return [
     'product_deleted' => 'Product deleted successfully.',
     'status_updated' => 'Status updated.',
     'category'=> 'Category',
+
+    'select_table' => 'Select Table',
+    'please_select_table_to_order' => 'Please select a table to start ordering.',
+    'available' => 'Available',
+    'busy' => 'Busy',
 ];

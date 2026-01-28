@@ -329,5 +329,11 @@ return [
     'product_deleted' => 'មុខម្ហូបត្រូវបានលុបដោយជោគជ័យ។',
     'status_updated' => 'ស្ថានភាពត្រូវបានកែប្រែ។',
     'category'=> 'ប្រភេទ',
+
+
+    'select_table' => 'ជ្រើសរើសតុ',
+    'please_select_table_to_order' => 'សូមជ្រើសរើសតុដើម្បីចាប់ផ្តើមកម្មង់។',
+    'available' => 'ទំនេរ',
+    'busy' => 'រវល់',
     
 ];

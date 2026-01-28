@@ -17,6 +17,9 @@ use App\Http\Controllers\Admin\TableController;
 use App\Http\Controllers\Admin\AddonController;
 use App\Http\Controllers\Admin\ProductController;
 
+use App\Http\Controllers\Pos\PosController;
+use App\Http\Controllers\Pos\OrderController; // <--- កុំភ្លេច Import
+
 use Illuminate\Support\Facades\Session;
 
 
@@ -329,9 +332,32 @@ Route::middleware('auth')->group(function () {
 
         
         
+        
 
     });
 });
+
+        // ======================
+        // POS SYSTEM ROUTES
+        // ======================
+        Route::middleware(['auth'])->prefix('pos')->name('pos.')->group(function () {
+            
+            // Table Selection Screen
+            Route::get('/tables', [PosController::class, 'index'])->name('tables');
+            Route::get('/tables/fetch', [PosController::class, 'fetchTables'])->name('tables.fetch');
+            
+            // Action ពេលចុចលើតុ
+            Route::get('/select-table/{id}', [PosController::class, 'selectTable'])->name('select_table');
+
+            // Menu Screen (យើងនឹងធ្វើនៅជំហានបន្ទាប់ តែដាក់ Route ទុកសិនកុំអោយ Error)
+            Route::get('/menu/{table_id}', [PosController::class, 'menu'])->name('menu');
+
+            // ======================
+            // ORDER ROUTES (បន្ថែមថ្មី)
+            // ======================
+            Route::post('/order/store', [OrderController::class, 'store'])->name('order.store');
+        });
+
 
 
 
