@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\ShopInfoController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\TableController;
 use App\Http\Controllers\Admin\AddonController;
+use App\Http\Controllers\Admin\ProductController;
 
 use Illuminate\Support\Facades\Session;
 
@@ -306,6 +307,24 @@ Route::middleware('auth')->group(function () {
 
             Route::put('/addons/{id}', 'update')->name('addons.update')->middleware('permission:addon-edit');
             Route::delete('/addons/{id}', 'destroy')->name('addons.destroy')->middleware('permission:addon-delete');
+        });
+
+        // ======================
+        // PRODUCT CRUD
+        // ======================
+        Route::controller(ProductController::class)->group(function () {
+            Route::get('/products', 'index')->name('products.index')->middleware('permission:product-list');
+            Route::get('/products/fetch', 'fetchProducts')->name('products.fetch')->middleware('permission:product-list');
+            
+            Route::post('/products', 'store')->name('products.store')->middleware('permission:product-create');
+            Route::post('/products/bulk-delete', 'bulkDelete')->name('products.bulk_delete')->middleware('permission:product-delete');
+            
+            // Update (POST method for file upload)
+            Route::post('/products/{id}', 'update')->name('products.update')->middleware('permission:product-edit');
+            Route::delete('/products/{id}', 'destroy')->name('products.destroy')->middleware('permission:product-delete');
+            
+            // Toggle Status (Optional: បិទ/បើក Stock)
+            Route::post('/products/{id}/toggle', 'toggleStatus')->name('products.toggle')->middleware('permission:product-edit');
         });
 
         

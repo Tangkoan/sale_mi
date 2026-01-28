@@ -318,4 +318,14 @@ return [
     'addon_created' => 'Addon created successfully.',
     'addon_updated' => 'Addon updated successfully.',
     'addon_deleted' => 'Addon deleted successfully.',
+
+    'product_management' => 'Product Management',
+    'product_name' => 'Product Name',
+    'add_product' => 'Add Product',
+    'all_categories' => 'All Categories',
+    'product_created' => 'Product created successfully.',
+    'product_updated' => 'Product updated successfully.',
+    'product_deleted' => 'Product deleted successfully.',
+    'status_updated' => 'Status updated.',
+    'category'=> 'Category',
 ];

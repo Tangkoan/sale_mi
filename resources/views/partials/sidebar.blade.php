@@ -241,7 +241,7 @@
                 @can('product-list')
                     <li>
                         {{-- សូមប្រាកដថាអ្នកបានបង្កើត Route: admin.products.index រួចហើយ --}}
-                        <a href="#" 
+                        <a href="{{ route('admin.products.index') }}"
                         class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
                                         {{ request()->routeIs('admin.products.*') ? 'text-primary font-bold' : 'opacity-80' }}">
                             <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
