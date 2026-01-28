@@ -310,4 +310,12 @@ return [
     'table_created' => 'Table created successfully.',
     'table_updated' => 'Table updated successfully.',
     'table_deleted' => 'Table deleted successfully.',
+
+    'addon_management' => 'Addon Management',
+    'addon_name' => 'Addon Name',
+    'add_addon' => 'Add Addon',
+    'price' => 'Price',
+    'addon_created' => 'Addon created successfully.',
+    'addon_updated' => 'Addon updated successfully.',
+    'addon_deleted' => 'Addon deleted successfully.',
 ];
