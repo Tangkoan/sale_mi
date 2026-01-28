@@ -32,11 +32,11 @@ class OrderController extends Controller
             // បើអត់មាន -> បង្កើត Order ថ្មី (Invoice)
             if (!$order) {
                 $order = Order::create([
-                    'invoice_number' => 'INV-' . time() . '-' . $request->table_id, // លេខវិក្កយបត្របណ្តោះអាសន្ន
+                    'invoice_number' => 'INV-' . time() . '-' . $request->table_id,
                     'table_id'       => $request->table_id,
-                    'user_id'        => Auth::id(), // អ្នកបើកតុដំបូង
+                    'user_id'        => Auth::id(),
                     'status'         => 'pending',
-                    'total_amount'   => 0, // នឹង Update តាមក្រោយ
+                    'total_amount'   => 0,
                 ]);
 
                 // Update Table Status -> Busy
@@ -50,35 +50,79 @@ class OrderController extends Controller
                     'order_id'   => $order->id,
                     'product_id' => $itemData['product_id'],
                     'quantity'   => $itemData['qty'],
-                    'price'      => $itemData['price'], // តម្លៃលក់ជាក់ស្តែង
+                    'price'      => $itemData['price'],
                     'note'       => $itemData['note'] ?? null,
-                    'is_printed' => false, // សំខាន់សម្រាប់ Printer (ជំហានក្រោយ)
-                    'created_by' => Auth::id(), // អ្នកចុចកុម្ម៉ង់មុខម្ហូបនេះ
+                    'is_printed' => false,
+                    'created_by' => Auth::id(),
                 ]);
 
-                // បញ្ចូល Addons (បើមាន)
+                // បញ្ចូល Addons (កែសម្រួលត្រង់នេះ)
                 if (!empty($itemData['addons'])) {
                     foreach ($itemData['addons'] as $addon) {
                         OrderItemAddon::create([
                             'order_item_id' => $orderItem->id,
                             'addon_id'      => $addon['id'],
                             'price'         => $addon['price'],
-                            'quantity'      => 1 // ជាទូទៅ Addon គិត ១
+                            'quantity'      => $addon['qty'] ?? 1 // <--- យក Qty ពី Frontend (សំខាន់!)
                         ]);
                     }
                 }
             }
 
-            // 4. គណនាតម្លៃសរុបឡើងវិញ (Optional: អាចធ្វើពេល Checkout ក៏បាន)
-            // $this->recalculateTotal($order);
-
-            // 5. Fire Event សម្រាប់ Printer (យើងនឹងធ្វើនៅជំហានបន្ទាប់)
-            // event(new OrderCreated($order));
-
             return response()->json([
                 'status'  => 'success',
                 'message' => 'Order placed successfully!',
                 'order_id' => $order->id
+            ]);
+        });
+    }
+
+    public function checkout(Request $request)
+    {
+        $request->validate([
+            'table_id' => 'required|exists:tables,id',
+            'received_amount' => 'required|numeric|min:0',
+            'payment_method' => 'required|in:cash,qr,card',
+        ]);
+
+        return DB::transaction(function () use ($request) {
+            $order = Order::where('table_id', $request->table_id)
+                          ->where('status', 'pending')
+                          ->firstOrFail();
+
+            // គណនាតម្លៃសរុបឡើងវិញអោយច្បាស់ (ការពារ Frontend បន្លំ)
+            $totalAmount = 0;
+            foreach ($order->items as $item) {
+                $itemTotal = $item->price * $item->quantity;
+                $addonTotal = 0;
+                // ត្រូវប្រាកដថាបាន load addons ក្នុង model OrderItem ឬ query យកមក
+                foreach ($item->addons as $addon) {
+                    $addonTotal += ($addon->price * ($addon->quantity ?? 1));
+                }
+                $totalAmount += ($itemTotal + $addonTotal);
+            }
+
+            $change = $request->received_amount - $totalAmount;
+
+            if ($change < 0) {
+                return response()->json(['message' => 'Not enough cash received!'], 422);
+            }
+
+            $order->update([
+                'status' => 'completed',
+                'total_amount' => $totalAmount, // Update total ចូល DB ផង
+                'payment_method' => $request->payment_method,
+                'received_amount' => $request->received_amount,
+                'change_amount' => $change,
+                'paid_at' => now(),
+            ]);
+
+            Table::where('id', $request->table_id)->update(['status' => 'available']);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Payment successful!',
+                'change' => $change,
             ]);
         });
     }

@@ -9,65 +9,86 @@ use App\Models\Order;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Addon;
-
+use App\Models\ShopInfo;
 
 class PosController extends Controller
 {
-    // 1. បង្ហាញទំព័ររើសតុ
     public function index()
     {
         return view('pos.tables');
     }
 
-    // 2. API ទាញទិន្នន័យតុ (សម្រាប់ Auto Refresh)
     public function fetchTables()
     {
-        // ទាញយកតុទាំងអស់ និងតម្រៀបតាមឈ្មោះ
         $tables = Table::orderBy('name', 'asc')->get();
-        
-        // យើងអាចបន្ថែម Logic ត្រង់នេះ បើចង់ដឹងថា Order ណាជារបស់តុណា
-        // ប៉ុន្តែសម្រាប់ជំហាននេះ ត្រឹម Status គឺគ្រប់គ្រាន់
-        
         return response()->json($tables);
     }
 
-    // 3. មុខងារជ្រើសរើសតុ (Select Table)
     public function selectTable($id)
     {
-        $table = Table::findOrFail($id);
-
-        // Logic: 
-        // - បើតុទំនេរ (Available) -> បង្កើត Order ថ្មី ឬគ្រាន់តែ Redirect ទៅ Menu
-        // - បើតុរវល់ (Busy) -> Redirect ទៅ Order ចាស់របស់តុនោះ
-        
-        // សំរាប់ពេលនេះ យើងគ្រាន់តែ Redirect ទៅកាន់ទំព័រ Menu សិន
-        // (យើងនឹងបង្កើត Route 'pos.menu' នៅជំហានបន្ទាប់)
+        // គ្រាន់តែ Redirect ទៅ Menu
         return redirect()->route('pos.menu', ['table_id' => $id]);
     }
 
-    // 4. MENU SCREEN (ទំព័រកុម្ម៉ង់)
     public function menu($table_id)
     {
         $table = Table::findOrFail($table_id);
         
-        // ទាញយក Categories ទាំងអស់ (Eager load products ដើម្បីស្រួលបង្ហាញ)
-        // យើងទាញតែ Products ដែល Active ប៉ុណ្ណោះ
         $categories = Category::with(['products' => function($q) {
             $q->where('is_active', true);
         }])->get();
 
-        // ទាញយក Products ទាំងអស់ (សម្រាប់ Search ក្រៅ Category)
         $products = Product::where('is_active', true)->with('category')->get();
-
-        // ទាញយក Addons ទាំងអស់ (បែងចែកតាម Type: Food/Drink ក្នុង View)
         $addons = Addon::all();
 
-        // ឆែកមើលថាតើតុនេះមាន Order ដែលកំពុងដំណើរការ (Pending) ឬអត់?
-        // ប្រសិនបើមាន យើងនឹងបង្ហាញប៊ូតុង "មើលមុខម្ហូបដែលបានកម្មង់រួច" (ជំហានក្រោយ)
         $currentOrder = Order::where('table_id', $table_id)
                              ->where('status', 'pending')
                              ->first();
 
         return view('pos.menu', compact('table', 'categories', 'products', 'addons', 'currentOrder'));
+    }
+
+    public function getOrderDetails($table_id)
+    {
+        // 1. ទាញយក Order
+        $order = Order::with(['items.product', 'items.addons.addon'])
+                    ->where('table_id', $table_id)
+                    ->where('status', 'pending')
+                    ->first();
+
+        if (!$order) {
+            return response()->json(['error' => 'No active order found'], 404);
+        }
+
+        // 2. គណនា Total (Logic ថ្មី: Product Qty ដាច់ដោយឡែក, Addon Qty ដាច់ដោយឡែក)
+        $grandTotal = 0;
+
+        foreach ($order->items as $item) {
+            // តម្លៃផលិតផលគោល = Price x Qty
+            $itemTotal = $item->price * $item->quantity;
+            
+            // តម្លៃ Addons = Price x Qty (របស់ Addon នីមួយៗ)
+            $addonTotal = 0;
+            foreach ($item->addons as $addonItem) {
+                // $addonItem->quantity គឺជា column ក្នុង table order_item_addons
+                $qty = $addonItem->quantity ?? 1; 
+                $price = $addonItem->price;
+                $addonTotal += ($price * $qty);
+            }
+
+            $grandTotal += ($itemTotal + $addonTotal);
+        }
+
+        // 3. Shop Info
+        $shop = ShopInfo::first();
+
+        return response()->json([
+            'order' => $order,
+            'items' => $order->items,
+            'total' => $grandTotal, // តម្លៃសរុបត្រឹមត្រូវ
+            'invoice_number' => $order->invoice_number,
+            'date' => $order->created_at->format('d/m/Y H:i'),
+            'shop' => $shop
+        ]);
     }
 }
