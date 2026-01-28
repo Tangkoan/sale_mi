@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\ShopInfoController;
 
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\TableController;
 
 use Illuminate\Support\Facades\Session;
 
@@ -257,6 +258,37 @@ Route::middleware('auth')->group(function () {
             // Update (ប្រើ POST ជំនួស PUT សម្រាប់ File Upload)
             Route::post('/categories/{id}', 'update')->name('categories.update');
             Route::delete('/categories/{id}', 'destroy')->name('categories.destroy');
+        });
+
+        
+        // ======================
+        // TABLE CRUD
+        // ======================
+        Route::controller(TableController::class)->group(function () {
+            Route::get('/tables', 'index')
+                ->name('tables.index')
+                ->middleware('permission:table-list');
+
+            Route::get('/tables/fetch', 'fetchTables')
+                ->name('tables.fetch')
+                ->middleware('permission:table-list');
+
+            Route::post('/tables', 'store')
+                ->name('tables.store')
+                ->middleware('permission:table-create');
+
+            // Bulk Delete (ដាក់ពីលើ {id})
+            Route::post('/tables/bulk-delete', 'bulkDelete')
+                ->name('tables.bulk_delete')
+                ->middleware('permission:table-delete');
+
+            Route::put('/tables/{id}', 'update')
+                ->name('tables.update')
+                ->middleware('permission:table-edit');
+
+            Route::delete('/tables/{id}', 'destroy')
+                ->name('tables.destroy')
+                ->middleware('permission:table-delete');
         });
 
         

@@ -302,4 +302,12 @@ return [
     'category_created' => 'Category created successfully.',
     'category_updated' => 'Category updated successfully.',
     'category_deleted' => 'Category deleted successfully.',
+
+    'table_management' => 'Table Management',
+    'table_name' => 'Table Name',
+    'add_table' => 'Add Table',
+    'table_name_exist' => 'This table name already exists.',
+    'table_created' => 'Table created successfully.',
+    'table_updated' => 'Table updated successfully.',
+    'table_deleted' => 'Table deleted successfully.',
 ];
