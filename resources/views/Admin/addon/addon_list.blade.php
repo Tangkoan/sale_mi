@@ -4,7 +4,9 @@
 
 <div class="w-full h-full px-1 py-1" x-data="addonManagement()">
     
-    {{-- HEADER --}}
+    {{-- =========================================== --}}
+    {{-- HEADER & ACTIONS                            --}}
+    {{-- =========================================== --}}
     <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">
         <div>
             <h1 class="text-2xl font-bold text-text-color flex items-center gap-2">
@@ -15,27 +17,29 @@
 
         <div class="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
             
-            {{-- Selected Actions --}}
+            {{-- 1. Selected Actions (Edit Sequence & Bulk Delete) --}}
             <div x-show="selectedIds.length > 0" x-transition 
                  class="flex items-center gap-2 mr-2 w-full sm:w-auto justify-between sm:justify-start bg-white dark:bg-gray-800 p-1 rounded-lg border border-border-color shadow-sm">
                  <span class="text-xs font-bold text-primary bg-primary/10 px-2 py-1.5 rounded ml-1" x-text="selectedIds.length + ' {{ __('messages.selected_items') }}'"></span>
                 
                 <div class="flex gap-1">
+                    {{-- Edit Sequence --}}
                     @can('addon-edit')
-                    <button @click="startSequentialEdit()" class="text-sm font-bold text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-md transition">
+                    <button @click="startSequentialEdit()" class="text-sm font-bold text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-md transition" title="{{ __('messages.edit_sequence') }}">
                         <i class="ri-edit-circle-line"></i>
                     </button>
                     @endcan
 
+                    {{-- Bulk Delete --}}
                     @can('addon-delete')
-                    <button @click="confirmBulkDelete()" class="text-sm font-bold text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-md transition">
+                    <button @click="confirmBulkDelete()" class="text-sm font-bold text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-md transition" title="{{ __('messages.delete_selected') }}">
                         <i class="ri-delete-bin-line"></i>
                     </button>
                     @endcan
                 </div>
             </div>
 
-            {{-- Column Visibility --}}
+            {{-- 2. Column Visibility Toggle --}}
             <div class="relative w-full sm:w-auto" x-data="{ openCol: false }">
                 <button @click="openCol = !openCol" @click.outside="openCol = false" 
                         class="w-full sm:w-auto flex justify-center items-center gap-2 px-3 py-2.5 bg-card-bg border border-input-border rounded-xl text-text-color hover:bg-input-bg transition text-sm font-medium shadow-sm">
@@ -53,7 +57,7 @@
                         </label>
                         <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-page-bg rounded cursor-pointer select-none">
                             <input type="checkbox" x-model="showCols.type" class="rounded text-primary focus:ring-primary border-input-border">
-                            <span class="text-sm text-text-color">Type</span>
+                            <span class="text-sm text-text-color">Destination</span>
                         </label>
                         <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-page-bg rounded cursor-pointer select-none">
                             <input type="checkbox" x-model="showCols.created_at" class="rounded text-primary focus:ring-primary border-input-border">
@@ -63,7 +67,7 @@
                 </div>
             </div>
 
-            {{-- Search --}}
+            {{-- 3. Search Bar --}}
             <div class="relative w-full sm:w-64">
                 <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-secondary">
                     <i class="ri-search-line"></i>
@@ -73,7 +77,7 @@
                        placeholder="{{ __('messages.search_placeholder') }}">
             </div>
 
-            {{-- Create Button --}}
+            {{-- 4. Create Button --}}
             <button 
                 @can('addon-create') @click="openModal('create')" @endcan
                 class="w-full sm:w-auto text-white font-bold py-2.5 px-6 rounded-xl flex justify-center items-center gap-2 transition-all shadow-lg shadow-primary/30 whitespace-nowrap
@@ -86,7 +90,9 @@
         </div>
     </div>
 
-    {{-- TABLE --}}
+    {{-- =========================================== --}}
+    {{-- TABLE LIST                                  --}}
+    {{-- =========================================== --}}
     <div class="bg-card-bg rounded-xl shadow-custom border border-border-color overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
@@ -96,7 +102,7 @@
                             <input type="checkbox" @change="toggleSelectAll()" x-model="selectAll" class="rounded border-input-border text-primary focus:ring-primary h-4 w-4">
                         </th>
                         
-                        {{-- Name --}}
+                        {{-- Name Column --}}
                         <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" 
                             @click="sort('name')" x-show="showCols.name">
                             <div class="flex items-center gap-1">
@@ -108,7 +114,7 @@
                             </div>
                         </th>
 
-                        {{-- Price --}}
+                        {{-- Price Column --}}
                         <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" 
                             @click="sort('price')" x-show="showCols.price">
                             <div class="flex items-center gap-1">
@@ -120,11 +126,11 @@
                             </div>
                         </th>
 
-                        {{-- Type --}}
+                        {{-- Type / Destination Column --}}
                         <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" 
                             @click="sort('type')" x-show="showCols.type">
                             <div class="flex items-center gap-1">
-                                Type
+                                Destination (Type)
                                 <div class="flex flex-col text-[10px] leading-[0.5] opacity-50 group-hover:opacity-100">
                                     <i class="ri-arrow-up-s-fill" :class="sortBy === 'type' && sortDir === 'asc' ? 'text-primary' : ''"></i>
                                     <i class="ri-arrow-down-s-fill" :class="sortBy === 'type' && sortDir === 'desc' ? 'text-primary' : ''"></i>
@@ -132,7 +138,7 @@
                             </div>
                         </th>
 
-                        {{-- Created At --}}
+                        {{-- Date Column --}}
                         <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" 
                             @click="sort('created_at')" x-show="showCols.created_at">
                             <div class="flex items-center gap-1">
@@ -154,19 +160,24 @@
                                 <input type="checkbox" :value="item.id" x-model="selectedIds" class="rounded border-input-border text-primary focus:ring-primary h-4 w-4">
                             </td>
                             
+                            {{-- Name --}}
                             <td class="px-6 py-4 font-bold text-text-color" x-text="item.name" x-show="showCols.name"></td>
                             
+                            {{-- Price --}}
                             <td class="px-6 py-4 font-bold text-primary" x-text="'$' + parseFloat(item.price).toFixed(2)" x-show="showCols.price"></td>
 
+                            {{-- Type (KITCHEN/BAR) --}}
                             <td class="px-6 py-4" x-show="showCols.type">
                                 <span class="px-3 py-1 rounded-full text-xs font-bold capitalize"
-                                      :class="item.type === 'food' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'"
+                                      :class="item.type === 'kitchen' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'"
                                       x-text="item.type">
                                 </span>
                             </td>
 
+                            {{-- Date --}}
                             <td class="px-6 py-4 text-secondary text-sm" x-text="new Date(item.created_at).toLocaleDateString()" x-show="showCols.created_at"></td>
                             
+                            {{-- Actions --}}
                             <td class="px-6 py-4 text-right">
                                 <div class="flex justify-end gap-2">
                                     <button @can('addon-edit') @click="openModal('edit', item)" @endcan
@@ -193,7 +204,9 @@
         <x-pagination />
     </div>
 
-    {{-- MODAL --}}
+    {{-- =========================================== --}}
+    {{-- CREATE / EDIT MODAL                         --}}
+    {{-- =========================================== --}}
     <div x-show="isModalOpen" style="display: none;" class="fixed inset-0 z-[100] flex items-center justify-center px-4" x-cloak>
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal()"></div>
 
@@ -202,6 +215,7 @@
              x-transition:enter-start="opacity-0 scale-95 translate-y-4" 
              x-transition:enter-end="opacity-100 scale-100 translate-y-0">
             
+            {{-- Modal Header --}}
             <div class="px-6 py-4 border-b border-border-color flex justify-between items-center" :class="isSequenceMode ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-page-bg/30'">
                 <div>
                     <h3 class="text-lg font-bold text-text-color" x-text="editMode ? '{{ __('messages.edit') }} Addon' : '{{ __('messages.create') }} Addon'"></h3>
@@ -216,38 +230,43 @@
             
             <form @submit.prevent="submitForm" class="p-6 space-y-4">
                 
-                {{-- Name --}}
+                {{-- Name Input --}}
                 <div>
                     <label class="block text-sm font-bold text-text-color mb-1">{{ __('messages.addon_name') }}</label>
                     <input type="text" x-model="form.name" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" placeholder="Ex: Extra Shot, Sugar">
                     <p x-show="errors.name" x-text="errors.name" class="text-red-500 text-xs mt-1"></p>
                 </div>
 
-                {{-- Price --}}
+                {{-- Price Input --}}
                 <div>
                     <label class="block text-sm font-bold text-text-color mb-1">{{ __('messages.price') }} ($)</label>
                     <input type="number" step="0.01" x-model="form.price" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" placeholder="0.00">
                     <p x-show="errors.price" x-text="errors.price" class="text-red-500 text-xs mt-1"></p>
                 </div>
 
-                {{-- Type --}}
+                {{-- Type Selection (KITCHEN / BAR) --}}
                 <div>
-                    <label class="block text-sm font-bold text-text-color mb-1">Type</label>
+                    <label class="block text-sm font-bold text-text-color mb-1">Destination (Type)</label>
                     <div class="grid grid-cols-2 gap-3">
+                        
+                        {{-- Option: Kitchen --}}
                         <label class="cursor-pointer border border-input-border rounded-lg p-3 flex items-center justify-center gap-2 transition-all"
-                               :class="form.type === 'food' ? 'bg-primary/10 border-primary text-primary' : 'hover:bg-page-bg'">
-                            <input type="radio" x-model="form.type" value="food" class="hidden">
-                            <i class="ri-restaurant-line"></i> Food
+                               :class="form.type === 'kitchen' ? 'bg-primary/10 border-primary text-primary' : 'hover:bg-page-bg'">
+                            <input type="radio" x-model="form.type" value="kitchen" class="hidden">
+                            <i class="ri-restaurant-line"></i> Kitchen
                         </label>
+                        
+                        {{-- Option: Bar --}}
                         <label class="cursor-pointer border border-input-border rounded-lg p-3 flex items-center justify-center gap-2 transition-all"
-                               :class="form.type === 'drink' ? 'bg-primary/10 border-primary text-primary' : 'hover:bg-page-bg'">
-                            <input type="radio" x-model="form.type" value="drink" class="hidden">
-                            <i class="ri-cup-line"></i> Drink
+                               :class="form.type === 'bar' ? 'bg-primary/10 border-primary text-primary' : 'hover:bg-page-bg'">
+                            <input type="radio" x-model="form.type" value="bar" class="hidden">
+                            <i class="ri-cup-line"></i> Bar
                         </label>
                     </div>
                     <p x-show="errors.type" x-text="errors.type" class="text-red-500 text-xs mt-1"></p>
                 </div>
 
+                {{-- Modal Footer --}}
                 <div class="pt-4 flex justify-between items-center border-t border-border-color mt-2">
                     <button type="button" x-show="isSequenceMode" @click="nextInSequence()" class="text-secondary hover:text-text-color text-sm font-bold px-2">
                         {{ __('messages.skip_this_user') }} <i class="ri-arrow-right-line align-middle"></i>
@@ -286,11 +305,13 @@
             sortBy: 'created_at',
             sortDir: 'desc',
 
+            // Sequence Edit Variables
             isSequenceMode: false,
             sequenceQueue: [],
             currentSeqIndex: 0,
 
-            form: { id: null, name: '', price: '', type: 'food' },
+            // Form Data (Default: Kitchen)
+            form: { id: null, name: '', price: '', type: 'kitchen' },
             errors: {},
 
             init() { 
@@ -368,7 +389,8 @@
                     this.loadDataToForm(item);
                 } else {
                     this.editMode = false;
-                    this.form = { id: null, name: '', price: '', type: 'food' };
+                    // Reset Form (Default: Kitchen)
+                    this.form = { id: null, name: '', price: '', type: 'kitchen' };
                 }
             },
 

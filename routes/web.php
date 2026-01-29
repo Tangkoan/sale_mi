@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\ProductController;
 
 use App\Http\Controllers\Pos\PosController;
 use App\Http\Controllers\Pos\OrderController; // <--- កុំភ្លេច Import
+use App\Http\Controllers\Pos\KitchenController; // <--- Import នៅខាងលើ
 
 use Illuminate\Support\Facades\Session;
 
@@ -363,6 +364,17 @@ Route::middleware('auth')->group(function () {
             Route::get('/order-details/{table_id}', [PosController::class, 'getOrderDetails'])->name('order.details');
             // Route សម្រាប់ Checkout
             Route::post('/order/checkout', [App\Http\Controllers\Pos\OrderController::class, 'checkout'])->name('order.checkout');
+
+            // === KITCHEN & BAR ROUTES ===
+        // ទំព័រដើមសម្រាប់មើលអេក្រង់
+        Route::get('/kitchen', [KitchenController::class, 'index'])->name('kitchen.view'); 
+        // APIs សម្រាប់ហៅដោយ JavaScript (AJAX)
+        Route::get('/kitchen/fetch', [KitchenController::class, 'fetchOrders'])->name('kitchen.fetch');
+        Route::post('/kitchen/update-item', [KitchenController::class, 'updateItemStatus'])->name('kitchen.update_item');
+        Route::post('/kitchen/done-all', [KitchenController::class, 'markOrderReady'])->name('kitchen.done_all');
+
+        // update status
+        Route::get('/products/status', [PosController::class, 'getProductStatuses'])->name('products.status');
         });
 
 

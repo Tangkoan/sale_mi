@@ -9,7 +9,7 @@ class Category extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'type']; // type: food, drink
+    protected $guarded = []; // អនុញ្ញាតអោយកែគ្រប់ field
 
     // ទំនាក់ទំនង៖ 1 Category មាន Products ច្រើន
     public function products()

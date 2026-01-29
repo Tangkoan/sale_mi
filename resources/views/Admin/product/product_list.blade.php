@@ -48,7 +48,7 @@
                         </label>
                         <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-page-bg rounded cursor-pointer select-none">
                             <input type="checkbox" x-model="showCols.category" class="rounded text-primary focus:ring-primary border-input-border">
-                            <span class="text-sm text-text-color">{{ __('messages.all_categories') }}</span>
+                            <span class="text-sm text-text-color">{{ __('messages.category') }}</span>
                         </label>
                         <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-page-bg rounded cursor-pointer select-none">
                             <input type="checkbox" x-model="showCols.price" class="rounded text-primary focus:ring-primary border-input-border">
@@ -100,32 +100,15 @@
                         <th class="px-6 py-4 w-4">
                             <input type="checkbox" @change="toggleSelectAll()" x-model="selectAll" class="rounded border-input-border text-primary focus:ring-primary h-4 w-4">
                         </th>
-                        
-                        {{-- Image --}}
                         <th class="px-6 py-4 font-bold" x-show="showCols.image">{{ __('messages.image') }}</th>
-
-                        {{-- Name --}}
                         <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" @click="sort('name')">
-                            <div class="flex items-center gap-1">
-                                {{ __('messages.product_name') }}
-                                <i class="ri-arrow-up-down-fill text-[10px] opacity-50 group-hover:opacity-100"></i>
-                            </div>
+                            <div class="flex items-center gap-1">{{ __('messages.product_name') }}<i class="ri-arrow-up-down-fill text-[10px] opacity-50 group-hover:opacity-100"></i></div>
                         </th>
-
-                        {{-- Category --}}
                         <th class="px-6 py-4 font-bold" x-show="showCols.category">{{ __('messages.category') }}</th>
-
-                        {{-- Price --}}
                         <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" @click="sort('price')" x-show="showCols.price">
-                            <div class="flex items-center gap-1">
-                                {{ __('messages.price') }}
-                                <i class="ri-arrow-up-down-fill text-[10px] opacity-50 group-hover:opacity-100"></i>
-                            </div>
+                            <div class="flex items-center gap-1">{{ __('messages.price') }}<i class="ri-arrow-up-down-fill text-[10px] opacity-50 group-hover:opacity-100"></i></div>
                         </th>
-
-                        {{-- Active --}}
                         <th class="px-6 py-4 font-bold">{{ __('messages.status') }}</th>
-
                         <th class="px-6 py-4 font-bold text-right">{{ __('messages.actions') }}</th>
                     </tr>
                 </thead>
@@ -135,32 +118,20 @@
                             <td class="px-6 py-4">
                                 <input type="checkbox" :value="item.id" x-model="selectedIds" class="rounded border-input-border text-primary focus:ring-primary h-4 w-4">
                             </td>
-                            
-                            {{-- Image --}}
                             <td class="px-6 py-4" x-show="showCols.image">
                                 <div class="h-10 w-10 rounded-lg bg-gray-100 overflow-hidden border border-border-color">
-                                    <template x-if="item.image">
-                                        <img :src="'/storage/' + item.image" class="w-full h-full object-cover">
-                                    </template>
-                                    <template x-if="!item.image">
-                                        <div class="w-full h-full flex items-center justify-center text-secondary"><i class="ri-image-line"></i></div>
-                                    </template>
+                                    <template x-if="item.image"><img :src="'/storage/' + item.image" class="w-full h-full object-cover"></template>
+                                    <template x-if="!item.image"><div class="w-full h-full flex items-center justify-center text-secondary"><i class="ri-image-line"></i></div></template>
                                 </div>
                             </td>
-
                             <td class="px-6 py-4 font-bold text-text-color" x-text="item.name"></td>
-                            
-                            {{-- Category Badge --}}
                             <td class="px-6 py-4" x-show="showCols.category">
                                 <span class="px-3 py-1 rounded-full text-xs font-bold border"
-                                      :class="item.category ? (item.category.type === 'food' ? 'bg-orange-50 text-orange-600 border-orange-200' : 'bg-blue-50 text-blue-600 border-blue-200') : 'bg-gray-100'">
+                                      :class="item.category ? (item.category.destination === 'kitchen' ? 'bg-orange-50 text-orange-600 border-orange-200' : 'bg-blue-50 text-blue-600 border-blue-200') : 'bg-gray-100'">
                                     <span x-text="item.category ? item.category.name : 'N/A'"></span>
                                 </span>
                             </td>
-
                             <td class="px-6 py-4 font-bold text-primary" x-text="'$' + parseFloat(item.price).toFixed(2)" x-show="showCols.price"></td>
-
-                            {{-- Active Toggle --}}
                             <td class="px-6 py-4">
                                 <button @click="toggleStatus(item.id)" 
                                         class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
@@ -169,17 +140,10 @@
                                           :class="item.is_active ? 'translate-x-6' : 'translate-x-1'"></span>
                                 </button>
                             </td>
-
                             <td class="px-6 py-4 text-right">
                                 <div class="flex justify-end gap-2">
-                                    <button @can('product-edit') @click="openModal('edit', item)" @endcan
-                                            class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100">
-                                            <i class="ri-pencil-line"></i>
-                                    </button>
-                                    <button @can('product-delete') @click="confirmDelete(item.id)" @endcan
-                                            class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-red-50 text-red-600 hover:bg-red-100">
-                                            <i class="ri-delete-bin-line"></i>
-                                    </button>
+                                    <button @can('product-edit') @click="openModal('edit', item)" @endcan class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100"><i class="ri-pencil-line"></i></button>
+                                    <button @can('product-delete') @click="confirmDelete(item.id)" @endcan class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-red-50 text-red-600 hover:bg-red-100"><i class="ri-delete-bin-line"></i></button>
                                 </div>
                             </td>
                         </tr>
@@ -205,7 +169,7 @@
              x-transition:enter-start="opacity-0 scale-95 translate-y-4" 
              x-transition:enter-end="opacity-100 scale-100 translate-y-0">
             
-            <div class="px-6 py-4 border-b border-border-color flex justify-between items-center" :class="isSequenceMode ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-page-bg/30'">
+            <div class="px-6 py-4 border-b border-border-color flex justify-between items-center bg-page-bg/30">
                 <div>
                     <h3 class="text-lg font-bold text-text-color" x-text="editMode ? '{{ __('messages.edit') }} Product' : '{{ __('messages.create') }} Product'"></h3>
                     <template x-if="isSequenceMode">
@@ -230,10 +194,10 @@
                     {{-- Category --}}
                     <div>
                         <label class="block text-sm font-bold text-text-color mb-1">{{ __('messages.category') }}</label>
-                        <select x-model="form.category_id" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
+                        <select x-model="form.category_id" @change="filterAddonsByType()" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
                             <option value="">Select Category</option>
                             @foreach($categories as $cat)
-                                <option value="{{ $cat->id }}">{{ $cat->name }} ({{ ucfirst($cat->type) }})</option>
+                                <option value="{{ $cat->id }}">{{ $cat->name }} ({{ ucfirst($cat->destination) }})</option>
                             @endforeach
                         </select>
                         <p x-show="errors.category_id" x-text="errors.category_id" class="text-red-500 text-xs mt-1"></p>
@@ -252,33 +216,44 @@
                         <label class="block text-sm font-bold text-text-color mb-1">{{ __('messages.image') }}</label>
                         <div class="flex items-center gap-4">
                             <div class="h-12 w-12 rounded-lg bg-gray-100 border border-border-color overflow-hidden flex-shrink-0">
-                                <template x-if="imagePreview">
-                                    <img :src="imagePreview" class="w-full h-full object-cover">
-                                </template>
-                                <template x-if="!imagePreview">
-                                    <div class="w-full h-full flex items-center justify-center text-secondary"><i class="ri-image-add-line"></i></div>
-                                </template>
+                                <template x-if="imagePreview"><img :src="imagePreview" class="w-full h-full object-cover"></template>
+                                <template x-if="!imagePreview"><div class="w-full h-full flex items-center justify-center text-secondary"><i class="ri-image-add-line"></i></div></template>
                             </div>
                             <input type="file" @change="handleFileUpload" accept="image/*" class="text-sm text-secondary file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20">
                         </div>
                     </div>
                 </div>
 
-                {{-- ADDONS SELECTION (Many-to-Many) --}}
-                <div class="border-t border-border-color pt-4">
-                    <label class="block text-sm font-bold text-text-color mb-2">Available Addons</label>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-40 overflow-y-auto p-2 bg-page-bg/50 rounded-lg border border-input-border">
-                        @foreach($addons as $addon)
-                            <label class="flex items-center gap-2 cursor-pointer hover:bg-white dark:hover:bg-white/5 p-2 rounded transition-colors">
-                                <input type="checkbox" :value="{{ $addon->id }}" x-model="form.addons" class="rounded border-input-border text-primary focus:ring-primary h-4 w-4">
+                {{-- ADDONS SELECTION (Smart Filtered) --}}
+                <div class="border-t border-border-color pt-4" x-show="visibleAddons.length > 0">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-sm font-bold text-text-color">Available Addons</label>
+                        <label class="flex items-center gap-2 cursor-pointer text-xs text-primary font-bold hover:text-primary/80">
+                            <input type="checkbox" x-model="selectAllAddons" @change="toggleSelectAllAddons()" class="rounded border-input-border text-primary focus:ring-primary h-3.5 w-3.5">
+                            Select All
+                        </label>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-40 overflow-y-auto p-2 bg-page-bg/50 rounded-lg border border-input-border custom-scrollbar">
+                        <template x-for="addon in visibleAddons" :key="addon.id">
+                            <label class="flex items-center gap-2 cursor-pointer hover:bg-white dark:hover:bg-white/5 p-2 rounded transition-colors border border-transparent hover:border-input-border">
+                                <input type="checkbox" :value="addon.id" x-model="form.addons" class="rounded border-input-border text-primary focus:ring-primary h-4 w-4">
                                 <div class="text-xs">
-                                    <span class="font-bold text-text-color block">{{ $addon->name }}</span>
-                                    <span class="text-secondary">+${{ number_format($addon->price, 2) }}</span>
+                                    <span class="font-bold text-text-color block" x-text="addon.name"></span>
+                                    <span class="text-secondary" x-text="'+$' + parseFloat(addon.price).toFixed(2)"></span>
                                 </div>
                             </label>
-                        @endforeach
+                        </template>
                     </div>
-                    <p class="text-xs text-secondary mt-1">Select addons that can be added to this product.</p>
+                    <p class="text-xs text-secondary mt-1">Filtering addons based on category destination.</p>
+                </div>
+                
+                <div class="border-t border-border-color pt-4 text-center text-sm text-secondary italic" x-show="!form.category_id">
+                    Please select a category to see available addons.
+                </div>
+                
+                <div class="border-t border-border-color pt-4 text-center text-sm text-secondary italic" x-show="form.category_id && visibleAddons.length === 0">
+                    No addons available for this category type.
                 </div>
 
             </form>
@@ -305,6 +280,10 @@
     function productManagement() {
         return {
             products: [],
+            categories: @json($categories), 
+            allAddons: @json($addons),      
+            visibleAddons: [],              
+            
             search: '',
             filterCategory: '',
             perPage: '10',
@@ -315,6 +294,7 @@
             isLoading: false,
             selectedIds: [],
             selectAll: false,
+            selectAllAddons: false,
 
             showCols: JSON.parse(localStorage.getItem('product_table_cols')) || { image: true, category: true, price: true },
             sortBy: 'created_at',
@@ -330,7 +310,42 @@
 
             init() { 
                 this.$watch('showCols', (value) => { localStorage.setItem('product_table_cols', JSON.stringify(value)); });
+                // Watch: ពេលប្តូរ Category ក្នុង Form -> Filter Addons ភ្លាម
+                this.$watch('form.category_id', (value) => {
+                    this.filterAddonsByType();
+                });
                 this.fetchProducts(); 
+            },
+
+            // ✅ Logic ថ្មី: Filter Addons តាម Destination របស់ Category
+            filterAddonsByType() {
+                if (!this.form.category_id) {
+                    this.visibleAddons = [];
+                    return;
+                }
+                const selectedCat = this.categories.find(c => c.id == this.form.category_id);
+                
+                if (selectedCat) {
+                    // Filter Addons ដែលមាន type ដូច destination របស់ category
+                    this.visibleAddons = this.allAddons.filter(a => a.type === selectedCat.destination);
+                } else {
+                    this.visibleAddons = [];
+                }
+                this.selectAllAddons = false; 
+            },
+
+            // ✅ Logic ថ្មី: Select All Addons
+            toggleSelectAllAddons() {
+                if (this.selectAllAddons) {
+                    this.visibleAddons.forEach(addon => {
+                        if (!this.form.addons.includes(addon.id)) {
+                            this.form.addons.push(addon.id);
+                        }
+                    });
+                } else {
+                    const visibleIds = this.visibleAddons.map(a => a.id);
+                    this.form.addons = this.form.addons.filter(id => !visibleIds.includes(id));
+                }
             },
 
             async fetchProducts() {
@@ -355,25 +370,12 @@
                 finally { this.isLoading = false; }
             },
 
-            sort(col) {
-                if (this.sortBy === col) this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
-                else { this.sortBy = col; this.sortDir = 'desc'; }
-                this.fetchProducts();
-            },
-
+            sort(col) { if (this.sortBy === col) this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc'; else { this.sortBy = col; this.sortDir = 'desc'; } this.fetchProducts(); },
             gotoPage(page) { this.currentPage = page; this.fetchProducts(); },
             changePage(url) { if(url) this.fetchProducts(); },
             toggleSelectAll() { this.selectedIds = this.selectAll ? this.products.map(p => p.id) : []; },
+            handleFileUpload(e) { const file = e.target.files[0]; if (file) { this.form.image = file; this.imagePreview = URL.createObjectURL(file); } },
 
-            handleFileUpload(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    this.form.image = file;
-                    this.imagePreview = URL.createObjectURL(file);
-                }
-            },
-
-            // Sequence Logic
             startSequentialEdit() {
                 const selectedIdsString = this.selectedIds.map(id => String(id));
                 this.sequenceQueue = this.products.filter(item => selectedIdsString.includes(String(item.id)));
@@ -386,7 +388,6 @@
                 this.loadDataToForm(this.sequenceQueue[0]);
                 this.isModalOpen = true;
             },
-
             nextInSequence() {
                 this.currentSeqIndex++;
                 if (this.currentSeqIndex < this.sequenceQueue.length) {
@@ -406,10 +407,13 @@
                     category_id: item.category_id,
                     price: item.price,
                     image: null,
-                    // Map addons ទៅជា Array of IDs សម្រាប់ checkbox
+                    // Load addons ដែលមានស្រាប់មកដាក់ក្នុង form
                     addons: item.addons ? item.addons.map(a => a.id) : [] 
                 };
                 this.imagePreview = item.image ? '/storage/' + item.image : null;
+                
+                // Trigger filter manually to show correct addons immediately
+                this.filterAddonsByType();
             },
 
             openModal(mode, item = null) {
@@ -422,6 +426,7 @@
                     this.editMode = false;
                     this.form = { id: null, name: '', category_id: '', price: '', image: null, addons: [] };
                     this.imagePreview = null;
+                    this.visibleAddons = [];
                 }
             },
 
@@ -443,7 +448,6 @@
                 formData.append('category_id', this.form.category_id);
                 formData.append('price', this.form.price);
                 
-                // Append Addons Array
                 if(this.form.addons && this.form.addons.length > 0) {
                     this.form.addons.forEach((id, index) => {
                         formData.append(`addons[${index}]`, id);

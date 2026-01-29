@@ -13,39 +13,34 @@ use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
+    // 1. View: បញ្ជូន Data ចាំបាច់ទៅ Blade
     public function index()
     {
-        // ផ្ញើទិន្នន័យ Category និង Addon ទៅ View ដើម្បីដាក់ក្នុង Modal Form
-        $categories = Category::all();
-        $addons = Addon::all();
-        
+        // យក destination មកផង ដើម្បីអោយ JS អាច Filter បាន
+        $categories = Category::select('id', 'name', 'destination')->get();
+        // យក type មកផង ដើម្បីផ្ទៀងផ្ទាត់ជាមួយ Category destination
+        $addons = Addon::select('id', 'name', 'price', 'type')->get();
+
         return view('admin.product.product_list', compact('categories', 'addons'));
     }
 
+    // 2. API: ទាញយក Products មកបង្ហាញក្នុង Table
     public function fetchProducts(Request $request)
     {
-        // Eager Load 'category' និង 'addons' ដើម្បីកុំឱ្យ Query យឺត
+        // Eager load 'addons' ដើម្បីអោយដឹងថា Product មួយណាមាន Addon អីខ្លះ (សម្រាប់ Edit)
         $query = Product::with(['category', 'addons']);
 
         if ($request->keyword) {
             $query->where('name', 'like', '%' . $request->keyword . '%');
         }
 
-        // Filter by Category
         if ($request->category_id) {
             $query->where('category_id', $request->category_id);
         }
 
-        // Sorting
         $sortBy  = $request->input('sort_by', 'created_at');
         $sortDir = $request->input('sort_dir', 'desc');
-        
-        // Handle sorting logic safely
-        if(in_array($sortBy, ['name', 'price', 'created_at', 'is_active'])) {
-            $query->orderBy($sortBy, $sortDir);
-        } else {
-            $query->latest();
-        }
+        $query->orderBy($sortBy, $sortDir);
 
         $perPage = $request->input('per_page', 10);
         $products = ($perPage === 'all') 
@@ -55,15 +50,16 @@ class ProductController extends Controller
         return response()->json($products);
     }
 
+    // 3. Create Product
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'name'        => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'price'       => 'required|numeric|min:0',
-            'image'       => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'addons'      => 'nullable|array',      // ទទួល Array នៃ Addon IDs
-            'addons.*'    => 'exists:addons,id'
+            'image'       => 'nullable|image|max:2048',
+            'addons'      => 'nullable|array', // ទទួលយក Array ID របស់ Addon
+            'addons.*'    => 'exists:addons,id',
         ]);
 
         if ($validator->fails()) {
@@ -75,7 +71,7 @@ class ProductController extends Controller
                 'name'        => $request->name,
                 'category_id' => $request->category_id,
                 'price'       => $request->price,
-                'is_active'   => true, // Default active
+                'is_active'   => true,
             ];
 
             if ($request->hasFile('image')) {
@@ -84,11 +80,12 @@ class ProductController extends Controller
 
             $product = Product::create($data);
 
-            // Sync Addons (Many-to-Many)
+            // ✅ Save Addons (Many-to-Many Relationship)
             if ($request->has('addons')) {
                 $product->addons()->sync($request->addons);
             }
 
+            // Log activity (Optional)
             if(function_exists('activity')) {
                 activity()->causedBy(auth()->user())->performedOn($product)->log('created product');
             }
@@ -97,6 +94,7 @@ class ProductController extends Controller
         });
     }
 
+    // 4. Update Product
     public function update(Request $request, $id)
     {
         $product = Product::findOrFail($id);
@@ -105,9 +103,8 @@ class ProductController extends Controller
             'name'        => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'price'       => 'required|numeric|min:0',
-            'image'       => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'image'       => 'nullable|image|max:2048',
             'addons'      => 'nullable|array',
-            'addons.*'    => 'exists:addons,id'
         ]);
 
         if ($validator->fails()) {
@@ -128,8 +125,9 @@ class ProductController extends Controller
 
             $product->save();
 
-            // Update Addons Relationship
-            // បើសិនជា user មិនបានជ្រើសរើស addon សោះ (checkbox ទំនេរ) យើងត្រូវ sync([]) ដើម្បីដក addon ចាស់ចេញ
+            // ✅ Sync Addons (Update)
+            // sync() នឹងលុបអាចាស់ចោល ហើយដាក់អាថ្មីចូល (ការពារស្ទួន)
+            // បើ $request->addons ទទេ (មិនរើសអីសោះ) វានឹងលុប Addon ចេញទាំងអស់
             $product->addons()->sync($request->addons ?? []);
 
             if(function_exists('activity')) {
@@ -140,44 +138,40 @@ class ProductController extends Controller
         });
     }
 
+    // 5. Delete Product
     public function destroy($id)
     {
         $product = Product::findOrFail($id);
-
         if ($product->image && Storage::disk('public')->exists($product->image)) {
             Storage::disk('public')->delete($product->image);
         }
-
-        // Pivot table (product_addon) នឹងលុបស្វ័យប្រវត្តិប្រសិនបើអ្នកបានដាក់ onDelete('cascade') ក្នុង Migration
-        // បើមិនដូច្នោះទេ ត្រូវដាក់ $product->addons()->detach(); នៅទីនេះ
         
+        $product->addons()->detach(); // លុបទំនាក់ទំនង Addon ចោលមុនលុប Product
         $product->delete();
 
         return response()->json(['status' => 'success', 'message' => __('messages.product_deleted')]);
     }
 
+    // 6. Bulk Delete
     public function bulkDelete(Request $request)
     {
         $products = Product::whereIn('id', $request->ids)->get();
-        $count = 0;
-
         foreach ($products as $product) {
             if ($product->image && Storage::disk('public')->exists($product->image)) {
                 Storage::disk('public')->delete($product->image);
             }
+            $product->addons()->detach();
             $product->delete();
-            $count++;
         }
-
-        return response()->json(['status' => 'success', 'message' => __('messages.bulk_delete_success', ['count' => $count])]);
+        return response()->json(['status' => 'success', 'message' => __('messages.bulk_delete_success', ['count' => count($products)])]);
     }
 
-    // Toggle Active Status
+    // 7. Toggle Status
     public function toggleStatus($id)
     {
         $product = Product::findOrFail($id);
         $product->is_active = !$product->is_active;
         $product->save();
-        return response()->json(['status' => 'success', 'message' => __('messages.status_updated')]);
+        return response()->json(['status' => 'success', 'message' => 'Status updated']);
     }
 }

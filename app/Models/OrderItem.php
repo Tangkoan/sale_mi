@@ -9,15 +9,7 @@ class OrderItem extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'order_id', 
-        'product_id', 
-        'quantity', 
-        'price', 
-        'note', 
-        'is_printed', 
-        'created_by'
-    ];
+    protected $guarded = []; // អនុញ្ញាតអោយកែគ្រប់ field
 
     // ទំនាក់ទំនង៖ មុខម្ហូបនេះស្ថិតក្នុង Order ណា
     public function order()

@@ -11,11 +11,13 @@ use App\Models\OrderItem;
 use App\Models\OrderItemAddon;
 use App\Models\Table;
 
+use App\Models\Product; // <--- កុំភ្លេច use Model Product
+
 class OrderController extends Controller
 {
     public function store(Request $request)
     {
-        // 1. Validation
+        // 1. Validation ធម្មតា
         $request->validate([
             'table_id' => 'required|exists:tables,id',
             'items'    => 'required|array|min:1',
@@ -23,13 +25,37 @@ class OrderController extends Controller
             'items.*.qty'        => 'required|integer|min:1',
         ]);
 
+        // 🔥 1. SMART CHECK (ប្រមូល List មុខម្ហូបដែលអស់)
+        $outOfStockItems = [];
+
+        foreach ($request->items as $item) {
+            $product = Product::find($item['product_id']);
+            
+            // បើផលិតផលត្រូវបានបិទ (Inactive)
+            if (!$product || !$product->is_active) {
+                $outOfStockItems[] = [
+                    'id' => $item['product_id'],
+                    'name' => $product ? $product->name : 'Unknown Item'
+                ];
+            }
+        }
+
+        // ប្រសិនបើមានមុខម្ហូបអស់ស្តុក សូម្បីតែ ១ មុខ
+        if (count($outOfStockItems) > 0) {
+            return response()->json([
+                'status' => 'out_of_stock', // ដាក់ Status ពិសេស
+                'message' => 'មុខម្ហូបខ្លះបានអស់ពីស្តុក។ ប្រព័ន្ធនឹងលុបវាចេញពីការកុម្ម៉ង់។',
+                'out_of_stock_items' => $outOfStockItems // ផ្ញើ ID ទៅឱ្យ Frontend
+            ], 422);
+        }
+
+        
         return DB::transaction(function () use ($request) {
-            // 2. ឆែកមើលថាតើតុនេះមាន Order ចាស់ដែលមិនទាន់គិតលុយទេ?
+            
             $order = Order::where('table_id', $request->table_id)
                           ->where('status', 'pending')
                           ->first();
 
-            // បើអត់មាន -> បង្កើត Order ថ្មី (Invoice)
             if (!$order) {
                 $order = Order::create([
                     'invoice_number' => 'INV-' . time() . '-' . $request->table_id,
@@ -38,14 +64,11 @@ class OrderController extends Controller
                     'status'         => 'pending',
                     'total_amount'   => 0,
                 ]);
-
-                // Update Table Status -> Busy
                 Table::where('id', $request->table_id)->update(['status' => 'busy']);
             }
 
-            // 3. បញ្ចូលមុខម្ហូប (Order Items)
             foreach ($request->items as $itemData) {
-                // បង្កើត Order Item
+                // ... (Create Order Items Logic របស់អ្នកនៅដដែល) ...
                 $orderItem = OrderItem::create([
                     'order_id'   => $order->id,
                     'product_id' => $itemData['product_id'],
@@ -53,17 +76,17 @@ class OrderController extends Controller
                     'price'      => $itemData['price'],
                     'note'       => $itemData['note'] ?? null,
                     'is_printed' => false,
+                    'status'     => 'pending', // សំខាន់សម្រាប់ KDS
                     'created_by' => Auth::id(),
                 ]);
 
-                // បញ្ចូល Addons (កែសម្រួលត្រង់នេះ)
                 if (!empty($itemData['addons'])) {
                     foreach ($itemData['addons'] as $addon) {
                         OrderItemAddon::create([
                             'order_item_id' => $orderItem->id,
                             'addon_id'      => $addon['id'],
                             'price'         => $addon['price'],
-                            'quantity'      => $addon['qty'] ?? 1 // <--- យក Qty ពី Frontend (សំខាន់!)
+                            'quantity'      => $addon['qty'] ?? 1
                         ]);
                     }
                 }

@@ -50,8 +50,8 @@
                             <span class="text-sm text-text-color">{{ __('messages.image') }}</span>
                         </label>
                         <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-page-bg rounded cursor-pointer select-none">
-                            <input type="checkbox" x-model="showCols.type" class="rounded text-primary focus:ring-primary border-input-border">
-                            <span class="text-sm text-text-color">Type</span>
+                            <input type="checkbox" x-model="showCols.destination" class="rounded text-primary focus:ring-primary border-input-border">
+                            <span class="text-sm text-text-color">Destination</span>
                         </label>
                         <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-page-bg rounded cursor-pointer select-none">
                             <input type="checkbox" x-model="showCols.created_at" class="rounded text-primary focus:ring-primary border-input-border">
@@ -95,7 +95,8 @@
                         </th>
                         <th class="px-6 py-4 font-bold" x-show="showCols.image">{{ __('messages.image') }}</th>
                         <th class="px-6 py-4 font-bold">{{ __('messages.category_name') }}</th>
-                        <th class="px-6 py-4 font-bold" x-show="showCols.type">{{ __('messages.status') }} (Type)</th>
+                        {{-- កែចំណងជើងពី Type ទៅ Destination --}}
+                        <th class="px-6 py-4 font-bold" x-show="showCols.destination">Destination (Type)</th>
                         <th class="px-6 py-4 font-bold" x-show="showCols.created_at">{{ __('messages.created_at') }}</th>
                         <th class="px-6 py-4 font-bold text-right">{{ __('messages.actions') }}</th>
                     </tr>
@@ -120,13 +121,16 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 font-bold text-text-color" x-text="item.name"></td>
-                            {{-- Type Badge --}}
-                            <td class="px-6 py-4" x-show="showCols.type">
+                            
+                            {{-- Destination Badge (Kitchen / Bar) --}}
+                            <td class="px-6 py-4" x-show="showCols.destination">
+                                {{-- ប្រើ field destination ជំនួស type --}}
                                 <span class="px-3 py-1 rounded-full text-xs font-bold capitalize"
-                                      :class="item.type === 'food' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'"
-                                      x-text="item.type">
+                                      :class="item.destination === 'kitchen' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'"
+                                      x-text="item.destination">
                                 </span>
                             </td>
+                            
                             <td class="px-6 py-4 text-secondary text-sm" x-show="showCols.created_at" x-text="new Date(item.created_at).toLocaleDateString()"></td>
                             <td class="px-6 py-4 text-right">
                                 <div class="flex justify-end gap-2">
@@ -163,7 +167,7 @@
              x-transition:enter-start="opacity-0 scale-95 translate-y-4" 
              x-transition:enter-end="opacity-100 scale-100 translate-y-0">
             
-            {{-- Modal Header with Sequence Info --}}
+            {{-- Modal Header --}}
             <div class="px-6 py-4 border-b border-border-color flex justify-between items-center" :class="isSequenceMode ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-page-bg/30'">
                 <div>
                     <h3 class="text-lg font-bold text-text-color" x-text="editMode ? '{{ __('messages.edit') }} Category' : '{{ __('messages.create') }} Category'"></h3>
@@ -185,22 +189,26 @@
                     <p x-show="errors.name" x-text="errors.name" class="text-red-500 text-xs mt-1"></p>
                 </div>
 
-                {{-- Type --}}
+                {{-- Destination Selection (Kitchen / Bar) --}}
                 <div>
-                    <label class="block text-sm font-bold text-text-color mb-1">Type (Food/Drink)</label>
+                    <label class="block text-sm font-bold text-text-color mb-1">Destination (Printer Location)</label>
                     <div class="grid grid-cols-2 gap-3">
+                        
+                        {{-- Option: Kitchen --}}
                         <label class="cursor-pointer border border-input-border rounded-lg p-3 flex items-center justify-center gap-2 transition-all"
-                               :class="form.type === 'food' ? 'bg-primary/10 border-primary text-primary' : 'hover:bg-page-bg'">
-                            <input type="radio" x-model="form.type" value="food" class="hidden">
-                            <i class="ri-restaurant-line"></i> Food
+                               :class="form.destination === 'kitchen' ? 'bg-primary/10 border-primary text-primary' : 'hover:bg-page-bg'">
+                            <input type="radio" x-model="form.destination" value="kitchen" class="hidden">
+                            <i class="ri-restaurant-line"></i> Kitchen
                         </label>
+                        
+                        {{-- Option: Bar --}}
                         <label class="cursor-pointer border border-input-border rounded-lg p-3 flex items-center justify-center gap-2 transition-all"
-                               :class="form.type === 'drink' ? 'bg-primary/10 border-primary text-primary' : 'hover:bg-page-bg'">
-                            <input type="radio" x-model="form.type" value="drink" class="hidden">
-                            <i class="ri-cup-line"></i> Drink
+                               :class="form.destination === 'bar' ? 'bg-primary/10 border-primary text-primary' : 'hover:bg-page-bg'">
+                            <input type="radio" x-model="form.destination" value="bar" class="hidden">
+                            <i class="ri-goblet-line"></i> Bar
                         </label>
                     </div>
-                    <p x-show="errors.type" x-text="errors.type" class="text-red-500 text-xs mt-1"></p>
+                    <p x-show="errors.destination" x-text="errors.destination" class="text-red-500 text-xs mt-1"></p>
                 </div>
 
                 {{-- Image Upload --}}
@@ -256,7 +264,7 @@
             // Column Visibility
             showCols: JSON.parse(localStorage.getItem('category_table_cols')) || { 
                 image: true, 
-                type: true, 
+                destination: true, // ប្តូរពី type ទៅ destination
                 created_at: true 
             },
 
@@ -265,7 +273,8 @@
             sequenceQueue: [],
             currentSeqIndex: 0,
 
-            form: { id: null, name: '', type: 'food', image: null },
+            // Form Data (Default destination is kitchen)
+            form: { id: null, name: '', destination: 'kitchen', image: null },
             imagePreview: null,
             errors: {},
 
@@ -310,7 +319,6 @@
                 }
             },
 
-            // ... (Sequence Edit Logic រក្សាទុកដដែល) ...
             startSequentialEdit() {
                 const selectedIdsString = this.selectedIds.map(id => String(id));
                 this.sequenceQueue = this.categories.filter(item => 
@@ -341,7 +349,8 @@
             loadCategoryToForm(item) {
                 this.editMode = true;
                 this.errors = {};
-                this.form = { ...item, image: null }; 
+                // បញ្ចូល destination ពី item ចូលក្នុង form
+                this.form = { ...item, image: null, destination: item.destination || 'kitchen' }; 
                 this.imagePreview = item.image ? '/storage/' + item.image : null;
             },
 
@@ -355,7 +364,8 @@
                     this.loadCategoryToForm(item);
                 } else {
                     this.editMode = false;
-                    this.form = { id: null, name: '', type: 'food', image: null };
+                    // Reset Form ជាមួយនឹង Default Destination = Kitchen
+                    this.form = { id: null, name: '', destination: 'kitchen', image: null };
                 }
             },
 
@@ -376,7 +386,8 @@
                 
                 let formData = new FormData();
                 formData.append('name', this.form.name);
-                formData.append('type', this.form.type);
+                // បញ្ជូន field destination
+                formData.append('destination', this.form.destination);
                 if (this.form.image instanceof File) {
                     formData.append('image', this.form.image);
                 }
@@ -420,34 +431,17 @@
                 finally { this.isLoading = false; }
             },
             
-            // ===========================================
-            // DELETE LOGIC (UPDATED TO USE askConfirm)
-            // ===========================================
-
-            // 1. Single Delete
+            // Delete Logic (Keep Existing)
             async confirmDelete(id) {
-                // ប្រើ askConfirm ជំនួស confirm()
-                askConfirm(async () => {
-                    await this.performDelete([id]);
-                });
+                askConfirm(async () => { await this.performDelete([id]); });
             },
-
-            // 2. Bulk Delete
             async confirmBulkDelete() {
                 if (this.selectedIds.length === 0) return;
-                
-                // ប្រើ askConfirm ជំនួស confirm()
-                askConfirm(async () => {
-                    await this.performDelete(this.selectedIds, true);
-                });
+                askConfirm(async () => { await this.performDelete(this.selectedIds, true); });
             },
-
-            // 3. Shared Perform Delete Function
             async performDelete(ids, isBulk = false) {
                 let url = isBulk ? "{{ route('admin.categories.bulk_delete') }}" : `/admin/categories/${ids[0]}`;
                 let method = isBulk ? 'POST' : 'DELETE';
-                
-                // Note: Delete method មិនត្រូវការ body ទេ ប៉ុន្តែ Bulk Delete (POST) ត្រូវការ
                 let body = isBulk ? JSON.stringify({ ids: ids }) : null;
 
                 try {

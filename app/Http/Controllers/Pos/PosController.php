@@ -26,7 +26,6 @@ class PosController extends Controller
 
     public function selectTable($id)
     {
-        // គ្រាន់តែ Redirect ទៅ Menu
         return redirect()->route('pos.menu', ['table_id' => $id]);
     }
 
@@ -38,7 +37,12 @@ class PosController extends Controller
             $q->where('is_active', true);
         }])->get();
 
-        $products = Product::where('is_active', true)->with('category')->get();
+        // 🔥 កែប្រែ៖ ត្រូវតែមាន ->with(['category', 'addons'])
+        // ដើម្បីឱ្យ Frontend ទទួលបានទិន្នន័យ Addon ដែលបាន Link ក្នុង Admin
+        $products = Product::where('is_active', true)
+                            ->with(['category', 'addons']) 
+                            ->get();
+        
         $addons = Addon::all();
 
         $currentOrder = Order::where('table_id', $table_id)
@@ -50,7 +54,6 @@ class PosController extends Controller
 
     public function getOrderDetails($table_id)
     {
-        // 1. ទាញយក Order
         $order = Order::with(['items.product', 'items.addons.addon'])
                     ->where('table_id', $table_id)
                     ->where('status', 'pending')
@@ -60,35 +63,36 @@ class PosController extends Controller
             return response()->json(['error' => 'No active order found'], 404);
         }
 
-        // 2. គណនា Total (Logic ថ្មី: Product Qty ដាច់ដោយឡែក, Addon Qty ដាច់ដោយឡែក)
         $grandTotal = 0;
 
         foreach ($order->items as $item) {
-            // តម្លៃផលិតផលគោល = Price x Qty
             $itemTotal = $item->price * $item->quantity;
-            
-            // តម្លៃ Addons = Price x Qty (របស់ Addon នីមួយៗ)
             $addonTotal = 0;
             foreach ($item->addons as $addonItem) {
-                // $addonItem->quantity គឺជា column ក្នុង table order_item_addons
                 $qty = $addonItem->quantity ?? 1; 
                 $price = $addonItem->price;
                 $addonTotal += ($price * $qty);
             }
-
             $grandTotal += ($itemTotal + $addonTotal);
         }
 
-        // 3. Shop Info
         $shop = ShopInfo::first();
 
         return response()->json([
             'order' => $order,
             'items' => $order->items,
-            'total' => $grandTotal, // តម្លៃសរុបត្រឹមត្រូវ
+            'total' => $grandTotal, 
             'invoice_number' => $order->invoice_number,
             'date' => $order->created_at->format('d/m/Y H:i'),
             'shop' => $shop
         ]);
+    }
+
+    // API: សម្រាប់អោយ Frontend ហៅឆែកមើលថាផលិតផលណាខ្លះ Active/Inactive
+    public function getProductStatuses()
+    {
+        // យកតែ id, is_active, និង price (ក្រែងលោមានការប្តូរតម្លៃភ្លាមៗដែរ)
+        $products = Product::select('id', 'is_active', 'price')->get();
+        return response()->json($products);
     }
 }

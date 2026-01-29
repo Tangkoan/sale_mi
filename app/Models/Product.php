@@ -22,4 +22,5 @@ class Product extends Model
     {
         return $this->belongsToMany(Addon::class, 'product_addon');
     }
+
 }

@@ -6,13 +6,13 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Category;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Storage; // ចាំបាច់សម្រាប់លុបរូបភាព
-use Illuminate\Support\Facades\DB;       // ចាំបាច់សម្រាប់ Transaction
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class CategoryController extends Controller
 {
     // ==========================================
-    // 1. VIEW (បង្ហាញទំព័រដើម)
+    // 1. VIEW
     // ==========================================
     public function index()
     {
@@ -20,7 +20,7 @@ class CategoryController extends Controller
     }
 
     // ==========================================
-    // 2. FETCH DATA (សម្រាប់ AJAX Table)
+    // 2. FETCH DATA
     // ==========================================
     public function fetchCategories(Request $request)
     {
@@ -31,14 +31,13 @@ class CategoryController extends Controller
             $query->where('name', 'like', '%' . $request->keyword . '%');
         }
         
-        // Filter by Type (Optional)
-        if ($request->type) {
-            $query->where('type', $request->type);
+        // Filter by Destination (កែពី type មក destination)
+        if ($request->destination) {
+            $query->where('destination', $request->destination);
         }
 
         $perPage = $request->input('per_page', 10);
         
-        // Return JSON
         $categories = ($perPage === 'all') 
             ? $query->latest()->paginate(999999) 
             : $query->latest()->paginate((int)$perPage);
@@ -53,12 +52,14 @@ class CategoryController extends Controller
     {
         // 1. Validation
         $validator = Validator::make($request->all(), [
-            'name'  => 'required|string|max:255',
-            'type'  => 'required|in:food,drink',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+            'name'        => 'required|string|max:255',
+            // ✅ កែពី type => destination និងតម្លៃ validate ទៅជា kitchen,bar
+            'destination' => 'required|in:kitchen,bar', 
+            'image'       => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ], [
             'required' => __('messages.field_required'),
             'image'    => __('messages.invalid_image'),
+            'in'       => __('messages.invalid_data'), // បើគេ hack ដាក់តម្លៃផ្សេងក្រៅពី kitchen/bar
         ]);
 
         if ($validator->fails()) {
@@ -72,19 +73,21 @@ class CategoryController extends Controller
         // 2. Save Data logic
         return DB::transaction(function () use ($request) {
             $data = [
-                'name' => $request->name,
-                'type' => $request->type,
+                'name'        => $request->name,
+                'destination' => $request->destination, // ✅ Save ចូល column destination
+                // ប្រសិនបើ table នៅមាន column 'type' ហើយមិនអាច null បាន
+                // អ្នកអាចកំណត់ Default បាន (Optional)
+                // 'type' => $request->destination == 'kitchen' ? 'food' : 'drink', 
             ];
 
             // Handle Image Upload
             if ($request->hasFile('image')) {
-                // Save ចូល folder 'storage/app/public/categories'
                 $data['image'] = $request->file('image')->store('categories', 'public');
             }
 
             $category = Category::create($data);
 
-            // Log activity (ប្រសិនបើមាន package spatie/laravel-activitylog)
+            // Log activity
             if(function_exists('activity')) {
                 activity()
                     ->causedBy(auth()->user())
@@ -107,9 +110,9 @@ class CategoryController extends Controller
         $category = Category::findOrFail($id);
 
         $validator = Validator::make($request->all(), [
-            'name'  => 'required|string|max:255',
-            'type'  => 'required|in:food,drink',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+            'name'        => 'required|string|max:255',
+            'destination' => 'required|in:kitchen,bar', // ✅ កែត្រង់នេះ
+            'image'       => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
         if ($validator->fails()) {
@@ -122,15 +125,15 @@ class CategoryController extends Controller
 
         return DB::transaction(function () use ($request, $category) {
             $category->name = $request->name;
-            $category->type = $request->type;
+            $category->destination = $request->destination; // ✅ កែត្រង់នេះ
 
             // Check if new image is uploaded
             if ($request->hasFile('image')) {
-                // 1. លុបរូបចាស់ចេញពី Storage
+                // 1. លុបរូបចាស់
                 if ($category->image && Storage::disk('public')->exists($category->image)) {
                     Storage::disk('public')->delete($category->image);
                 }
-                // 2. ដាក់រូបថ្មីចូល
+                // 2. ដាក់រូបថ្មី
                 $category->image = $request->file('image')->store('categories', 'public');
             }
 
@@ -151,18 +154,16 @@ class CategoryController extends Controller
     }
 
     // ==========================================
-    // 5. DESTROY (លុបមួយ)
+    // 5. DESTROY (លុបមួយ - មិនបាច់កែ)
     // ==========================================
     public function destroy($id)
     {
         $category = Category::findOrFail($id);
 
-        // 1. លុបរូបភាព
         if ($category->image && Storage::disk('public')->exists($category->image)) {
             Storage::disk('public')->delete($category->image);
         }
 
-        // 2. លុប Record
         $category->delete();
 
         if(function_exists('activity')) {
@@ -176,7 +177,7 @@ class CategoryController extends Controller
     }
 
     // ==========================================
-    // 6. BULK DELETE (លុបច្រើនក្នុងពេលតែមួយ)
+    // 6. BULK DELETE (លុបច្រើន - មិនបាច់កែ)
     // ==========================================
     public function bulkDelete(Request $request)
     {
@@ -189,17 +190,13 @@ class CategoryController extends Controller
             return response()->json(['status' => 'error', 'message' => __('messages.invalid_data')], 422);
         }
 
-        // ទាញយកទិន្នន័យមកសិន ដើម្បី Loop លុបរូបភាព
         $categories = Category::whereIn('id', $request->ids)->get();
         $count = 0;
 
         foreach ($categories as $category) {
-            // 1. លុបរូបភាពចេញពី Storage សម្រាប់ item នីមួយៗ
             if ($category->image && Storage::disk('public')->exists($category->image)) {
                 Storage::disk('public')->delete($category->image);
             }
-            
-            // 2. លុប Record
             $category->delete();
             $count++;
         }

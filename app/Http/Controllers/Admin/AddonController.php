@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Addon;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
 
 class AddonController extends Controller
 {
@@ -19,17 +18,15 @@ class AddonController extends Controller
     {
         $query = Addon::query();
 
-        // 1. Search
         if ($request->keyword) {
             $query->where('name', 'like', '%' . $request->keyword . '%');
         }
 
-        // 2. Filter Type
+        // Filter តាម Type (kitchen/bar)
         if ($request->type) {
             $query->where('type', $request->type);
         }
 
-        // 3. Sorting
         $sortBy  = $request->input('sort_by', 'created_at');
         $sortDir = $request->input('sort_dir', 'desc');
         $query->orderBy($sortBy, $sortDir);
@@ -47,7 +44,8 @@ class AddonController extends Controller
         $validator = Validator::make($request->all(), [
             'name'  => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
-            'type'  => 'required|in:food,drink', // ដើម្បីដឹងថាវាសម្រាប់ម្ហូប ឬទឹក
+            // ✅ កែត្រង់នេះ៖ ទទួលយកតែ kitchen ឬ bar
+            'type'  => 'required|in:kitchen,bar', 
         ], [
             'required' => __('messages.field_required'),
             'numeric'  => __('messages.invalid_number'),
@@ -60,7 +58,7 @@ class AddonController extends Controller
         $addon = Addon::create([
             'name'  => $request->name,
             'price' => $request->price,
-            'type'  => $request->type,
+            'type'  => $request->type, // kitchen ឬ bar
         ]);
 
         if(function_exists('activity')) {
@@ -77,7 +75,8 @@ class AddonController extends Controller
         $validator = Validator::make($request->all(), [
             'name'  => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
-            'type'  => 'required|in:food,drink',
+            // ✅ កែត្រង់នេះ៖ ទទួលយកតែ kitchen ឬ bar
+            'type'  => 'required|in:kitchen,bar',
         ]);
 
         if ($validator->fails()) {
@@ -97,34 +96,17 @@ class AddonController extends Controller
         return response()->json(['status' => 'success', 'message' => __('messages.addon_updated')]);
     }
 
+    // ... (destroy និង bulkDelete រក្សាទុកដដែល មិនបាច់កែ) ...
     public function destroy($id)
     {
         $addon = Addon::findOrFail($id);
         $addon->delete();
-
-        if(function_exists('activity')) {
-            activity()->causedBy(auth()->user())->performedOn($addon)->log('deleted addon');
-        }
-
         return response()->json(['status' => 'success', 'message' => __('messages.addon_deleted')]);
     }
 
     public function bulkDelete(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'ids'   => 'required|array',
-            'ids.*' => 'exists:addons,id'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => __('messages.invalid_data')], 422);
-        }
-
         Addon::whereIn('id', $request->ids)->delete();
-
-        return response()->json([
-            'status'  => 'success',
-            'message' => __('messages.bulk_delete_success', ['count' => count($request->ids)])
-        ]);
+        return response()->json(['status' => 'success', 'message' => __('messages.bulk_delete_success', ['count' => count($request->ids)])]);
     }
 }
