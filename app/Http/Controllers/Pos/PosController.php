@@ -95,4 +95,11 @@ class PosController extends Controller
         $products = Product::select('id', 'is_active', 'price')->get();
         return response()->json($products);
     }
+
+    public function getAddonStatuses()
+    {
+        // Fetch id and is_active for all addons
+        $addons = Addon::select('id', 'is_active', 'price')->get();
+        return response()->json($addons);
+    }
 }

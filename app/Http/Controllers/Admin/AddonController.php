@@ -17,6 +17,8 @@ class AddonController extends Controller
     public function fetchAddons(Request $request)
     {
         $query = Addon::query();
+        // បន្ថែម: Sort តាម Active (Active នៅលើ)
+        $query->orderBy('is_active', 'desc');
 
         if ($request->keyword) {
             $query->where('name', 'like', '%' . $request->keyword . '%');
@@ -37,6 +39,15 @@ class AddonController extends Controller
             : $query->paginate((int)$perPage);
 
         return response()->json($addons);
+    }
+
+    // បន្ថែម function ថ្មី
+    public function toggleStatus($id)
+    {
+        $addon = Addon::findOrFail($id);
+        $addon->is_active = !$addon->is_active;
+        $addon->save();
+        return response()->json(['status' => 'success', 'message' => 'Addon status updated']);
     }
 
     public function store(Request $request)

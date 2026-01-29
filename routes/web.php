@@ -311,6 +311,8 @@ Route::middleware('auth')->group(function () {
 
             Route::put('/addons/{id}', 'update')->name('addons.update')->middleware('permission:addon-edit');
             Route::delete('/addons/{id}', 'destroy')->name('addons.destroy')->middleware('permission:addon-delete');
+
+            Route::post('addons/{id}/toggle', 'toggleStatus')->name('addons.toggle');
         });
 
         // ======================
@@ -375,6 +377,8 @@ Route::middleware('auth')->group(function () {
 
         // update status
         Route::get('/products/status', [PosController::class, 'getProductStatuses'])->name('products.status');
+
+        Route::get('/addons/status', [PosController::class, 'getAddonStatuses'])->name('addons.status');
         });
 
 
