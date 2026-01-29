@@ -29,19 +29,22 @@ class PosController extends Controller
         return redirect()->route('pos.menu', ['table_id' => $id]);
     }
 
+    // =================================================================
+    // 🔥 កន្លែងដែលត្រូវកែគឺនៅត្រង់នេះ (FUNCTION MENU)
+    // =================================================================
     public function menu($table_id)
     {
         $table = Table::findOrFail($table_id);
         
-        $categories = Category::with(['products' => function($q) {
-            $q->where('is_active', true);
-        }])->get();
+        // ១. កែត្រង់នេះ៖ ដក query function ដែល filter active ចេញ
+        // ពីមុន៖ Category::with(['products' => function($q) { $q->where('is_active', true); }])->get();
+        // ឥឡូវ៖ យក Products ទាំងអស់ក្នុង Category ទោះ Active ឬអត់
+        $categories = Category::with('products')->get();
 
-        // 🔥 កែប្រែ៖ ត្រូវតែមាន ->with(['category', 'addons'])
-        // ដើម្បីឱ្យ Frontend ទទួលបានទិន្នន័យ Addon ដែលបាន Link ក្នុង Admin
-        $products = Product::where('is_active', true)
-                            ->with(['category', 'addons']) 
-                            ->get();
+        // ២. កែត្រង់នេះ៖ ដក where('is_active', true) ចេញ
+        // ដើម្បីអោយ Frontend ទទួលបានទិន្នន័យទាំងអស់ រួចចាំអោយ JS គ្រប់គ្រងការបង្ហាញ (Inactive = Gray)
+        $products = Product::with(['category', 'addons']) // ទុក with ដដែល
+                           ->get(); // យកទាំងអស់
         
         $addons = Addon::all();
 
@@ -91,14 +94,13 @@ class PosController extends Controller
     // API: សម្រាប់អោយ Frontend ហៅឆែកមើលថាផលិតផលណាខ្លះ Active/Inactive
     public function getProductStatuses()
     {
-        // យកតែ id, is_active, និង price (ក្រែងលោមានការប្តូរតម្លៃភ្លាមៗដែរ)
+        // កន្លែងនេះត្រូវហើយ គឺយកទាំងអស់ដើម្បី update status
         $products = Product::select('id', 'is_active', 'price')->get();
         return response()->json($products);
     }
 
     public function getAddonStatuses()
     {
-        // Fetch id and is_active for all addons
         $addons = Addon::select('id', 'is_active', 'price')->get();
         return response()->json($addons);
     }
