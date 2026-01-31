@@ -20,18 +20,23 @@
             <span class="text-lg sm:text-2xl font-mono font-bold text-blue-400" x-text="currentTime"></span>
         </div>
 
-        {{-- Destination Toggle (Kitchen vs Bar) --}}
-        <div class="flex bg-gray-900 p-0.5 sm:p-1 rounded-lg border border-gray-700 shrink-0">
-            <button @click="changeMode('kitchen')" 
-                    class="px-3 sm:px-6 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-bold transition-all flex items-center gap-1 sm:gap-2"
-                    :class="mode === 'kitchen' ? 'bg-orange-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'">
-                <i class="ri-restaurant-line"></i> <span class="hidden sm:inline">Kitchen</span>
-            </button>
-            <button @click="changeMode('bar')" 
-                    class="px-3 sm:px-6 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-bold transition-all flex items-center gap-1 sm:gap-2"
-                    :class="mode === 'bar' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'">
-                <i class="ri-goblet-line"></i> <span class="hidden sm:inline">Bar</span>
-            </button>
+        {{-- ✅ Destination Toggle (Dynamic Loop) --}}
+        <div class="flex bg-gray-900 p-0.5 sm:p-1 rounded-lg border border-gray-700 shrink-0 overflow-x-auto custom-scrollbar max-w-[200px] sm:max-w-md">
+            @foreach($destinations as $dest)
+                <button @click="changeMode({{ $dest->id }})" 
+                        class="px-3 sm:px-6 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-bold transition-all flex items-center gap-1 sm:gap-2 whitespace-nowrap"
+                        :class="currentDestinationId == {{ $dest->id }} ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-white'">
+                    
+                    {{-- Icon Logic based on name (Optional) --}}
+                    @if(stripos($dest->name, 'bar') !== false || stripos($dest->name, 'drink') !== false)
+                        <i class="ri-goblet-line"></i>
+                    @else
+                        <i class="ri-restaurant-line"></i>
+                    @endif
+                    
+                    <span class="hidden sm:inline">{{ $dest->name }}</span>
+                </button>
+            @endforeach
         </div>
 
         {{-- Status --}}
@@ -74,7 +79,7 @@
                     <div class="p-2 sm:p-3 flex justify-between items-start border-b border-gray-700"
                          :class="getOrderDuration(order.created_at) > 20 ? 'bg-red-900/30' : (getOrderDuration(order.created_at) > 10 ? 'bg-yellow-900/20' : 'bg-gray-800')">
                         <div>
-                            <h2 class="text-xl sm:text-2xl font-black text-white leading-none" x-text="order.table.name"></h2>
+                            <h2 class="text-xl sm:text-2xl font-black text-white leading-none" x-text="order.table ? order.table.name : 'Unknown'"></h2>
                             <p class="text-[10px] sm:text-xs text-gray-400 mt-1" x-text="'#' + order.invoice_number"></p>
                         </div>
                         <div class="text-right">
@@ -100,7 +105,7 @@
                                     <div class="flex-1 min-w-0">
                                         <p class="text-base sm:text-lg font-bold leading-tight" 
                                            :class="item.status === 'ready' ? 'line-through text-gray-500' : 'text-white'"
-                                           x-text="item.product.name"></p>
+                                           x-text="item.product ? item.product.name : 'Product Deleted'"></p>
                                     
                                         {{-- Addons --}}
                                         <template x-if="item.addons && item.addons.length > 0">
@@ -150,12 +155,16 @@
 
 {{-- SCRIPT --}}
 <script>
-    // ... [Copy the exact same script from your previous kitchen.blade.php here] ...
-    // The JavaScript logic is independent of the responsive layout changes.
     function kitchenDisplay() {
         return {
             orders: [],
-            mode: 'kitchen', 
+            
+            // ✅ កែ៖ កំណត់ ID ដោយឆែកមើលក្នុង LocalStorage មុន
+            // បើមានក្នុង LocalStorage យកអាហ្នឹង, បើអត់មានចាំយកពី PHP ($destinations->first())
+            currentDestinationId: localStorage.getItem('kitchen_active_tab') 
+                ? parseInt(localStorage.getItem('kitchen_active_tab')) 
+                : {{ $destinations->first()->id ?? 0 }}, 
+
             isLoading: false,
             currentTime: '',
             timerInterval: null,
@@ -164,8 +173,13 @@
             init() {
                 this.updateClock();
                 this.timerInterval = setInterval(() => this.updateClock(), 1000);
-                this.fetchOrders();
-                this.pollingInterval = setInterval(() => this.fetchOrders(), 5000);
+                
+                // Fetch ភ្លាមៗបើមាន ID
+                if(this.currentDestinationId !== 0) {
+                    this.fetchOrders();
+                    // Poll រៀងរាល់ 5 វិនាទី
+                    this.pollingInterval = setInterval(() => this.fetchOrders(), 5000);
+                }
             },
 
             updateClock() {
@@ -173,16 +187,25 @@
                 this.currentTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             },
 
-            changeMode(newMode) {
-                this.mode = newMode;
+            changeMode(newId) {
+                this.currentDestinationId = newId;
+                
+                // ✅ បន្ថែម៖ ពេលចុចប្តូរ Tab ត្រូវ Save ID ទុកក្នុង LocalStorage ភ្លាម
+                localStorage.setItem('kitchen_active_tab', newId);
+
                 this.orders = []; 
                 this.fetchOrders();
             },
 
             async fetchOrders() {
+                // បើគ្មាន Destination ID មិនបាច់ Fetch
+                if(this.currentDestinationId === 0) return;
+
+                // កុំបង្ហាញ Loading ញឹកពេកបើមាន Data ហើយ (Optional improvement)
                 if(this.orders.length === 0) this.isLoading = true;
+                
                 try {
-                    const response = await fetch(`{{ route('pos.kitchen.fetch') }}?destination=${this.mode}`);
+                    const response = await fetch(`{{ route('pos.kitchen.fetch') }}?kitchen_destination_id=${this.currentDestinationId}`);
                     const data = await response.json();
                     this.orders = data;
                 } catch (error) {
@@ -200,6 +223,7 @@
                         body: JSON.stringify({ item_id: itemId, status: 'ready' })
                     });
                     if (response.ok) {
+                        // Optimistic Update
                         this.orders.forEach(order => {
                             const item = order.items.find(i => i.id === itemId);
                             if(item) item.status = 'ready';
@@ -215,7 +239,7 @@
                     const response = await fetch("{{ route('pos.kitchen.done_all') }}", {
                         method: "POST",
                         headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": "{{ csrf_token() }}" },
-                        body: JSON.stringify({ order_id: orderId, destination: this.mode })
+                        body: JSON.stringify({ order_id: orderId, kitchen_destination_id: this.currentDestinationId })
                     });
                     if (response.ok) {
                         this.orders = this.orders.filter(o => o.id !== orderId);
@@ -225,15 +249,36 @@
             },
 
             getOrderDuration(createdAt) {
-                const start = new Date(createdAt).getTime();
-                const now = new Date().getTime();
-                return Math.floor((now - start) / 60000); 
+                // 1. បម្លែងម៉ោងពី Database (String) ទៅជា Date Object
+                // Laravel តែងតែផ្ញើ format មកត្រឹមត្រូវ ប៉ុន្តែយើងត្រូវប្រាកដថា JS ស្គាល់
+                const start = new Date(createdAt);
+                const now = new Date();
+
+                // 2. រកគម្លាត (Difference) គិតជា Milliseconds
+                let diffMs = now - start;
+
+                // 3. បើសិនគម្លាតអវិជ្ជមាន (ដោយសារម៉ោង Server លឿនជាង Client បន្តិចបន្តួច)
+                // យើងកំណត់វាអោយស្មើ 0 ដើម្បីកុំអោយចេញលេខ -1m
+                if (diffMs < 0) diffMs = 0;
+
+                // 4. បម្លែងទៅជានាទី (1 នាទី = 60000ms)
+                return Math.floor(diffMs / 60000); 
             },
 
             formatTimeAgo(createdAt) {
                 const mins = this.getOrderDuration(createdAt);
+
+                // បើតិចជាង 1 នាទី បង្ហាញ "Just now"
                 if (mins < 1) return 'Just now';
-                if (mins > 60) return Math.floor(mins/60) + 'h ' + (mins%60) + 'm';
+
+                // បើលើសពី 60 នាទី បង្ហាញជា ម៉ោង និង នាទី (ឧ. 1h 30m)
+                if (mins >= 60) {
+                    const h = Math.floor(mins / 60);
+                    const m = mins % 60;
+                    return h + 'h ' + m + 'm';
+                }
+
+                // ធម្មតា បង្ហាញតែនាទី (ឧ. 10m)
                 return mins + 'm';
             }
         }

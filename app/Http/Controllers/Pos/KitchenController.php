@@ -6,45 +6,54 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\KitchenDestination; // ✅ Import Model
 use Illuminate\Support\Facades\DB;
 
 class KitchenController extends Controller
 {
-    // 1. បង្ហាញទំព័រ Kitchen Screen (Blade View)
+    // 1. បង្ហាញទំព័រ Kitchen Screen
     public function index()
     {
-        return view('pos.kitchen.index'); // យើងនឹងបង្កើត View នេះនៅជំហានក្រោយ
+        // ✅ ទាញយក Destination ទាំងអស់ដើម្បីបង្កើតប៊ូតុងនៅ Frontend
+        $destinations = KitchenDestination::where('is_active', true)->get();
+        
+        return view('pos.kitchen.index', compact('destinations'));
     }
 
-    // 2. API: ទាញយក Order សម្រាប់ផ្ទះបាយ ឬ បារ (Real-time polling)
+    // 2. API: ទាញយក Order
     public function fetchOrders(Request $request)
     {
-        $destination = $request->query('destination', 'kitchen');
+        // ✅ ទទួលយក ID ជំនួសឱ្យ String
+        $destinationId = $request->query('kitchen_destination_id');
 
-        // Logic កែតម្រូវ៖ ទាញយក Order ទាំងអស់ (ទោះគិតលុយហើយក៏ដោយ)
-        // ឱ្យតែមានមុខម្ហូបដែលត្រូវនឹង Destination និងមិនទាន់ធ្វើរួច
-        $orders = Order::with(['table', 'items' => function ($query) use ($destination) {
-                $query->whereHas('product.category', function ($q) use ($destination) {
-                    $q->where('destination', $destination);
+        if (!$destinationId) {
+            return response()->json([]);
+        }
+
+        // Logic: ទាញយក Order ដែលមាន Item ត្រូវនឹង Destination ID នេះ
+        $orders = Order::with(['table', 'items' => function ($query) use ($destinationId) {
+                // Filter Items យកតែរបស់ Destination នេះ
+                $query->whereHas('product.category', function ($q) use ($destinationId) {
+                    $q->where('kitchen_destination_id', $destinationId);
                 })
                 ->whereIn('status', ['pending', 'cooking'])
                 ->with(['product', 'addons.addon']);
             }])
-            ->whereHas('items', function ($query) use ($destination) {
-                // យកតែ Order ណាដែលនៅសល់ម្ហូបមិនទាន់ធ្វើ
-                $query->whereHas('product.category', function ($q) use ($destination) {
-                    $q->where('destination', $destination);
+            ->whereHas('items', function ($query) use ($destinationId) {
+                // Filter Order យកតែ Order ណាដែលមាន Item របស់ Destination នេះ
+                $query->whereHas('product.category', function ($q) use ($destinationId) {
+                    $q->where('kitchen_destination_id', $destinationId);
                 })
                 ->whereIn('status', ['pending', 'cooking']);
             })
-            ->whereDate('created_at', today()) // បន្ថែម៖ យកតែ Order ថ្ងៃនេះ (ការពារកុំអោយ Order ចាស់ៗលោតមក)
+            ->whereDate('created_at', today())
             ->orderBy('created_at', 'asc')
             ->get();
 
         return response()->json($orders);
     }
 
-    // 3. API: ចុងភៅចុច "Done" លើមុខម្ហូបមួយមុខៗ
+    // 3. API: Update Item Status (មិនបាច់កែព្រោះប្រើ Item ID)
     public function updateItemStatus(Request $request)
     {
         $request->validate([
@@ -59,19 +68,18 @@ class KitchenController extends Controller
         return response()->json(['message' => 'Item status updated', 'status' => $item->status]);
     }
 
-    // 4. API: ចុងភៅចុច "Done All" (ធ្វើរួចមួយតុតែម្ដង)
+    // 4. API: Done All (កែសម្រួលឱ្យប្រើ ID)
     public function markOrderReady(Request $request)
     {
         $request->validate([
             'order_id' => 'required|exists:orders,id',
-            'destination' => 'required|in:kitchen,bar'
+            'kitchen_destination_id' => 'required|exists:kitchen_destinations,id' // ✅ Validate ID
         ]);
 
-        // Update គ្រប់ Item ក្នុង Order នោះ អោយទៅជា 'ready'
-        // តែតម្រូវអោយត្រូវ destination ផង (កុំអោយប៉ះរបស់ Bar ពេល Kitchen ចុច)
+        // Update គ្រប់ Item ក្នុង Order នោះ ដែលស្ថិតក្នុង Destination ID នេះ
         OrderItem::where('order_id', $request->order_id)
             ->whereHas('product.category', function($q) use ($request) {
-                $q->where('destination', $request->destination);
+                $q->where('kitchen_destination_id', $request->kitchen_destination_id);
             })
             ->update(['status' => 'ready']);
 
