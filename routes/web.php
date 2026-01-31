@@ -380,20 +380,24 @@ Route::middleware('auth')->group(function () {
             // ✅ ត្រូវតែមាន Route នេះដាច់ខាត ទើប Modal ស្គាល់ទិន្នន័យ
             Route::get('/order-details/{table_id}', [PosController::class, 'getOrderDetails'])->name('order.details');
             // Route សម្រាប់ Checkout
-            Route::post('/order/checkout', [App\Http\Controllers\Pos\OrderController::class, 'checkout'])->name('order.checkout');
+            Route::post('/order/checkout', [OrderController::class, 'checkout'])->name('order.checkout');
+
+
+            Route::post('/order/update-item', [OrderController::class, 'updateItem'])->name('order.update-item');
+            Route::post('/order/update-addon', [OrderController::class, 'updateAddon'])->name('order.update-addon');
 
             // === KITCHEN & BAR ROUTES ===
-        // ទំព័រដើមសម្រាប់មើលអេក្រង់
-        Route::get('/kitchen', [KitchenController::class, 'index'])->name('kitchen.view'); 
-        // APIs សម្រាប់ហៅដោយ JavaScript (AJAX)
-        Route::get('/kitchen/fetch', [KitchenController::class, 'fetchOrders'])->name('kitchen.fetch');
-        Route::post('/kitchen/update-item', [KitchenController::class, 'updateItemStatus'])->name('kitchen.update_item');
-        Route::post('/kitchen/done-all', [KitchenController::class, 'markOrderReady'])->name('kitchen.done_all');
+            // ទំព័រដើមសម្រាប់មើលអេក្រង់
+            Route::get('/kitchen', [KitchenController::class, 'index'])->name('kitchen.view'); 
+            // APIs សម្រាប់ហៅដោយ JavaScript (AJAX)
+            Route::get('/kitchen/fetch', [KitchenController::class, 'fetchOrders'])->name('kitchen.fetch');
+            Route::post('/kitchen/update-item', [KitchenController::class, 'updateItemStatus'])->name('kitchen.update_item');
+            Route::post('/kitchen/done-all', [KitchenController::class, 'markOrderReady'])->name('kitchen.done_all');
 
-        // update status
-        Route::get('/products/status', [PosController::class, 'getProductStatuses'])->name('products.status');
+            // update status
+            Route::get('/products/status', [PosController::class, 'getProductStatuses'])->name('products.status');
 
-        Route::get('/addons/status', [PosController::class, 'getAddonStatuses'])->name('addons.status');
+            Route::get('/addons/status', [PosController::class, 'getAddonStatuses'])->name('addons.status');
         });
 
 // Exchange Rate
