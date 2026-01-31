@@ -4,9 +4,7 @@
 
 <div class="w-full h-full px-1 py-1" x-data="addonManagement()">
     
-    {{-- =========================================== --}}
-    {{-- 1. HEADER & ACTIONS                         --}}
-    {{-- =========================================== --}}
+    {{-- 1. HEADER & ACTIONS --}}
     <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">
         <div>
             <h1 class="text-2xl font-bold text-text-color flex items-center gap-2">
@@ -17,7 +15,7 @@
 
         <div class="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
             
-            {{-- Selected Actions (Edit Sequence & Bulk Delete) --}}
+            {{-- Selected Actions --}}
             <div x-show="selectedIds.length > 0" x-transition 
                  class="flex items-center gap-2 mr-2 w-full sm:w-auto justify-between sm:justify-start bg-white dark:bg-gray-800 p-1 rounded-lg border border-border-color shadow-sm">
                  <span class="text-xs font-bold text-primary bg-primary/10 px-2 py-1.5 rounded ml-1" x-text="selectedIds.length + ' {{ __('messages.selected_items') }}'"></span>
@@ -37,31 +35,16 @@
                 </div>
             </div>
 
-            {{-- Column Visibility --}}
-            <div class="relative w-full sm:w-auto" x-data="{ openCol: false }">
-                <button @click="openCol = !openCol" @click.outside="openCol = false" 
-                        class="w-full sm:w-auto flex justify-center items-center gap-2 px-3 py-2.5 bg-card-bg border border-input-border rounded-xl text-text-color hover:bg-input-bg transition text-sm font-medium shadow-sm">
-                    <i class="ri-layout-column-line"></i> <span class="sm:hidden lg:inline">{{ __('messages.columns') }}</span>
-                </button>
-                <div x-show="openCol" class="absolute right-0 mt-2 w-48 bg-card-bg border border-border-color rounded-xl shadow-xl z-50 p-2" style="display: none;" x-transition>
-                    <div class="space-y-1">
-                        <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-page-bg rounded cursor-pointer select-none">
-                            <input type="checkbox" x-model="showCols.name" class="rounded text-primary focus:ring-primary border-input-border">
-                            <span class="text-sm text-text-color">{{ __('messages.addon_name') }}</span>
-                        </label>
-                        <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-page-bg rounded cursor-pointer select-none">
-                            <input type="checkbox" x-model="showCols.price" class="rounded text-primary focus:ring-primary border-input-border">
-                            <span class="text-sm text-text-color">{{ __('messages.price') }}</span>
-                        </label>
-                        <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-page-bg rounded cursor-pointer select-none">
-                            <input type="checkbox" x-model="showCols.type" class="rounded text-primary focus:ring-primary border-input-border">
-                            <span class="text-sm text-text-color">Destination</span>
-                        </label>
-                        <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-page-bg rounded cursor-pointer select-none">
-                            <input type="checkbox" x-model="showCols.created_at" class="rounded text-primary focus:ring-primary border-input-border">
-                            <span class="text-sm text-text-color">{{ __('messages.created_at') }}</span>
-                        </label>
-                    </div>
+            {{-- Filter Destination (Optional Filter Dropdown) --}}
+            <div class="relative w-full sm:w-40">
+                <select x-model="filterDestination" @change="fetchAddons()" class="w-full px-3 py-2.5 rounded-xl border border-input-border bg-card-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm shadow-sm appearance-none">
+                    <option value="">All Destinations</option>
+                    <template x-for="dest in destinations" :key="dest.id">
+                        <option :value="dest.id" x-text="dest.name"></option>
+                    </template>
+                </select>
+                <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                    <i class="ri-arrow-down-s-line text-secondary"></i>
                 </div>
             </div>
 
@@ -88,9 +71,7 @@
         </div>
     </div>
 
-    {{-- =========================================== --}}
-    {{-- 2. TABLE LIST                               --}}
-    {{-- =========================================== --}}
+    {{-- 2. TABLE LIST --}}
     <div class="bg-card-bg rounded-xl shadow-custom border border-border-color overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
@@ -101,56 +82,30 @@
                         </th>
                         
                         {{-- Name --}}
-                        <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" 
-                            @click="sort('name')" x-show="showCols.name">
+                        <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" @click="sort('name')">
                             <div class="flex items-center gap-1">
                                 {{ __('messages.addon_name') }}
-                                <div class="flex flex-col text-[10px] leading-[0.5] opacity-50 group-hover:opacity-100">
-                                    <i class="ri-arrow-up-s-fill" :class="sortBy === 'name' && sortDir === 'asc' ? 'text-primary' : ''"></i>
-                                    <i class="ri-arrow-down-s-fill" :class="sortBy === 'name' && sortDir === 'desc' ? 'text-primary' : ''"></i>
-                                </div>
+                                <i class="ri-arrow-up-down-fill text-[10px] opacity-50 group-hover:opacity-100" :class="{'text-primary opacity-100': sortBy === 'name'}"></i>
                             </div>
                         </th>
 
                         {{-- Price --}}
-                        <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" 
-                            @click="sort('price')" x-show="showCols.price">
+                        <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" @click="sort('price')">
                             <div class="flex items-center gap-1">
                                 {{ __('messages.price') }}
-                                <div class="flex flex-col text-[10px] leading-[0.5] opacity-50 group-hover:opacity-100">
-                                    <i class="ri-arrow-up-s-fill" :class="sortBy === 'price' && sortDir === 'asc' ? 'text-primary' : ''"></i>
-                                    <i class="ri-arrow-down-s-fill" :class="sortBy === 'price' && sortDir === 'desc' ? 'text-primary' : ''"></i>
-                                </div>
+                                <i class="ri-arrow-up-down-fill text-[10px] opacity-50 group-hover:opacity-100" :class="{'text-primary opacity-100': sortBy === 'price'}"></i>
                             </div>
                         </th>
 
-                        {{-- Type (Kitchen/Bar) --}}
-                        <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" 
-                            @click="sort('type')" x-show="showCols.type">
+                        {{-- Destination --}}
+                        <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" @click="sort('destination')">
                             <div class="flex items-center gap-1">
-                                Destination (Type)
-                                <div class="flex flex-col text-[10px] leading-[0.5] opacity-50 group-hover:opacity-100">
-                                    <i class="ri-arrow-up-s-fill" :class="sortBy === 'type' && sortDir === 'asc' ? 'text-primary' : ''"></i>
-                                    <i class="ri-arrow-down-s-fill" :class="sortBy === 'type' && sortDir === 'desc' ? 'text-primary' : ''"></i>
-                                </div>
+                                Destination
+                                <i class="ri-arrow-up-down-fill text-[10px] opacity-50 group-hover:opacity-100" :class="{'text-primary opacity-100': sortBy === 'destination'}"></i>
                             </div>
                         </th>
 
-                        {{-- ✅ NEW: Status Column --}}
                         <th class="px-6 py-4 font-bold">{{ __('messages.status') }}</th>
-
-                        {{-- Date --}}
-                        <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" 
-                            @click="sort('created_at')" x-show="showCols.created_at">
-                            <div class="flex items-center gap-1">
-                                {{ __('messages.created_at') }}
-                                <div class="flex flex-col text-[10px] leading-[0.5] opacity-50 group-hover:opacity-100">
-                                    <i class="ri-arrow-up-s-fill" :class="sortBy === 'created_at' && sortDir === 'asc' ? 'text-primary' : ''"></i>
-                                    <i class="ri-arrow-down-s-fill" :class="sortBy === 'created_at' && sortDir === 'desc' ? 'text-primary' : ''"></i>
-                                </div>
-                            </div>
-                        </th>
-
                         <th class="px-6 py-4 font-bold text-right">{{ __('messages.actions') }}</th>
                     </tr>
                 </thead>
@@ -161,44 +116,37 @@
                                 <input type="checkbox" :value="item.id" x-model="selectedIds" class="rounded border-input-border text-primary focus:ring-primary h-4 w-4">
                             </td>
                             
-                            {{-- Name --}}
-                            <td class="px-6 py-4 font-bold text-text-color" x-text="item.name" x-show="showCols.name"></td>
-                            
-                            {{-- Price --}}
-                            <td class="px-6 py-4 font-bold text-primary" x-text="'$' + parseFloat(item.price).toFixed(2)" x-show="showCols.price"></td>
+                            <td class="px-6 py-4 font-bold text-text-color" x-text="item.name"></td>
+                            <td class="px-6 py-4 font-bold text-primary" x-text="'$' + parseFloat(item.price).toFixed(2)"></td>
 
-                            {{-- Type --}}
-                            <td class="px-6 py-4" x-show="showCols.type">
-                                <span class="px-3 py-1 rounded-full text-xs font-bold capitalize"
-                                      :class="item.type === 'kitchen' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'"
-                                      x-text="item.type">
-                                </span>
+                            {{-- Destination Badge --}}
+                            <td class="px-6 py-4">
+                                <template x-if="item.destination">
+                                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-600 border border-blue-200 inline-flex items-center gap-1">
+                                        <i class="ri-printer-line text-sm"></i>
+                                        <span x-text="item.destination.name"></span>
+                                    </span>
+                                </template>
+                                <template x-if="!item.destination">
+                                    <span class="text-xs text-gray-400 italic">No Destination</span>
+                                </template>
                             </td>
 
-                            {{-- ✅ NEW: Status Toggle --}}
+                            {{-- Status --}}
                             <td class="px-6 py-4">
                                 <button @click="toggleStatus(item.id)" 
                                         class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
                                         :class="(item.is_active == 1 || item.is_active == true) ? 'bg-green-500' : 'bg-gray-300'">
                                     <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm"
-                                        :class="(item.is_active == 1 || item.is_active == true) ? 'translate-x-6' : 'translate-x-1'"></span>
+                                          :class="(item.is_active == 1 || item.is_active == true) ? 'translate-x-6' : 'translate-x-1'"></span>
                                 </button>
                             </td>
 
-                            {{-- Date --}}
-                            <td class="px-6 py-4 text-secondary text-sm" x-text="new Date(item.created_at).toLocaleDateString()" x-show="showCols.created_at"></td>
-                            
                             {{-- Actions --}}
                             <td class="px-6 py-4 text-right">
                                 <div class="flex justify-end gap-2">
-                                    <button @can('addon-edit') @click="openModal('edit', item)" @endcan
-                                            class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100">
-                                            <i class="ri-pencil-line"></i>
-                                    </button>
-                                    <button @can('addon-delete') @click="confirmDelete(item.id)" @endcan
-                                            class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-red-50 text-red-600 hover:bg-red-100">
-                                            <i class="ri-delete-bin-line"></i>
-                                    </button>
+                                    <button @can('addon-edit') @click="openModal('edit', item)" @endcan class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100"><i class="ri-pencil-line"></i></button>
+                                    <button @can('addon-delete') @click="confirmDelete(item.id)" @endcan class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-red-50 text-red-600 hover:bg-red-100"><i class="ri-delete-bin-line"></i></button>
                                 </div>
                             </td>
                         </tr>
@@ -215,9 +163,7 @@
         <x-pagination />
     </div>
 
-    {{-- =========================================== --}}
-    {{-- 3. CREATE / EDIT MODAL                      --}}
-    {{-- =========================================== --}}
+    {{-- 3. CREATE / EDIT MODAL --}}
     <div x-show="isModalOpen" style="display: none;" class="fixed inset-0 z-[100] flex items-center justify-center px-4" x-cloak>
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal()"></div>
 
@@ -239,7 +185,6 @@
             </div>
             
             <form @submit.prevent="submitForm" class="p-6 space-y-4">
-                
                 {{-- Name --}}
                 <div>
                     <label class="block text-sm font-bold text-text-color mb-1">{{ __('messages.addon_name') }}</label>
@@ -254,22 +199,21 @@
                     <p x-show="errors.price" x-text="errors.price" class="text-red-500 text-xs mt-1"></p>
                 </div>
 
-                {{-- Type --}}
+                {{-- ✅ Destination Dropdown --}}
                 <div>
-                    <label class="block text-sm font-bold text-text-color mb-1">Destination (Type)</label>
-                    <div class="grid grid-cols-2 gap-3">
-                        <label class="cursor-pointer border border-input-border rounded-lg p-3 flex items-center justify-center gap-2 transition-all"
-                               :class="form.type === 'kitchen' ? 'bg-primary/10 border-primary text-primary' : 'hover:bg-page-bg'">
-                            <input type="radio" x-model="form.type" value="kitchen" class="hidden">
-                            <i class="ri-restaurant-line"></i> Kitchen
-                        </label>
-                        <label class="cursor-pointer border border-input-border rounded-lg p-3 flex items-center justify-center gap-2 transition-all"
-                               :class="form.type === 'bar' ? 'bg-primary/10 border-primary text-primary' : 'hover:bg-page-bg'">
-                            <input type="radio" x-model="form.type" value="bar" class="hidden">
-                            <i class="ri-cup-line"></i> Bar
-                        </label>
+                    <label class="block text-sm font-bold text-text-color mb-1">Destination</label>
+                    <div class="relative">
+                        <select x-model="form.kitchen_destination_id" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none appearance-none">
+                            <option value="">Select Destination</option>
+                            <template x-for="dest in destinations" :key="dest.id">
+                                <option :value="dest.id" x-text="dest.name"></option>
+                            </template>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                            <i class="ri-arrow-down-s-line text-secondary"></i>
+                        </div>
                     </div>
-                    <p x-show="errors.type" x-text="errors.type" class="text-red-500 text-xs mt-1"></p>
+                    <p x-show="errors.kitchen_destination_id" x-text="errors.kitchen_destination_id" class="text-red-500 text-xs mt-1"></p>
                 </div>
 
                 <div class="pt-4 flex justify-between items-center border-t border-border-color mt-2">
@@ -280,7 +224,7 @@
 
                     <div class="flex gap-3">
                         <button type="button" @click="closeModal(true)" class="px-4 py-2 rounded-lg border border-input-border text-text-color hover:bg-page-bg transition">{{ __('messages.cancel') }}</button>
-                        <button type="submit" class="bg-primary text-white px-6 py-2 rounded-lg hover:opacity-90 transition flex items-center gap-2" :disabled="isLoading">
+                        <button type="submit" class="bg-primary text-white px-6 py-2 rounded-lg hover:opacity-90 transition flex items-center gap-2 shadow-lg shadow-primary/30" :disabled="isLoading">
                             <i x-show="isLoading" class="ri-loader-4-line animate-spin"></i>
                             <span x-text="isSequenceMode ? (currentSeqIndex + 1 === sequenceQueue.length ? '{{ __('messages.finish') }}' : '{{ __('messages.save_and_next') }}') : (editMode ? '{{ __('messages.update') }}' : '{{ __('messages.save') }}')"></span>
                         </button>
@@ -295,7 +239,10 @@
     function addonManagement() {
         return {
             addons: [],
+            // ✅ Destinations List
+            destinations: @json($destinations), 
             search: '',
+            filterDestination: '', // Filter by destination
             perPage: '10',
             currentPage: 1, 
             pagination: { last_page: 1, total: 0 }, 
@@ -305,29 +252,24 @@
             selectedIds: [],
             selectAll: false,
 
-            // Config
-            showCols: JSON.parse(localStorage.getItem('addon_table_cols')) || { name: true, price: true, type: true, created_at: true },
             sortBy: 'created_at',
             sortDir: 'desc',
 
-            // Sequence Edit
             isSequenceMode: false,
             sequenceQueue: [],
             currentSeqIndex: 0,
 
-            // Form
-            form: { id: null, name: '', price: '', type: 'kitchen' },
+            // ✅ Form (kitchen_destination_id)
+            form: { id: null, name: '', price: '', kitchen_destination_id: '' },
             errors: {},
 
-            init() { 
-                this.$watch('showCols', (value) => { localStorage.setItem('addon_table_cols', JSON.stringify(value)); });
-                this.fetchAddons(); 
-            },
+            init() { this.fetchAddons(); },
 
             async fetchAddons() {
                 let url = "{{ route('admin.addons.fetch') }}";
                 const params = new URLSearchParams({
                     keyword: this.search,
+                    kitchen_destination_id: this.filterDestination, // ✅ Send destination filter
                     per_page: this.perPage,
                     page: this.currentPage,
                     sort_by: this.sortBy,
@@ -352,49 +294,29 @@
             },
 
             gotoPage(page) { this.currentPage = page; this.fetchAddons(); },
-            changePage(url) { if(url) this.fetchAddons(); },
-
+            
             toggleSelectAll() { this.selectedIds = this.selectAll ? this.addons.map(t => t.id) : []; },
 
-            // ✅ កែសម្រួល៖ Toggle Status (Optimistic Update)
             async toggleStatus(id) {
-                // ១. រកមើលទីតាំងរបស់ Addon ក្នុង Array
                 const index = this.addons.findIndex(item => item.id === id);
                 if (index === -1) return;
-
-                // ២. ទុកតម្លៃដើមសិន (ក្រែងលោ Server Error យើងប្ដូរមកវិញ)
                 const originalState = this.addons[index].is_active;
-
-                // ៣. ប្ដូរស្ថានភាពភ្លាមៗ (កុំអាលចាំ Server) -> ធ្វើអោយប៊ូតុងដើរលឿន
-                // បើ 1 ប្ដូរទៅ 0, បើ 0 ប្ដូរទៅ 1
                 this.addons[index].is_active = (originalState == 1 || originalState == true) ? 0 : 1;
 
                 try {
-                    // ៤. ផ្ញើទៅ Server
                     const response = await fetch(`/admin/addons/${id}/toggle`, {
                         method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') 
-                        }
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }
                     });
-
                     if (!response.ok) throw new Error('Failed');
-
-                    // ៥. Success
                     window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Status updated successfully' } }));
-                    
-                    // មិនបាច់ហៅ this.fetchAddons() ទៀតទេ ព្រោះយើងបាន Update ក្នុង Array ខាងលើរួចហើយ
-                    
                 } catch(e) { 
                     console.error(e);
-                    // ៦. បើមានបញ្ហា (Error) -> ប្ដូរមកស្ថានភាពដើមវិញ
                     this.addons[index].is_active = originalState;
                     window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Failed to update status' } }));
                 }
             },
 
-            // Sequence Logic (Preserved)
             startSequentialEdit() {
                 const selectedIdsString = this.selectedIds.map(id => String(id));
                 this.sequenceQueue = this.addons.filter(item => selectedIdsString.includes(String(item.id)));
@@ -421,7 +343,13 @@
             loadDataToForm(item) {
                 this.editMode = true;
                 this.errors = {};
-                this.form = { ...item };
+                // ✅ Load kitchen_destination_id
+                this.form = { 
+                    id: item.id, 
+                    name: item.name, 
+                    price: item.price, 
+                    kitchen_destination_id: item.kitchen_destination_id || '' 
+                };
             },
 
             openModal(mode, item = null) {
@@ -432,7 +360,8 @@
                     this.loadDataToForm(item);
                 } else {
                     this.editMode = false;
-                    this.form = { id: null, name: '', price: '', type: 'kitchen' };
+                    // Reset Form
+                    this.form = { id: null, name: '', price: '', kitchen_destination_id: '' };
                 }
             },
 
@@ -448,6 +377,7 @@
             async submitForm() {
                 this.isLoading = true;
                 this.errors = {};
+                
                 let url = this.editMode ? `/admin/addons/${this.form.id}` : "{{ route('admin.addons.store') }}";
                 let method = this.editMode ? 'PUT' : 'POST';
 

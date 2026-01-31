@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\TableController;
 use App\Http\Controllers\Admin\AddonController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\KitchenDestinationController;
 
 use App\Http\Controllers\Pos\PosController;
 use App\Http\Controllers\Pos\OrderController; // <--- កុំភ្លេច Import
@@ -333,6 +334,18 @@ Route::middleware('auth')->group(function () {
             Route::post('/products/{id}/toggle', 'toggleStatus')->name('products.toggle')->middleware('permission:product-edit');
         });
 
+
+        // ======================
+        // Destinations CRUD
+        // ======================
+        Route::controller(AddonController::class)->group(function () {
+            Route::get('/destinations', [KitchenDestinationController::class, 'index'])->name('destinations.index');
+            Route::get('/destinations/fetch', [KitchenDestinationController::class, 'fetchDestinations'])->name('destinations.fetch');
+            Route::post('/destinations/store', [KitchenDestinationController::class, 'store'])->name('destinations.store');
+            Route::post('/destinations/{id}', [KitchenDestinationController::class, 'update'])->name('destinations.update'); // For Edit
+            Route::post('/destinations/{id}/delete', [KitchenDestinationController::class, 'destroy'])->name('destinations.delete');
+            Route::post('/destinations/bulk-delete', [KitchenDestinationController::class, 'bulkDelete'])->name('destinations.bulk_delete');
+        });
         
         
         

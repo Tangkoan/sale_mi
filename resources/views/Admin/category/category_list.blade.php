@@ -15,20 +15,18 @@
 
         <div class="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
             
-            {{-- Selected Actions (Bulk Delete & Edit Sequence) --}}
+            {{-- Selected Actions --}}
             <div x-show="selectedIds.length > 0" x-transition 
                  class="flex items-center gap-2 mr-2 w-full sm:w-auto justify-between sm:justify-start bg-white dark:bg-gray-800 p-1 rounded-lg border border-border-color shadow-sm">
                  <span class="text-xs font-bold text-primary bg-primary/10 px-2 py-1.5 rounded ml-1" x-text="selectedIds.length + ' {{ __('messages.selected_items') }}'"></span>
                 
                 <div class="flex gap-1">
-                    {{-- Edit Sequence Button --}}
                     @can('category-edit')
                     <button @click="startSequentialEdit()" class="text-sm font-bold text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-md transition" title="{{ __('messages.edit_sequence') }}">
                         <i class="ri-edit-circle-line"></i>
                     </button>
                     @endcan
 
-                    {{-- Bulk Delete Button --}}
                     @can('category-delete')
                     <button @click="confirmBulkDelete()" class="text-sm font-bold text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-md transition" title="{{ __('messages.delete_selected') }}">
                         <i class="ri-delete-bin-line"></i>
@@ -37,7 +35,7 @@
                 </div>
             </div>
 
-            {{-- Column Visibility Toggle --}}
+            {{-- Column Visibility --}}
             <div class="relative w-full sm:w-auto" x-data="{ openCol: false }">
                 <button @click="openCol = !openCol" @click.outside="openCol = false" 
                         class="w-full sm:w-auto flex justify-center items-center gap-2 px-3 py-2.5 bg-card-bg border border-input-border rounded-xl text-text-color hover:bg-input-bg transition text-sm font-medium shadow-sm">
@@ -95,8 +93,8 @@
                         </th>
                         <th class="px-6 py-4 font-bold" x-show="showCols.image">{{ __('messages.image') }}</th>
                         <th class="px-6 py-4 font-bold">{{ __('messages.category_name') }}</th>
-                        {{-- កែចំណងជើងពី Type ទៅ Destination --}}
-                        <th class="px-6 py-4 font-bold" x-show="showCols.destination">Destination (Type)</th>
+                        {{-- Destination Column --}}
+                        <th class="px-6 py-4 font-bold" x-show="showCols.destination">Destination</th>
                         <th class="px-6 py-4 font-bold" x-show="showCols.created_at">{{ __('messages.created_at') }}</th>
                         <th class="px-6 py-4 font-bold text-right">{{ __('messages.actions') }}</th>
                     </tr>
@@ -122,13 +120,14 @@
                             </td>
                             <td class="px-6 py-4 font-bold text-text-color" x-text="item.name"></td>
                             
-                            {{-- Destination Badge (Kitchen / Bar) --}}
+                            {{-- ✅ កែ៖ បង្ហាញ Destination Name ពី Relationship --}}
                             <td class="px-6 py-4" x-show="showCols.destination">
-                                {{-- ប្រើ field destination ជំនួស type --}}
-                                <span class="px-3 py-1 rounded-full text-xs font-bold capitalize"
-                                      :class="item.destination === 'kitchen' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'"
-                                      x-text="item.destination">
+                                <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-600 border border-blue-200 inline-flex items-center gap-1"
+                                      x-show="item.destination">
+                                    <i class="ri-printer-line text-sm"></i>
+                                    <span x-text="item.destination ? item.destination.name : 'N/A'"></span>
                                 </span>
+                                <span x-show="!item.destination" class="text-xs text-secondary italic">Not Assigned</span>
                             </td>
                             
                             <td class="px-6 py-4 text-secondary text-sm" x-show="showCols.created_at" x-text="new Date(item.created_at).toLocaleDateString()"></td>
@@ -167,7 +166,6 @@
              x-transition:enter-start="opacity-0 scale-95 translate-y-4" 
              x-transition:enter-end="opacity-100 scale-100 translate-y-0">
             
-            {{-- Modal Header --}}
             <div class="px-6 py-4 border-b border-border-color flex justify-between items-center" :class="isSequenceMode ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-page-bg/30'">
                 <div>
                     <h3 class="text-lg font-bold text-text-color" x-text="editMode ? '{{ __('messages.edit') }} Category' : '{{ __('messages.create') }} Category'"></h3>
@@ -180,7 +178,7 @@
                 <button @click="closeModal(true)" class="text-secondary hover:text-text-color"><i class="ri-close-line text-xl"></i></button>
             </div>
             
-            <form @submit.prevent="submitForm" class="p-6 space-y-4">
+            <form @submit.prevent="submitForm" class="p-6 space-y-5">
                 
                 {{-- Name --}}
                 <div>
@@ -189,41 +187,39 @@
                     <p x-show="errors.name" x-text="errors.name" class="text-red-500 text-xs mt-1"></p>
                 </div>
 
-                {{-- Destination Selection (Kitchen / Bar) --}}
+                {{-- ✅ កែ៖ Destination Selection (Dropdown from Table) --}}
                 <div>
                     <label class="block text-sm font-bold text-text-color mb-1">Destination (Printer Location)</label>
-                    <div class="grid grid-cols-2 gap-3">
-                        
-                        {{-- Option: Kitchen --}}
-                        <label class="cursor-pointer border border-input-border rounded-lg p-3 flex items-center justify-center gap-2 transition-all"
-                               :class="form.destination === 'kitchen' ? 'bg-primary/10 border-primary text-primary' : 'hover:bg-page-bg'">
-                            <input type="radio" x-model="form.destination" value="kitchen" class="hidden">
-                            <i class="ri-restaurant-line"></i> Kitchen
-                        </label>
-                        
-                        {{-- Option: Bar --}}
-                        <label class="cursor-pointer border border-input-border rounded-lg p-3 flex items-center justify-center gap-2 transition-all"
-                               :class="form.destination === 'bar' ? 'bg-primary/10 border-primary text-primary' : 'hover:bg-page-bg'">
-                            <input type="radio" x-model="form.destination" value="bar" class="hidden">
-                            <i class="ri-goblet-line"></i> Bar
-                        </label>
+                    <div class="relative">
+                        <select x-model="form.kitchen_destination_id" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none appearance-none">
+                            <option value="">Select Destination</option>
+                            <template x-for="dest in destinations" :key="dest.id">
+                                <option :value="dest.id" x-text="dest.name"></option>
+                            </template>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                            <i class="ri-arrow-down-s-line text-secondary"></i>
+                        </div>
                     </div>
-                    <p x-show="errors.destination" x-text="errors.destination" class="text-red-500 text-xs mt-1"></p>
+                    <p x-show="errors.kitchen_destination_id" x-text="errors.kitchen_destination_id" class="text-red-500 text-xs mt-1"></p>
                 </div>
 
                 {{-- Image Upload --}}
                 <div>
                     <label class="block text-sm font-bold text-text-color mb-1">{{ __('messages.image') }}</label>
-                    <div class="flex items-center gap-4">
-                        <div class="h-16 w-16 rounded-lg bg-gray-100 border border-border-color overflow-hidden flex-shrink-0">
+                    <div class="flex items-center gap-4 p-3 border border-dashed border-input-border rounded-xl bg-page-bg/30">
+                        <div class="h-16 w-16 rounded-lg bg-gray-100 border border-border-color overflow-hidden flex-shrink-0 relative group">
                             <template x-if="imagePreview">
                                 <img :src="imagePreview" class="w-full h-full object-cover">
                             </template>
                             <template x-if="!imagePreview">
-                                <div class="w-full h-full flex items-center justify-center text-secondary"><i class="ri-image-add-line"></i></div>
+                                <div class="w-full h-full flex items-center justify-center text-secondary bg-white"><i class="ri-image-add-line text-2xl"></i></div>
                             </template>
                         </div>
-                        <input type="file" @change="handleFileUpload" accept="image/*" class="text-sm text-secondary file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20">
+                        <div class="flex-1">
+                            <input type="file" @change="handleFileUpload" accept="image/*" class="block w-full text-sm text-secondary file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-primary file:text-white hover:file:bg-primary/90 cursor-pointer">
+                            <p class="text-[10px] text-secondary mt-1">Supported: JPEG, PNG, JPG (Max 2MB)</p>
+                        </div>
                     </div>
                     <p x-show="errors.image" x-text="errors.image" class="text-red-500 text-xs mt-1"></p>
                 </div>
@@ -236,7 +232,7 @@
 
                     <div class="flex gap-3">
                         <button type="button" @click="closeModal(true)" class="px-4 py-2 rounded-lg border border-input-border text-text-color hover:bg-page-bg transition">{{ __('messages.cancel') }}</button>
-                        <button type="submit" class="bg-primary text-white px-6 py-2 rounded-lg hover:opacity-90 transition flex items-center gap-2" :disabled="isLoading">
+                        <button type="submit" class="bg-primary text-white px-6 py-2 rounded-lg hover:opacity-90 transition flex items-center gap-2 shadow-lg shadow-primary/30" :disabled="isLoading">
                             <i x-show="isLoading" class="ri-loader-4-line animate-spin"></i>
                             <span x-text="isSequenceMode ? (currentSeqIndex + 1 === sequenceQueue.length ? '{{ __('messages.finish') }}' : '{{ __('messages.save_and_next') }}') : (editMode ? '{{ __('messages.update') }}' : '{{ __('messages.save') }}')"></span>
                         </button>
@@ -251,6 +247,8 @@
     function categoryManagement() {
         return {
             categories: [],
+            // ✅ បន្ថែម៖ List សម្រាប់ Dropdown
+            destinations: @json($destinations), 
             search: '',
             perPage: '10',
             currentPage: 1, 
@@ -261,20 +259,18 @@
             selectedIds: [],
             selectAll: false,
 
-            // Column Visibility
             showCols: JSON.parse(localStorage.getItem('category_table_cols')) || { 
                 image: true, 
-                destination: true, // ប្តូរពី type ទៅ destination
+                destination: true, 
                 created_at: true 
             },
 
-            // Sequence Edit Variables
             isSequenceMode: false,
             sequenceQueue: [],
             currentSeqIndex: 0,
 
-            // Form Data (Default destination is kitchen)
-            form: { id: null, name: '', destination: 'kitchen', image: null },
+            // ✅ កែ៖ form.kitchen_destination_id
+            form: { id: null, name: '', kitchen_destination_id: '', image: null },
             imagePreview: null,
             errors: {},
 
@@ -349,8 +345,8 @@
             loadCategoryToForm(item) {
                 this.editMode = true;
                 this.errors = {};
-                // បញ្ចូល destination ពី item ចូលក្នុង form
-                this.form = { ...item, image: null, destination: item.destination || 'kitchen' }; 
+                // ✅ កែ៖ load kitchen_destination_id
+                this.form = { ...item, image: null, kitchen_destination_id: item.kitchen_destination_id || '' }; 
                 this.imagePreview = item.image ? '/storage/' + item.image : null;
             },
 
@@ -364,8 +360,8 @@
                     this.loadCategoryToForm(item);
                 } else {
                     this.editMode = false;
-                    // Reset Form ជាមួយនឹង Default Destination = Kitchen
-                    this.form = { id: null, name: '', destination: 'kitchen', image: null };
+                    // Reset Form
+                    this.form = { id: null, name: '', kitchen_destination_id: '', image: null };
                 }
             },
 
@@ -386,8 +382,8 @@
                 
                 let formData = new FormData();
                 formData.append('name', this.form.name);
-                // បញ្ជូន field destination
-                formData.append('destination', this.form.destination);
+                // ✅ កែ៖ append kitchen_destination_id
+                formData.append('kitchen_destination_id', this.form.kitchen_destination_id);
                 if (this.form.image instanceof File) {
                     formData.append('image', this.form.image);
                 }
@@ -431,7 +427,6 @@
                 finally { this.isLoading = false; }
             },
             
-            // Delete Logic (Keep Existing)
             async confirmDelete(id) {
                 askConfirm(async () => { await this.performDelete([id]); });
             },

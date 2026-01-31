@@ -9,7 +9,7 @@ class Product extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['category_id', 'name', 'price', 'image', 'is_active'];
+    protected $guarded = []; // អនុញ្ញាតអោយកែគ្រប់ field
 
     // ទំនាក់ទំនង៖ Product ស្ថិតក្នុង Category មួយ
     public function category()

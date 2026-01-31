@@ -5,61 +5,67 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Category;
+use App\Models\KitchenDestination; // ✅ Import Model ថ្មី
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 
 class CategoryController extends Controller
 {
-    // ==========================================
-    // 1. VIEW
-    // ==========================================
     public function index()
     {
-        return view('admin.category.category_list');
+        // ✅ យក Destinations ទាំងអស់មកប្រើក្នុង Dropdown
+        $destinations = KitchenDestination::select('id', 'name')->get();
+        return view('admin.category.category_list', compact('destinations'));
     }
 
-    // ==========================================
-    // 2. FETCH DATA
-    // ==========================================
     public function fetchCategories(Request $request)
     {
-        $query = Category::query();
+        // ✅ កែសម្រួល៖ Eager Load 'destination' relationship
+        // ដើម្បីឱ្យ Frontend អាចហៅ item.destination.name បាន
+        $query = Category::with('destination'); 
 
-        // Search Keyword
+        // 1. Search Keyword
         if ($request->keyword) {
             $query->where('name', 'like', '%' . $request->keyword . '%');
         }
         
-        // Filter by Destination (កែពី type មក destination)
+        // 2. Filter Destination (បើមាន)
         if ($request->destination) {
-            $query->where('destination', $request->destination);
+            // Filter តាម relationship ឬ column ID ផ្ទាល់
+            // បើ $request->destination គឺជា ID (លេខ):
+            $query->where('kitchen_destination_id', $request->destination);
         }
 
+        // 3. Handle Sorting
+        $sortBy = $request->input('sort_by', 'created_at');
+        $sortDir = $request->input('sort_dir', 'desc');
+        
+        // បើ Sort តាម destination name (មិនមែន ID) អាចនឹងត្រូវការ join table
+        // ប៉ុន្តែសម្រាប់ពេលនេះ sort តាម ID ឬ column ធម្មតាសិន
+        $query->orderBy($sortBy, $sortDir);
+
+        // 4. Pagination
         $perPage = $request->input('per_page', 10);
         
         $categories = ($perPage === 'all') 
-            ? $query->latest()->paginate(999999) 
-            : $query->latest()->paginate((int)$perPage);
+            ? $query->paginate(999999) 
+            : $query->paginate((int)$perPage);
 
         return response()->json($categories);
     }
 
-    // ==========================================
-    // 3. STORE (បង្កើតថ្មី)
-    // ==========================================
     public function store(Request $request)
     {
-        // 1. Validation
         $validator = Validator::make($request->all(), [
-            'name'        => 'required|string|max:255',
-            // ✅ កែពី type => destination និងតម្លៃ validate ទៅជា kitchen,bar
-            'destination' => 'required|in:kitchen,bar', 
-            'image'       => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+            'name'                   => 'required|string|max:255',
+            // ✅ Validate foreign key
+            'kitchen_destination_id' => 'required|exists:kitchen_destinations,id', 
+            'image'                  => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ], [
             'required' => __('messages.field_required'),
             'image'    => __('messages.invalid_image'),
-            'in'       => __('messages.invalid_data'), // បើគេ hack ដាក់តម្លៃផ្សេងក្រៅពី kitchen/bar
+            'exists'   => __('messages.invalid_data'),
         ]);
 
         if ($validator->fails()) {
@@ -70,24 +76,18 @@ class CategoryController extends Controller
             ], 422);
         }
 
-        // 2. Save Data logic
         return DB::transaction(function () use ($request) {
             $data = [
-                'name'        => $request->name,
-                'destination' => $request->destination, // ✅ Save ចូល column destination
-                // ប្រសិនបើ table នៅមាន column 'type' ហើយមិនអាច null បាន
-                // អ្នកអាចកំណត់ Default បាន (Optional)
-                // 'type' => $request->destination == 'kitchen' ? 'food' : 'drink', 
+                'name'                   => $request->name,
+                'kitchen_destination_id' => $request->kitchen_destination_id, // ✅ Save ID
             ];
 
-            // Handle Image Upload
             if ($request->hasFile('image')) {
                 $data['image'] = $request->file('image')->store('categories', 'public');
             }
 
             $category = Category::create($data);
 
-            // Log activity
             if(function_exists('activity')) {
                 activity()
                     ->causedBy(auth()->user())
@@ -102,17 +102,14 @@ class CategoryController extends Controller
         });
     }
 
-    // ==========================================
-    // 4. UPDATE (កែប្រែ)
-    // ==========================================
     public function update(Request $request, $id)
     {
         $category = Category::findOrFail($id);
 
         $validator = Validator::make($request->all(), [
-            'name'        => 'required|string|max:255',
-            'destination' => 'required|in:kitchen,bar', // ✅ កែត្រង់នេះ
-            'image'       => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+            'name'                   => 'required|string|max:255',
+            'kitchen_destination_id' => 'required|exists:kitchen_destinations,id',
+            'image'                  => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
         if ($validator->fails()) {
@@ -125,15 +122,12 @@ class CategoryController extends Controller
 
         return DB::transaction(function () use ($request, $category) {
             $category->name = $request->name;
-            $category->destination = $request->destination; // ✅ កែត្រង់នេះ
+            $category->kitchen_destination_id = $request->kitchen_destination_id; // ✅ Update ID
 
-            // Check if new image is uploaded
             if ($request->hasFile('image')) {
-                // 1. លុបរូបចាស់
                 if ($category->image && Storage::disk('public')->exists($category->image)) {
                     Storage::disk('public')->delete($category->image);
                 }
-                // 2. ដាក់រូបថ្មី
                 $category->image = $request->file('image')->store('categories', 'public');
             }
 
@@ -153,46 +147,24 @@ class CategoryController extends Controller
         });
     }
 
-    // ==========================================
-    // 5. DESTROY (លុបមួយ - មិនបាច់កែ)
-    // ==========================================
+    // ... Destroy & BulkDelete នៅដដែល ...
     public function destroy($id)
     {
         $category = Category::findOrFail($id);
-
         if ($category->image && Storage::disk('public')->exists($category->image)) {
             Storage::disk('public')->delete($category->image);
         }
-
         $category->delete();
-
         if(function_exists('activity')) {
             activity()->causedBy(auth()->user())->performedOn($category)->log('deleted category');
         }
-
-        return response()->json([
-            'status'  => 'success',
-            'message' => __('messages.category_deleted')
-        ]);
+        return response()->json(['status' => 'success', 'message' => __('messages.category_deleted')]);
     }
 
-    // ==========================================
-    // 6. BULK DELETE (លុបច្រើន - មិនបាច់កែ)
-    // ==========================================
     public function bulkDelete(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'ids'   => 'required|array',
-            'ids.*' => 'exists:categories,id'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => __('messages.invalid_data')], 422);
-        }
-
         $categories = Category::whereIn('id', $request->ids)->get();
         $count = 0;
-
         foreach ($categories as $category) {
             if ($category->image && Storage::disk('public')->exists($category->image)) {
                 Storage::disk('public')->delete($category->image);
@@ -200,10 +172,6 @@ class CategoryController extends Controller
             $category->delete();
             $count++;
         }
-
-        return response()->json([
-            'status'  => 'success',
-            'message' => __('messages.bulk_delete_success', ['count' => $count])
-        ]);
+        return response()->json(['status' => 'success', 'message' => __('messages.bulk_delete_success', ['count' => $count])]);
     }
 }

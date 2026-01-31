@@ -5,33 +5,44 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Addon;
+use App\Models\KitchenDestination; // ✅ Import Model
 use Illuminate\Support\Facades\Validator;
 
 class AddonController extends Controller
 {
     public function index()
     {
-        return view('admin.addon.addon_list');
+        // ✅ យក Destinations ទាំងអស់ដើម្បីដាក់ក្នុង Dropdown ពេលបង្កើត Addon
+        $destinations = KitchenDestination::where('is_active', true)->select('id', 'name')->get();
+        return view('admin.addon.addon_list', compact('destinations'));
     }
 
     public function fetchAddons(Request $request)
     {
-        $query = Addon::query();
-        // បន្ថែម: Sort តាម Active (Active នៅលើ)
+        // ✅ Eager Load Relationship ឈ្មោះ 'destination' (ត្រូវប្រាកដថា Model Addon មាន function destination())
+        $query = Addon::with('destination'); 
+
+        // Sort តាម Active (Active នៅលើគេ)
         $query->orderBy('is_active', 'desc');
 
         if ($request->keyword) {
             $query->where('name', 'like', '%' . $request->keyword . '%');
         }
 
-        // Filter តាម Type (kitchen/bar)
-        if ($request->type) {
-            $query->where('type', $request->type);
+        // ✅ Filter តាម kitchen_destination_id (ជំនួស type)
+        if ($request->kitchen_destination_id) {
+            $query->where('kitchen_destination_id', $request->kitchen_destination_id);
         }
 
         $sortBy  = $request->input('sort_by', 'created_at');
         $sortDir = $request->input('sort_dir', 'desc');
-        $query->orderBy($sortBy, $sortDir);
+        
+        // ប្រសិនបើ Sort តាម destination, យើងតម្រៀបតាម ID ជំនួសសិន (Simple Sort)
+        if ($sortBy === 'destination') {
+            $query->orderBy('kitchen_destination_id', $sortDir);
+        } else {
+            $query->orderBy($sortBy, $sortDir);
+        }
 
         $perPage = $request->input('per_page', 10);
         $addons = ($perPage === 'all') 
@@ -41,7 +52,6 @@ class AddonController extends Controller
         return response()->json($addons);
     }
 
-    // បន្ថែម function ថ្មី
     public function toggleStatus($id)
     {
         $addon = Addon::findOrFail($id);
@@ -53,13 +63,14 @@ class AddonController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name'  => 'required|string|max:255',
-            'price' => 'required|numeric|min:0',
-            // ✅ កែត្រង់នេះ៖ ទទួលយកតែ kitchen ឬ bar
-            'type'  => 'required|in:kitchen,bar', 
+            'name'                   => 'required|string|max:255',
+            'price'                  => 'required|numeric|min:0',
+            // ✅ Validate ID ពី Table kitchen_destinations
+            'kitchen_destination_id' => 'required|exists:kitchen_destinations,id', 
         ], [
             'required' => __('messages.field_required'),
             'numeric'  => __('messages.invalid_number'),
+            'exists'   => __('messages.invalid_data'),
         ]);
 
         if ($validator->fails()) {
@@ -67,9 +78,10 @@ class AddonController extends Controller
         }
 
         $addon = Addon::create([
-            'name'  => $request->name,
-            'price' => $request->price,
-            'type'  => $request->type, // kitchen ឬ bar
+            'name'                   => $request->name,
+            'price'                  => $request->price,
+            'kitchen_destination_id' => $request->kitchen_destination_id, // ✅ Save ID
+            'is_active'              => true
         ]);
 
         if(function_exists('activity')) {
@@ -84,10 +96,10 @@ class AddonController extends Controller
         $addon = Addon::findOrFail($id);
 
         $validator = Validator::make($request->all(), [
-            'name'  => 'required|string|max:255',
-            'price' => 'required|numeric|min:0',
-            // ✅ កែត្រង់នេះ៖ ទទួលយកតែ kitchen ឬ bar
-            'type'  => 'required|in:kitchen,bar',
+            'name'                   => 'required|string|max:255',
+            'price'                  => 'required|numeric|min:0',
+            // ✅ Validate ID
+            'kitchen_destination_id' => 'required|exists:kitchen_destinations,id',
         ]);
 
         if ($validator->fails()) {
@@ -95,9 +107,9 @@ class AddonController extends Controller
         }
 
         $addon->update([
-            'name'  => $request->name,
-            'price' => $request->price,
-            'type'  => $request->type,
+            'name'                   => $request->name,
+            'price'                  => $request->price,
+            'kitchen_destination_id' => $request->kitchen_destination_id, // ✅ Update ID
         ]);
 
         if(function_exists('activity')) {
@@ -107,7 +119,6 @@ class AddonController extends Controller
         return response()->json(['status' => 'success', 'message' => __('messages.addon_updated')]);
     }
 
-    // ... (destroy និង bulkDelete រក្សាទុកដដែល មិនបាច់កែ) ...
     public function destroy($id)
     {
         $addon = Addon::findOrFail($id);
