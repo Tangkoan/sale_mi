@@ -12,6 +12,8 @@ use App\Http\Controllers\Admin\RoleAssignmentRuleController;
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\ShopInfoController;
 
+use App\Http\Controllers\Admin\ExchangeRateController;
+
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\TableController;
 use App\Http\Controllers\Admin\AddonController;
@@ -394,7 +396,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/addons/status', [PosController::class, 'getAddonStatuses'])->name('addons.status');
         });
 
-
-
+// Exchange Rate
+Route::prefix('system/exchange-rate')->name('system.exchange-rate.')->group(function () {
+    Route::get('/get', [ExchangeRateController::class, 'getCurrentRate'])->name('get');
+    Route::post('/update', [ExchangeRateController::class, 'updateRate'])->name('update');
+    Route::get('/fetch-nbc', [ExchangeRateController::class, 'fetchFromNBC'])->name('fetch-nbc');
+});
 
 // require __DIR__.'/auth.php'; // បិទចោលសិន កុំអោយជាន់គ្នាជាមួយ Custom Auth របស់យើង
