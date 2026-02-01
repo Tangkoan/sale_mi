@@ -125,7 +125,102 @@ class OrderController extends Controller
         });
     }
 
-    // Helper function ដើម្បីគណនាតម្លៃសរុប
+    
+
+    public function checkout(Request $request)
+    {
+        $request->validate([
+            'order_id'       => 'required|exists:orders,id',
+            'received_amount'=> 'required|numeric|min:0',
+            'payment_method' => 'required|in:cash,qr,card',
+            'items'          => 'required|array', // ត្រូវការ items ដើម្បី update ចុងក្រោយ
+        ]);
+
+        return DB::transaction(function () use ($request) {
+            $order = Order::with('items.addons')->findOrFail($request->order_id);
+
+            if ($order->status == 'completed') {
+                return response()->json(['status' => 'error', 'message' => 'Order is already paid!'], 400);
+            }
+
+            // =========================================================
+            // ជំហានទី ១: SYNC ITEMS (Update តាមអ្វីដែល user កែលើ​ screen)
+            // =========================================================
+            
+            // 1. ប្រមូល ID របស់ Items ដែល client ផ្ញើមក
+            $submittedItemIds = collect($request->items)->pluck('id')->filter()->toArray();
+
+            // 2. លុប Items ណាដែលក្នុង DB មាន តែ Client អត់មាន (មានន័យថាគេលុបចោល)
+            OrderItem::where('order_id', $order->id)
+                     ->whereNotIn('id', $submittedItemIds)
+                     ->delete(); 
+
+            // 3. Update ចំនួន Items និង Addons ដែលនៅសល់
+            foreach ($request->items as $itemData) {
+                $item = OrderItem::find($itemData['id']);
+                if ($item) {
+                    $item->update(['quantity' => $itemData['quantity']]);
+
+                    if (!empty($itemData['addons'])) {
+                        $submittedAddonIds = collect($itemData['addons'])->pluck('id')->toArray();
+                        
+                        // លុប Addon ចោល
+                        OrderItemAddon::where('order_item_id', $item->id)
+                                      ->whereNotIn('id', $submittedAddonIds)
+                                      ->delete();
+
+                        // Update Addon Qty
+                        foreach ($itemData['addons'] as $addonData) {
+                            OrderItemAddon::where('id', $addonData['id'])
+                                          ->update(['quantity' => $addonData['quantity']]);
+                        }
+                    } else {
+                        // លុប Addons ទាំងអស់បើគេដកអស់
+                        $item->addons()->delete();
+                    }
+                }
+            }
+
+            // =========================================================
+            // ជំហានទី ២: PROCESS PAYMENT
+            // =========================================================
+
+            // គណនាលុយឡើងវិញ (Server Side Calculation)
+            $totalAmount = $this->recalculateOrderTotal($order->id);
+            
+            $change = $request->received_amount - $totalAmount;
+
+            // ផ្ទៀងផ្ទាត់លុយ
+            if ($request->payment_method == 'cash' && round($change, 2) < 0) {
+                DB::rollBack(); 
+                return response()->json(['status' => 'error', 'message' => 'Not enough cash received!'], 422);
+            }
+
+            // Update Order
+            $order->update([
+                'status'          => 'completed',
+                'total_amount'    => $totalAmount,
+                'payment_method'  => $request->payment_method,
+                'received_amount' => $request->received_amount,
+                'change_amount'   => $change,
+                'paid_at'         => now(),
+            ]);
+
+            // ទំនេរតុ
+            if ($order->table_id) {
+                Table::where('id', $order->table_id)->update(['status' => 'available']);
+            }
+
+            return response()->json([
+                'status'   => 'success',
+                'message'  => 'Payment successful!',
+                'order_id' => $order->id,
+                'change'   => $change,
+            ]);
+        });
+    }
+
+    // Helper Function
     private function recalculateOrderTotal($orderId)
     {
         $order = Order::with(['items.addons'])->find($orderId);
@@ -135,58 +230,13 @@ class OrderController extends Controller
             $itemTotal = $item->price * $item->quantity;
             $addonTotal = 0;
             foreach ($item->addons as $addon) {
-                $addonTotal += ($addon->price * ($addon->quantity ?? 1)); // Addon គុណនឹង qty ម្ហូប ឬ qty addon ផ្ទាល់
+                $addonTotal += ($addon->price * ($addon->quantity ?? 1));
             }
-            // ភាគច្រើន Addon គុណនឹងចំនួនម្ហូប (item quantity) បើគិតបែបនោះ៖
-            // $addonTotal = $addonTotal * $item->quantity; 
-            
             $totalAmount += ($itemTotal + $addonTotal);
         }
 
         $order->update(['total_amount' => $totalAmount]);
         return $totalAmount;
-    }
-
-    public function checkout(Request $request)
-    {
-        $request->validate([
-            'table_id' => 'required|exists:tables,id',
-            'received_amount' => 'required|numeric|min:0',
-            'payment_method' => 'required|in:cash,qr,card',
-        ]);
-
-        return DB::transaction(function () use ($request) {
-            $order = Order::where('table_id', $request->table_id)
-                          ->where('status', 'pending')
-                          ->firstOrFail();
-
-            // ហៅ Function គណនាលុយដើម្បីយកតម្លៃចុងក្រោយបំផុត
-            $totalAmount = $this->recalculateOrderTotal($order->id);
-
-            $change = $request->received_amount - $totalAmount;
-
-            // Allow payment if exact match or greater (Floating point fix applied in logic usually)
-            if ($request->payment_method == 'cash' && round($change, 2) < 0) {
-                return response()->json(['message' => 'Not enough cash received!'], 422);
-            }
-
-            $order->update([
-                'status' => 'completed',
-                'total_amount' => $totalAmount,
-                'payment_method' => $request->payment_method,
-                'received_amount' => $request->received_amount,
-                'change_amount' => $change,
-                'paid_at' => now(),
-            ]);
-
-            Table::where('id', $request->table_id)->update(['status' => 'available']);
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Payment successful!',
-                'change' => $change,
-            ]);
-        });
     }
 
     public function updateAddon(Request $request)

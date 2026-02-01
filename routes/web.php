@@ -374,7 +374,7 @@ Route::middleware('auth')->group(function () {
             // ORDER ROUTES (បន្ថែមថ្មី)
             // ======================
             Route::post('/order/store', [OrderController::class, 'store'])->name('order.store');
-            Route::post('/order/checkout', [OrderController::class, 'checkout'])->name('order.checkout');
+            Route::post('/checkout', [OrderController::class, 'checkout'])->name('pos.order.checkout');
 
     
             // ✅ ត្រូវតែមាន Route នេះដាច់ខាត ទើប Modal ស្គាល់ទិន្នន័យ

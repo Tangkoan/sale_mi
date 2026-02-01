@@ -1,22 +1,39 @@
 <script>
     function posTables() {
         return {
+            // ==========================================
+            // 1. DATA (STATE)
+            // ==========================================
             tables: [],
             isLoading: false,
             interval: null,
+            
+            // Modal State
             isCheckoutModalOpen: false,
             isLoadingOrder: false,
             isProcessing: false,
+            
+            // Order Data
             selectedTable: null,
-            orderDetails: { items: [], total: 0, invoice_number: '' },
             paymentMethod: 'cash',
             receivedAmount: '',
-            exchangeRate: 4100, // អត្រាប្ដូរប្រាក់ (អាចកែនៅទីនេះ ឬទាញពី DB)
+            exchangeRate: 4100,
+            
+            orderDetails: {
+                id: null,
+                items: [],
+                total: 0,
+                invoice_number: '',
+                shop: null 
+            },
 
+            // ==========================================
+            // 2. INIT & TABLE LOADING
+            // ==========================================
             init() {
                 this.fetchTables();
                 this.interval = setInterval(() => { 
-                    if (!this.isCheckoutModalOpen) this.fetchTables(true); 
+                    if(!this.isCheckoutModalOpen) this.fetchTables(true); 
                 }, 5000);
             },
 
@@ -29,132 +46,171 @@
                 finally { if (!silent) this.isLoading = false; }
             },
 
-            // គណនាលុយរៀល
             get totalRiel() {
                 const total = parseFloat(this.orderDetails.total || 0);
-                return Math.ceil(total * this.exchangeRate).toLocaleString('km-KH'); // Round up and format
+                return Math.ceil(total * this.exchangeRate).toLocaleString('km-KH');
             },
-
-            async openQuickCheckout(table) {
-                this.selectedTable = table;
-                this.isCheckoutModalOpen = true;
-                this.isLoadingOrder = true;
-                this.paymentMethod = 'cash';
-                this.receivedAmount = '';
-                await this.fetchOrderDetails(table.id);
-            },
-
-            async fetchOrderDetails(tableId) {
-                try {
-                    const response = await fetch(`/pos/order-details/${tableId}`);
-                    if (!response.ok) throw new Error("Order not found");
-                    this.orderDetails = await response.json();
-                    
-                    // Auto fill received amount if it's empty or was equal to previous total
-                    if(this.receivedAmount === '' || this.receivedAmount == 0) {
-                         this.receivedAmount = this.orderDetails.total; 
+            
+            recalculateTotalLocal() {
+                let total = 0;
+                this.orderDetails.items.forEach(item => {
+                    let itemTotal = parseFloat(item.price) * parseInt(item.quantity);
+                    let addonTotal = 0;
+                    if (item.addons) {
+                        item.addons.forEach(ad => {
+                            addonTotal += parseFloat(ad.price) * parseInt(ad.quantity || 1);
+                        });
                     }
+                    total += itemTotal + addonTotal;
+                });
+                this.orderDetails.total = total;
+            },
+
+            // ==========================================
+            // 3. OPEN CHECKOUT
+            // ==========================================
+            async openQuickCheckout(table) {
+                if (table.status === 'available') {
+                    this.showToast('តុនេះទំនេរ សូមធ្វើការកម្មង់ជាមុនសិន', 'warning');
+                    return;
+                }
+
+                this.isLoading = true;
+                try {
+                    const response = await fetch(`/pos/order-details/${table.id}`);
+                    if (!response.ok) throw new Error("Order not found");
+                    const data = await response.json();
+
+                    this.orderDetails = {
+                        ...data.order,
+                        items: data.items,
+                        shop: data.shop || null,
+                        total: parseFloat(data.order.total_amount || 0)
+                    };
+
+                    this.selectedTable = table;
+                    this.receivedAmount = this.orderDetails.total; // Auto fill amount
+                    this.paymentMethod = 'cash';
+                    this.isCheckoutModalOpen = true;
+
                 } catch (error) {
                     console.error("Cannot load order:", error);
-                    // បើគ្មាន Order, Reset
-                    this.orderDetails = { items: [], total: 0 };
+                    this.showToast("មានបញ្ហាក្នុងការទាញទិន្នន័យ Order", 'error');
                 } finally {
-                    this.isLoadingOrder = false;
+                    this.isLoading = false;
                 }
             },
 
-            // 🔥 FUNCTION សម្រាប់កែចំនួន និងលុប
-            async updateItemQty(itemId, action) {
-                // បិទការចុចស្ទួនៗ
-                if (this.isLoadingOrder) return;
-                this.isLoadingOrder = true; // Show loading state on details
+            // ==========================================
+            // 4. ITEM LOGIC
+            // ==========================================
+            updateItemQty(itemId, action) {
+                let index = this.orderDetails.items.findIndex(i => i.id === itemId);
+                if (index === -1) return;
+                let item = this.orderDetails.items[index];
 
-                try {
-                    const response = await fetch("{{ route('pos.order.update-item') }}", {
-                        method: "POST",
-                        headers: { 
-                            "Content-Type": "application/json", 
-                            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute('content') 
-                        },
-                        body: JSON.stringify({ item_id: itemId, action: action })
-                    });
-                    
-                    if (response.ok) {
-                        // Reload order details to reflect DB changes
-                        await this.fetchOrderDetails(this.selectedTable.id);
-                        // Reset received amount to new total automatically for convenience
-                        this.receivedAmount = this.orderDetails.total; 
-                    } else {
-                        alert("Update failed");
+                if (action === 'increase') item.quantity++;
+                else if (action === 'decrease') {
+                    if (item.quantity > 1) item.quantity--;
+                    else this.orderDetails.items.splice(index, 1);
+                } else if (action === 'remove') {
+                    this.orderDetails.items.splice(index, 1);
+                }
+                this.recalculateTotalLocal();
+            },
+
+            updateAddonQty(addonId, action) {
+                for (let item of this.orderDetails.items) {
+                    if (item.addons) {
+                        let addonIndex = item.addons.findIndex(a => a.id === addonId);
+                        if (addonIndex !== -1) {
+                            let addon = item.addons[addonIndex];
+                            if (action === 'increase') addon.quantity++;
+                            else if (action === 'decrease') {
+                                if (addon.quantity > 1) addon.quantity--;
+                                else item.addons.splice(addonIndex, 1);
+                            } else if (action === 'remove') item.addons.splice(addonIndex, 1);
+                            this.recalculateTotalLocal();
+                            return;
+                        }
                     }
-                } catch (error) {
-                    console.error(error);
-                } finally {
-                    this.isLoadingOrder = false;
                 }
             },
 
-
-            // 🔥 FUNCTION សម្រាប់កែចំនួនAddon
-            async updateAddonQty(addonRowId, action) {
-                if (this.isLoadingOrder) return;
-                this.isLoadingOrder = true;
-
-                try {
-                    const response = await fetch("{{ route('pos.order.update-addon') }}", {
-                        method: "POST",
-                        headers: { 
-                            "Content-Type": "application/json", 
-                            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute('content') 
-                        },
-                        body: JSON.stringify({ addon_row_id: addonRowId, action: action })
-                    });
-                    
-                    if (response.ok) {
-                        await this.fetchOrderDetails(this.selectedTable.id);
-                        this.receivedAmount = this.orderDetails.total; // Update តម្លៃដែលត្រូវបង់
-                    } else {
-                        alert("Update Addon Failed");
-                    }
-                } catch (error) {
-                    console.error(error);
-                } finally {
-                    this.isLoadingOrder = false;
-                }
-            },
-
+            // ==========================================
+            // 5. PAYMENT & PRINT LOGIC
+            // ==========================================
             async processPayment() {
+                // Validation
+                if (this.paymentMethod === 'cash' && (parseFloat(this.receivedAmount || 0) < parseFloat(this.orderDetails.total))) {
+                    this.showToast('ទឹកប្រាក់ទទួលបានមិនគ្រប់គ្រាន់!', 'error');
+                    return;
+                }
+
+                if (this.orderDetails.items.length === 0) {
+                     if(!confirm('ការបញ្ជាទិញគ្មានទិន្នន័យ។ តើអ្នកចង់ Cancel Order នេះទេ?')) return;
+                }
+
                 this.isProcessing = true;
                 try {
-                    const response = await fetch("{{ route('pos.order.checkout') }}", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
+                    const response = await fetch('/pos/checkout', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
+                        },
                         body: JSON.stringify({
-                            table_id: this.selectedTable.id,
+                            order_id: this.orderDetails.id,
+                            table_id: this.orderDetails.table_id,
                             received_amount: this.receivedAmount,
-                            payment_method: this.paymentMethod
+                            payment_method: this.paymentMethod,
+                            items: this.orderDetails.items
                         })
                     });
-                    
-                    const result = await response.json();
 
-                    if (response.ok) {
+                    const data = await response.json();
+
+                    if (response.ok && data.status === 'success') {
+                        // 1. បិទ Modal ដើម្បីត្រឡប់ទៅ Page Table វិញ
                         this.isCheckoutModalOpen = false;
-                        setTimeout(() => window.print(), 300);
-                        window.onafterprint = () => { this.fetchTables(); };
-                        setTimeout(() => { this.fetchTables(); }, 3000);
+                        
+                        // 2. បង្ហាញ Toast Message
+                        this.showToast(`✅ ការទូទាត់ជោគជ័យ! លុយអាប់: $${parseFloat(data.change).toFixed(2)}`, 'success');
+                        
+                        // 3. Refresh ទិន្នន័យតុ (អោយវាចេញពណ៌បៃតងវិញ)
+                        this.fetchTables();
+                        
+                        // 4. PRINT RECEIPT (ផ្នែកសំខាន់)
+                        // យើងរង់ចាំ 300ms ដើម្បីអោយ Modal បិទជិតសិន ចាំបើកផ្ទាំង Print
+                        setTimeout(() => {
+                            window.print();
+                        }, 500);
+
                     } else {
-                        alert(result.message || "Payment Failed!");
+                        this.showToast(data.message || 'Payment Failed', 'error');
                     }
                 } catch (error) {
                     console.error(error);
-                    alert("Error processing payment.");
+                    this.showToast('System Error: សូមព្យាយាមម្តងទៀត', 'error');
                 } finally {
                     this.isProcessing = false;
                 }
+            },
+
+            // ==========================================
+            // 6. TOAST HELPER FUNCTION
+            // ==========================================
+            showToast(message, type = 'success') {
+                // Dispatch Event ទៅកាន់ Component Toast របស់អ្នក
+                // ឈ្មោះ event 'notify' នេះអាចប្រែប្រួលទៅតាមកូដក្នុង toast.blade.php របស់អ្នក
+                // បើ component អ្នកប្រើឈ្មោះផ្សេង សូមប្តូរត្រង់នេះ (ឧ. 'toast-show', 'flash-message')
+                window.dispatchEvent(new CustomEvent('notify', { 
+                    detail: { 
+                        message: message, 
+                        type: type 
+                    } 
+                }));
             }
-
-
         }
     }
 </script>
