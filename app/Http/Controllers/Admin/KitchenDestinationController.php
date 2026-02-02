@@ -14,13 +14,12 @@ class KitchenDestinationController extends Controller
         return view('admin.destination.list');
     }
 
-    
-
     public function store(Request $request)
     {
+        // កែ Validation ពី IP ទៅជា Integer ឬ String ធម្មតា
         $validator = Validator::make($request->all(), [
-            'name'       => 'required|string|max:255',
-            'printer_ip' => 'nullable|ip',
+            'name'         => 'required|string|max:255',
+            'printnode_id' => 'nullable|numeric', // PrintNode ID ជាលេខ
         ]);
 
         if ($validator->fails()) {
@@ -29,7 +28,7 @@ class KitchenDestinationController extends Controller
 
         KitchenDestination::create([
             'name' => $request->name,
-            'printer_ip' => $request->printer_ip,
+            'printnode_id' => $request->printnode_id, // ប្ដូរ field
         ]);
 
         return response()->json(['status' => 'success', 'message' => 'Destination created successfully']);
@@ -40,8 +39,8 @@ class KitchenDestinationController extends Controller
         $destination = KitchenDestination::findOrFail($id);
         
         $validator = Validator::make($request->all(), [
-            'name'       => 'required|string|max:255',
-            'printer_ip' => 'nullable|ip',
+            'name'         => 'required|string|max:255',
+            'printnode_id' => 'nullable|numeric',
         ]);
 
         if ($validator->fails()) {
@@ -50,7 +49,7 @@ class KitchenDestinationController extends Controller
 
         $destination->update([
             'name' => $request->name,
-            'printer_ip' => $request->printer_ip,
+            'printnode_id' => $request->printnode_id, // ប្ដូរ field
         ]);
 
         return response()->json(['status' => 'success', 'message' => 'Destination updated successfully']);
@@ -74,12 +73,11 @@ class KitchenDestinationController extends Controller
 
         if ($request->keyword) {
             $query->where('name', 'like', '%' . $request->keyword . '%')
-                  ->orWhere('printer_ip', 'like', '%' . $request->keyword . '%');
+                  ->orWhere('printnode_id', 'like', '%' . $request->keyword . '%'); // Search តាម ID ជំនួស IP
         }
 
-        // ✅ បន្ថែម៖ Logic សម្រាប់ Sort
-        $sortBy  = $request->input('sort_by', 'created_at'); // default តាមថ្ងៃបង្កើត
-        $sortDir = $request->input('sort_dir', 'desc');      // default ថ្មីទៅចាស់
+        $sortBy  = $request->input('sort_by', 'created_at');
+        $sortDir = $request->input('sort_dir', 'desc');
         
         $query->orderBy($sortBy, $sortDir);
 

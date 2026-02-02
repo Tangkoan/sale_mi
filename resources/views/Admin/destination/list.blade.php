@@ -4,7 +4,7 @@
 
 <div class="w-full h-full px-1 py-1" x-data="destinationManagement()">
     
-    {{-- HEADER (រក្សានៅដដែល) --}}
+    {{-- HEADER --}}
     <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">
         <div>
             <h1 class="text-2xl font-bold text-text-color flex items-center gap-2">
@@ -36,7 +36,7 @@
                 </span>
                 <input type="text" x-model="search" @keyup.debounce.500ms="fetchDestinations()"
                        class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input-border bg-card-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder-secondary text-sm shadow-sm"
-                       placeholder="Search name or IP...">
+                       placeholder="Search Name or ID...">
             </div>
 
             {{-- Create Button --}}
@@ -58,22 +58,20 @@
                             <input type="checkbox" @change="toggleSelectAll()" x-model="selectAll" class="rounded border-input-border text-primary focus:ring-primary h-4 w-4">
                         </th>
                         
-                        {{-- ✅ កែសម្រួល៖ ដាក់ Sort នៅលើ Name --}}
                         <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" @click="sort('name')">
                             <div class="flex items-center gap-1">
                                 Name 
-                                {{-- Icon សម្រាប់បង្ហាញថាបច្ចុប្បន្នកំពុង Sort តាមអី --}}
                                 <i class="ri-arrow-up-down-fill text-[10px] opacity-50 group-hover:opacity-100" 
                                    :class="{'text-primary opacity-100': sortBy === 'name'}"></i>
                             </div>
                         </th>
 
-                        {{-- ✅ កែសម្រួល៖ ដាក់ Sort នៅលើ Printer IP --}}
-                        <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" @click="sort('printer_ip')">
+                        {{-- ✅ កែសម្រួល៖ Sort by PrintNode ID --}}
+                        <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" @click="sort('printnode_id')">
                             <div class="flex items-center gap-1">
-                                Printer IP
+                                PrintNode ID
                                 <i class="ri-arrow-up-down-fill text-[10px] opacity-50 group-hover:opacity-100"
-                                   :class="{'text-primary opacity-100': sortBy === 'printer_ip'}"></i>
+                                   :class="{'text-primary opacity-100': sortBy === 'printnode_id'}"></i>
                             </div>
                         </th>
 
@@ -89,10 +87,10 @@
                             </td>
                             <td class="px-6 py-4 font-bold text-text-color" x-text="item.name"></td>
                             
-                            {{-- IP Address --}}
+                            {{-- ✅ កែសម្រួល៖ បង្ហាញ PrintNode ID --}}
                             <td class="px-6 py-4">
                                 <span class="font-mono text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-600 dark:text-gray-300" 
-                                      x-text="item.printer_ip || 'No Printer'"></span>
+                                      x-text="item.printnode_id || 'No ID'"></span>
                             </td>
 
                             <td class="px-6 py-4">
@@ -123,7 +121,7 @@
         <x-pagination />
     </div>
 
-    {{-- MODAL (រក្សានៅដដែល) --}}
+    {{-- MODAL --}}
     <div x-show="isModalOpen" style="display: none;" class="fixed inset-0 z-[100] flex items-center justify-center px-4" x-cloak>
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal()"></div>
 
@@ -152,16 +150,16 @@
                     <p x-show="errors.name" x-text="errors.name" class="text-red-500 text-xs mt-1"></p>
                 </div>
 
-                {{-- Printer IP --}}
+                {{-- ✅ កែសម្រួល៖ PrintNode ID Input --}}
                 <div>
-                    <label class="block text-sm font-bold text-text-color mb-1">Printer IP Address (Optional)</label>
+                    <label class="block text-sm font-bold text-text-color mb-1">PrintNode ID</label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-secondary">
-                            <i class="ri-printer-line"></i>
+                            <i class="ri-qr-code-line"></i>
                         </span>
-                        <input type="text" x-model="form.printer_ip" placeholder="192.168.1.200" class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none font-mono">
+                        <input type="number" x-model="form.printnode_id" placeholder="e.g. 123456" class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none font-mono">
                     </div>
-                    <p x-show="errors.printer_ip" x-text="errors.printer_ip" class="text-red-500 text-xs mt-1"></p>
+                    <p x-show="errors.printnode_id" x-text="errors.printnode_id" class="text-red-500 text-xs mt-1"></p>
                 </div>
 
                 <div class="pt-4 flex justify-between items-center border-t border-border-color mt-2">
@@ -197,7 +195,6 @@
             selectedIds: [],
             selectAll: false,
 
-            // ✅ បន្ថែម៖ Variable សម្រាប់ Sort
             sortBy: 'created_at',
             sortDir: 'desc',
 
@@ -205,20 +202,20 @@
             sequenceQueue: [],
             currentSeqIndex: 0,
 
-            form: { id: null, name: '', printer_ip: '' },
+            // ✅ កែសម្រួល៖ Form Object
+            form: { id: null, name: '', printnode_id: '' },
             errors: {},
 
             init() { this.fetchDestinations(); },
 
-            // ✅ កែសម្រួល៖ បញ្ជូន sort_by និង sort_dir ទៅ API
             async fetchDestinations() {
                 let url = "{{ route('admin.destinations.fetch') }}";
                 const params = new URLSearchParams({ 
                     keyword: this.search, 
                     per_page: this.perPage, 
                     page: this.currentPage,
-                    sort_by: this.sortBy,   // ថ្មី
-                    sort_dir: this.sortDir  // ថ្មី
+                    sort_by: this.sortBy,
+                    sort_dir: this.sortDir
                 });
                 
                 this.isLoading = true;
@@ -232,7 +229,6 @@
                 finally { this.isLoading = false; }
             },
 
-            // ✅ បន្ថែម៖ Function Sort
             sort(col) {
                 if (this.sortBy === col) {
                     this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
@@ -274,7 +270,8 @@
             loadDestinationToForm(item) {
                 this.editMode = true;
                 this.errors = {};
-                this.form = { ...item, printer_ip: item.printer_ip || '' };
+                // ✅ កែសម្រួល៖ Load data ចូល form
+                this.form = { ...item, printnode_id: item.printnode_id || '' };
             },
 
             openModal(mode, item = null) {
@@ -285,7 +282,8 @@
                     this.loadDestinationToForm(item);
                 } else {
                     this.editMode = false;
-                    this.form = { id: null, name: '', printer_ip: '' };
+                    // ✅ កែសម្រួល៖ Reset form
+                    this.form = { id: null, name: '', printnode_id: '' };
                 }
             },
 
