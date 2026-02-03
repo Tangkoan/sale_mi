@@ -199,77 +199,114 @@ class OrderController extends Controller
 
     
 
+    // 🔥 FUNCTION ថ្មី ១: គ្រាន់តែអានមុខម្ហូបពីតុដែលចង់ Merge (Read Only)
+    public function getItemsForMerge($tableId)
+    {
+        $order = Order::with(['items.product', 'items.addons.addon'])
+                      ->where('table_id', $tableId)
+                      ->where('status', 'pending')
+                      ->first();
+
+        if (!$order) {
+            return response()->json(['items' => []]);
+        }
+
+        return response()->json([
+            'items' => $order->items,
+            'source_order_id' => $order->id // ទុកចំណាំថាបានមកពី Order ណា
+        ]);
+    }
+
+    // 🔥 FUNCTION ២: កែ Checkout ឲ្យចេះ "Adopt/Claim" មុខម្ហូបពីតុផ្សេង
     public function checkout(Request $request)
     {
         $request->validate([
             'order_id'       => 'required|exists:orders,id',
             'received_amount'=> 'required|numeric|min:0',
             'payment_method' => 'required|in:cash,qr,card',
-            'items'          => 'required|array', // ត្រូវការ items ដើម្បី update ចុងក្រោយ
+            'items'          => 'required|array', 
         ]);
 
         return DB::transaction(function () use ($request) {
-            $order = Order::with('items.addons')->findOrFail($request->order_id);
+            $mainOrder = Order::findOrFail($request->order_id);
 
-            if ($order->status == 'completed') {
+            if ($mainOrder->status == 'completed') {
                 return response()->json(['status' => 'error', 'message' => 'Order is already paid!'], 400);
             }
 
             // =========================================================
-            // ជំហានទី ១: SYNC ITEMS (Update តាមអ្វីដែល user កែលើ​ screen)
+            // ជំហានពិសេស: SYNC & ADOPT ITEMS (ទទួលយកមុខម្ហូបពី Merge)
             // =========================================================
             
-            // 1. ប្រមូល ID របស់ Items ដែល client ផ្ញើមក
+            // 1. ប្រមូល ID មុខម្ហូបទាំងអស់ដែល User បញ្ជូនមក (រួមទាំងរបស់តុ Merge ផង)
             $submittedItemIds = collect($request->items)->pluck('id')->filter()->toArray();
 
-            // 2. លុប Items ណាដែលក្នុង DB មាន តែ Client អត់មាន (មានន័យថាគេលុបចោល)
-            OrderItem::where('order_id', $order->id)
+            // 2. លុបមុខម្ហូបណាដែលជារបស់ Main Order តែមិនមានក្នុង List (User លុបចោល)
+            // ចំណាំ៖ យើងមិនលុបរបស់ Merge Order ទេ ព្រោះបើគេមិនយក វាគ្រាន់តែនៅតុដើមដដែល
+            OrderItem::where('order_id', $mainOrder->id)
                      ->whereNotIn('id', $submittedItemIds)
                      ->delete(); 
 
-            // 3. Update ចំនួន Items និង Addons ដែលនៅសល់
+            // 3. Update & Move Items
+            // យើងនឹងកត់ត្រាថា Order ណាខ្លះដែលត្រូវបានរងផលប៉ះពាល់ (ដើម្បីលុបចោលពេលវាទំនេរ)
+            $affectedOrderIds = [$mainOrder->id];
+
             foreach ($request->items as $itemData) {
                 $item = OrderItem::find($itemData['id']);
+                
                 if ($item) {
-                    $item->update(['quantity' => $itemData['quantity']]);
+                    // ប្រសិនបើ Item នេះមកពី Order ផ្សេង (Merge), កត់ត្រា ID Order ចាស់ទុក
+                    if ($item->order_id != $mainOrder->id) {
+                        $affectedOrderIds[] = $item->order_id;
+                    }
 
+                    // 🔥 សំខាន់បំផុត: ផ្លាស់ប្តូរម្ចាស់ (Move Item to Current Order)
+                    $item->update([
+                        'quantity' => $itemData['quantity'],
+                        'order_id' => $mainOrder->id // ផ្ទេរមក Order នេះទាំងអស់
+                    ]);
+
+                    // Handle Addons (កូដដដែល)
                     if (!empty($itemData['addons'])) {
                         $submittedAddonIds = collect($itemData['addons'])->pluck('id')->toArray();
-                        
-                        // លុប Addon ចោល
-                        OrderItemAddon::where('order_item_id', $item->id)
-                                      ->whereNotIn('id', $submittedAddonIds)
-                                      ->delete();
-
-                        // Update Addon Qty
+                        OrderItemAddon::where('order_item_id', $item->id)->whereNotIn('id', $submittedAddonIds)->delete();
                         foreach ($itemData['addons'] as $addonData) {
-                            OrderItemAddon::where('id', $addonData['id'])
-                                          ->update(['quantity' => $addonData['quantity']]);
+                            OrderItemAddon::where('id', $addonData['id'])->update(['quantity' => $addonData['quantity']]);
                         }
                     } else {
-                        // លុប Addons ទាំងអស់បើគេដកអស់
                         $item->addons()->delete();
                     }
                 }
             }
 
-            // =========================================================
-            // ជំហានទី ២: PROCESS PAYMENT
-            // =========================================================
-
-            // គណនាលុយឡើងវិញ (Server Side Calculation)
-            $totalAmount = $this->recalculateOrderTotal($order->id);
+            // 4. CLEANUP: ពិនិត្យមើល Order ចាស់ៗដែលត្រូវបាន Merge មក
+            // បើគេយកអស់ហើយ (Empty Items) ត្រូវលុប Order ចោល និង Free Table
+            $otherOrderIds = array_unique(array_diff($affectedOrderIds, [$mainOrder->id]));
             
-            $change = $request->received_amount - $totalAmount;
-
-            // ផ្ទៀងផ្ទាត់លុយ
-            if ($request->payment_method == 'cash' && round($change, 2) < 0) {
-                DB::rollBack(); 
-                return response()->json(['status' => 'error', 'message' => 'Not enough cash received!'], 422);
+            foreach ($otherOrderIds as $oldOrderId) {
+                $oldOrder = Order::find($oldOrderId);
+                if ($oldOrder && $oldOrder->items()->count() == 0) {
+                    // បើអស់ម្ហូបហើយ -> Free Table
+                    if ($oldOrder->table_id) {
+                        Table::where('id', $oldOrder->table_id)->update(['status' => 'available']);
+                    }
+                    // លុប Order ចោល
+                    $oldOrder->delete();
+                }
             }
 
-            // Update Order
-            $order->update([
+            // =========================================================
+            // ជំហានបញ្ចប់: គិតលុយ (Payment)
+            // =========================================================
+
+            $totalAmount = $this->recalculateOrderTotal($mainOrder->id);
+            $change = $request->received_amount - $totalAmount;
+
+            if ($request->payment_method == 'cash' && round($change, 2) < 0) {
+                return response()->json(['status' => 'error', 'message' => 'Not enough cash!'], 422);
+            }
+
+            $mainOrder->update([
                 'status'          => 'completed',
                 'total_amount'    => $totalAmount,
                 'payment_method'  => $request->payment_method,
@@ -278,15 +315,13 @@ class OrderController extends Controller
                 'paid_at'         => now(),
             ]);
 
-            // ទំនេរតុ
-            if ($order->table_id) {
-                Table::where('id', $order->table_id)->update(['status' => 'available']);
+            if ($mainOrder->table_id) {
+                Table::where('id', $mainOrder->table_id)->update(['status' => 'available']);
             }
 
             return response()->json([
                 'status'   => 'success',
-                'message'  => 'Payment successful!',
-                'order_id' => $order->id,
+                'message'  => 'Transaction completed (Merged & Paid)!',
                 'change'   => $change,
             ]);
         });
@@ -345,6 +380,176 @@ class OrderController extends Controller
             return response()->json([
                 'status' => 'success',
                 'total'  => $newTotal
+            ]);
+        });
+    }
+
+
+
+
+    public function getBusyTablesForMerge(Request $request)
+    {
+        // 1. ចាប់យកលេខតុបច្ចុប្បន្នពី URL (?current=5)
+        $currentTableId = $request->query('current');
+
+        // 2. ការពារករណីអត់មាន ID
+        if (!$currentTableId) {
+            return response()->json([]);
+        }
+
+        // 3. ទាញយកតុដែលរវល់ (Busy) តែមិនមែនតុខ្លួនឯង
+        // (ប្រើ Model Table ដើម្បីអោយស្គាល់ prefix 'vc_' ដោយស្វ័យប្រវត្តិ)
+        $tables = \App\Models\Table::where('status', 'busy')
+                    ->where('id', '!=', $currentTableId)
+                    ->select('id', 'name')
+                    ->orderBy('name', 'asc')
+                    ->get();
+
+        return response()->json($tables);
+    }
+
+    public function mergeTables(Request $request)
+    {
+        $request->validate([
+            'target_table_id' => 'required',
+            'main_table_id'   => 'required',
+        ]);
+
+        return DB::transaction(function () use ($request) {
+            try {
+                // 1. រក Order របស់តុទាំងពីរ
+                $mainOrder = Order::where('table_id', $request->main_table_id)
+                                  ->where('status', 'pending')
+                                  ->first();
+
+                $targetOrder = Order::where('table_id', $request->target_table_id)
+                                    ->where('status', 'pending')
+                                    ->first();
+
+                // Check ការពារ
+                if (!$mainOrder) {
+                    throw new \Exception("តុបច្ចុប្បន្នគ្មាន Order ដើម្បីបញ្ចូលទេ");
+                }
+                if (!$targetOrder) {
+                    throw new \Exception("តុដែលត្រូវបញ្ចូល (Target) គ្មាន Order ទេ");
+                }
+
+                // 2. ផ្ទេរ Items ទាំងអស់ពី Target -> Main
+                foreach ($targetOrder->items as $item) {
+                    $item->update(['order_id' => $mainOrder->id]);
+                }
+
+                // 3. 🔥 ចំណុចសំខាន់៖ លុប Order ចាស់ចោល (Delete)
+                // យើងមិន Update Status ទៅ 'merged' ទេ ព្រោះ DB អត់ស្គាល់
+                // ម្យ៉ាងទៀត Order នេះអស់តម្លៃហើយ (Items ទៅអស់ហើយ) លុបចោលល្អជាង
+                $targetOrder->delete();
+                
+                // 4. Update តុដែលត្រូវបញ្ចូល (Target) អោយទំនេរវិញ (Available)
+                // (Field status ក្នុង vc_tables ទទួលយក 'available' | 'busy')
+                \App\Models\Table::where('id', $request->target_table_id)
+                                 ->update(['status' => 'available']);
+
+                // 5. គណនាលុយសរុបអោយ Main Order ឡើងវិញ
+                $newTotal = $this->recalculateOrderTotal($mainOrder->id);
+
+                return response()->json([
+                    'status' => 'success', 
+                    'message' => 'បញ្ចូលតុជោគជ័យ!',
+                    'new_total' => $newTotal
+                ]);
+
+            } catch (\Exception $e) {
+                // បោះ Error ទៅ Frontend ជា Toast Message
+                return response()->json([
+                    'status' => 'error', 
+                    'message' => 'Server Error: ' . $e->getMessage()
+                ], 500);
+            }
+        });
+    }
+
+    // =========================================================
+    // មុខងារទី ២: SPLIT BILL (បំបែកការគិតលុយ)
+    // =========================================================
+    public function splitPayment(Request $request)
+    {
+        $request->validate([
+            'original_order_id' => 'required|exists:orders,id',
+            'split_items'       => 'required|array|min:1', // [{id: 1, qty: 1}, {id: 2, qty: 2}]
+            'payment_method'    => 'required',
+            'received_amount'   => 'required'
+        ]);
+
+        return DB::transaction(function () use ($request) {
+            $originalOrder = Order::findOrFail($request->original_order_id);
+
+            // 1. បង្កើត Order ថ្មីសម្រាប់បំបែក (Sub Order)
+            // សម្គាល់៖ Order នេះមិនមាន Table ID ទេ ឬប្រើ Table ID ដដែលក៏បាន តែ status completed ភ្លាមៗ
+            $splitOrder = Order::create([
+                'invoice_number'  => 'SPL-' . time(),
+                'user_id'         => Auth::id(),
+                'table_id'        => $originalOrder->table_id, // នៅតុដដែល
+                'status'          => 'completed', // គិតលុយភ្លាមៗ
+                'payment_method'  => $request->payment_method,
+                'received_amount' => $request->received_amount,
+                'total_amount'    => 0, // នឹងគណនាតាមក្រោយ
+                'paid_at'         => now()
+            ]);
+
+            // 2. ដំណើរការផ្ទេរ Item
+            foreach ($request->split_items as $splitItem) {
+                $originalItem = OrderItem::with('addons')->find($splitItem['id']);
+                
+                if (!$originalItem) continue;
+
+                $qtyToSplit = intval($splitItem['qty']);
+
+                if ($qtyToSplit >= $originalItem->quantity) {
+                    // ករណីទី 1: យកទាំងអស់ -> គ្រាន់តែប្តូរ order_id ទៅ Order ថ្មី
+                    $originalItem->update(['order_id' => $splitOrder->id]);
+                } else {
+                    // ករណីទី 2: យកតែមួយផ្នែក -> ត្រូវបំបែក Row
+                    
+                    // ក. បន្ថយចំនួនពី Item ចាស់
+                    $originalItem->decrement('quantity', $qtyToSplit);
+
+                    // ខ. បង្កើត Item ថ្មីក្នុង Order ថ្មី
+                    $newItem = $originalItem->replicate();
+                    $newItem->order_id = $splitOrder->id;
+                    $newItem->quantity = $qtyToSplit;
+                    $newItem->save();
+
+                    // គ. ចម្លង Addons (បើមាន)
+                    foreach ($originalItem->addons as $addon) {
+                        $newAddon = $addon->replicate();
+                        $newAddon->order_item_id = $newItem->id;
+                        // Addon ក៏ត្រូវបំបែកតាមសមាមាត្រដែរ (សន្មតថាកាត់តាម Item)
+                        $newAddon->save();
+                    }
+                }
+            }
+
+            // 3. គណនាលុយឡើងវិញទាំងសងខាង
+            $splitTotal = $this->recalculateOrderTotal($splitOrder->id);
+            $this->recalculateOrderTotal($originalOrder->id);
+
+            // Update Change amount
+            $change = $request->received_amount - $splitTotal;
+            $splitOrder->update(['total_amount' => $splitTotal, 'change_amount' => $change]);
+
+            // 4. ពិនិត្យមើល Original Order
+            // បើ Original Order អស់ Item ហើយ -> Mark as Completed ដែរ
+            if ($originalOrder->items()->count() == 0) {
+                $originalOrder->update(['status' => 'completed']);
+                \App\Models\Table::where('id', $originalOrder->table_id)->update(['status' => 'available']);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'បំបែកការគិតលុយជោគជ័យ!',
+                'split_order_id' => $splitOrder->id,
+                'remaining_items_count' => $originalOrder->items()->count(),
+                'change' => $change
             ]);
         });
     }

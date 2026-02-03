@@ -375,7 +375,13 @@ Route::middleware('auth')->group(function () {
             // ======================
             Route::post('/order/store', [OrderController::class, 'store'])->name('order.store');
             Route::post('/checkout', [OrderController::class, 'checkout'])->name('pos.order.checkout');
-
+            // 1. API សម្រាប់ទាញយកតុដែលរវល់ (Busy Tables)
+            Route::get('/tables/busy-list', [OrderController::class, 'getBusyTablesForMerge']);
+            // 2. Route សម្រាប់បញ្ចូលតុ (Merge) - ដែលកំពុង Error
+            Route::post('/order/merge', [OrderController::class, 'mergeTables'])->name('order.merge');
+            // 3. Route សម្រាប់បំបែកវិក្កយបត្រ (Split)
+            Route::post('/order/split', [OrderController::class, 'splitPayment'])->name('order.split');
+            Route::get('/order/items-for-merge/{tableId}', [OrderController::class, 'getItemsForMerge']);
     
             // ✅ ត្រូវតែមាន Route នេះដាច់ខាត ទើប Modal ស្គាល់ទិន្នន័យ
             Route::get('/order-details/{table_id}', [PosController::class, 'getOrderDetails'])->name('order.details');
