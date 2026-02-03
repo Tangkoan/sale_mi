@@ -35,4 +35,13 @@ class Order extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+
+    /**
+     * Prepare a date for array / JSON serialization.
+     * បម្លែងម៉ោងអោយទៅជា ISO-8601 (មាន T និង Z) ពេលផ្ញើទៅ JSON
+     */
+    protected function serializeDate(\DateTimeInterface $date)
+    {
+        return $date->format('Y-m-d\TH:i:s\Z'); // បង្ខំអោយចេញជា UTC Format
+    }
 }

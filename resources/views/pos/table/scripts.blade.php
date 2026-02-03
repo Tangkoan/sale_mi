@@ -32,6 +32,7 @@
             // ==========================================
             init() {
                 this.fetchTables();
+                // Refresh តុម្តងរៀងរាល់ 5 វិនាទី (ដរាបណាមិនទាន់បើក Checkout)
                 this.interval = setInterval(() => { 
                     if(!this.isCheckoutModalOpen) this.fetchTables(true); 
                 }, 5000);
@@ -51,6 +52,11 @@
                 return Math.ceil(total * this.exchangeRate).toLocaleString('km-KH');
             },
             
+            // Helper: ពិនិត្យមើលថាជា Extra ឬអត់
+            isExtraItem(item) {
+                return item.product && item.product.name.toLowerCase().includes('extra');
+            },
+
             recalculateTotalLocal() {
                 let total = 0;
                 this.orderDetails.items.forEach(item => {
@@ -125,11 +131,19 @@
                         let addonIndex = item.addons.findIndex(a => a.id === addonId);
                         if (addonIndex !== -1) {
                             let addon = item.addons[addonIndex];
+                            
+                            // បើជា Extra Item ការដក Addon ស្មើនឹងដក Item ធំ
+                            if (this.isExtraItem(item) && item.addons.length === 1 && (action === 'decrease' && addon.quantity === 1 || action === 'remove')) {
+                                this.updateItemQty(item.id, 'remove');
+                                return;
+                            }
+
                             if (action === 'increase') addon.quantity++;
                             else if (action === 'decrease') {
                                 if (addon.quantity > 1) addon.quantity--;
                                 else item.addons.splice(addonIndex, 1);
                             } else if (action === 'remove') item.addons.splice(addonIndex, 1);
+                            
                             this.recalculateTotalLocal();
                             return;
                         }
@@ -171,17 +185,10 @@
                     const data = await response.json();
 
                     if (response.ok && data.status === 'success') {
-                        // 1. បិទ Modal ដើម្បីត្រឡប់ទៅ Page Table វិញ
                         this.isCheckoutModalOpen = false;
-                        
-                        // 2. បង្ហាញ Toast Message
                         this.showToast(`✅ ការទូទាត់ជោគជ័យ! លុយអាប់: $${parseFloat(data.change).toFixed(2)}`, 'success');
-                        
-                        // 3. Refresh ទិន្នន័យតុ (អោយវាចេញពណ៌បៃតងវិញ)
                         this.fetchTables();
                         
-                        // 4. PRINT RECEIPT (ផ្នែកសំខាន់)
-                        // យើងរង់ចាំ 300ms ដើម្បីអោយ Modal បិទជិតសិន ចាំបើកផ្ទាំង Print
                         setTimeout(() => {
                             window.print();
                         }, 500);
@@ -201,14 +208,8 @@
             // 6. TOAST HELPER FUNCTION
             // ==========================================
             showToast(message, type = 'success') {
-                // Dispatch Event ទៅកាន់ Component Toast របស់អ្នក
-                // ឈ្មោះ event 'notify' នេះអាចប្រែប្រួលទៅតាមកូដក្នុង toast.blade.php របស់អ្នក
-                // បើ component អ្នកប្រើឈ្មោះផ្សេង សូមប្តូរត្រង់នេះ (ឧ. 'toast-show', 'flash-message')
                 window.dispatchEvent(new CustomEvent('notify', { 
-                    detail: { 
-                        message: message, 
-                        type: type 
-                    } 
+                    detail: { message: message, type: type } 
                 }));
             }
         }

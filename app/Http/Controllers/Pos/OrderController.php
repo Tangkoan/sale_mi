@@ -12,71 +12,143 @@ use App\Models\OrderItemAddon;
 use App\Models\Table;
 use App\Models\Product;
 
+use Rawilk\Printing\Facades\Printing;
+use App\Models\KitchenDestination;
+use Illuminate\Validation\Rule; // Import នៅខាងលើ
+
+use Illuminate\Support\Facades\Log;       // ✅ បន្ថែម
+use Illuminate\Support\Facades\Validator; // ✅ បន្ថែម
+
 class OrderController extends Controller
 {
     // ... (store function នៅដដែល)
 
     public function store(Request $request)
     {
-        // រក្សាទុកកូដ store របស់អ្នកនៅទីនេះដដែល...
-        // (ដើម្បីកុំអោយវែងពេក ខ្ញុំសុំមិនសរសេរឡើងវិញទេ ព្រោះមិនមានការកែប្រែនៅត្រង់នេះ)
-         $request->validate([
-            'table_id' => 'required|exists:tables,id',
+        // ---------------------------------------------------------
+        // ជំហានទី ១: កត់ត្រាទិន្នន័យដែលទទួលបានពី Frontend (Log Input)
+        // ---------------------------------------------------------
+        // Log::info('🟢 [POS ORDER] Starting Store Process...');
+        // Log::info('📥 Data Received:', $request->all());
+
+        // ---------------------------------------------------------
+        // ជំហានទី ២: ធ្វើ Validation ដោយដៃ (Manual Validation)
+        // ---------------------------------------------------------
+        $validator = Validator::make($request->all(), [
+            'table_id' => 'required', // ដាក់ធម្មតាសិន ដើម្បីចង់ដឹងថាវាជាប់អត់
             'items'    => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
+            
+            // 🔥 កន្លែងរសើប: យើង Log មើលសិន កុំទាន់អាលតឹងរ៉ឹងពេក
+            'items.*.product_id' => 'required', 
             'items.*.qty'        => 'required|integer|min:1',
         ]);
 
-        // ... (Logic ដដែលរបស់អ្នក) ...
-        
+        // បើ Validation បរាជ័យ -> កត់ចូល Log ភ្លាម
+        if ($validator->fails()) {
+            // Log::error('❌ [POS ORDER] Validation Failed:', $validator->errors()->toArray());
+            
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Validation Error',
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+
         return DB::transaction(function () use ($request) {
-            $order = Order::where('table_id', $request->table_id)
-                          ->where('status', 'pending')
-                          ->first();
+            try {
+                // ---------------------------------------------------------
+                // ជំហានទី ៣: ចាប់ផ្តើមបង្កើត Order
+                // ---------------------------------------------------------
+                
+                // 1. Check Table
+                // យើងប្រើឈ្មោះ Model ផ្ទាល់ដើម្បីអោយវាស្គាល់ Prefix 'vc_' ដោយស្វ័យប្រវត្តិ
+                // បើបងប្រើ Table ឈ្មោះ 'vc_tables' ត្រូវប្រាកដថា Model Table មាន $table = 'tables' ឬអត់កំណត់
+                
+                $order = Order::firstOrCreate(
+                    ['table_id' => $request->table_id, 'status' => 'pending'],
+                    [
+                        'invoice_number' => 'INV-' . time() . '-' . $request->table_id,
+                        'user_id'        => Auth::id(),
+                        'total_amount'   => 0,
+                    ]
+                );
+                
+                // Log::info('✅ Order Created/Found ID: ' . $order->id);
 
-            if (!$order) {
-                $order = Order::create([
-                    'invoice_number' => 'INV-' . time() . '-' . $request->table_id,
-                    'table_id'       => $request->table_id,
-                    'user_id'        => Auth::id(),
-                    'status'         => 'pending',
-                    'total_amount'   => 0,
-                ]);
-                Table::where('id', $request->table_id)->update(['status' => 'busy']);
-            }
+                // Update Table Status
+                $table = \App\Models\Table::find($request->table_id);
+                if ($table) {
+                    $table->update(['status' => 'busy']);
+                } else {
+                    Log::warning('⚠️ Table ID ' . $request->table_id . ' not found in DB');
+                }
 
-            foreach ($request->items as $itemData) {
-                $orderItem = OrderItem::create([
-                    'order_id'   => $order->id,
-                    'product_id' => $itemData['product_id'],
-                    'quantity'   => $itemData['qty'],
-                    'price'      => $itemData['price'],
-                    'note'       => $itemData['note'] ?? null,
-                    'is_printed' => false,
-                    'status'     => 'pending',
-                    'created_by' => Auth::id(),
-                ]);
+                $newOrderItems = new \Illuminate\Database\Eloquent\Collection();
 
-                if (!empty($itemData['addons'])) {
-                    foreach ($itemData['addons'] as $addon) {
-                        OrderItemAddon::create([
-                            'order_item_id' => $orderItem->id,
-                            'addon_id'      => $addon['id'],
-                            'price'         => $addon['price'],
-                            'quantity'      => $addon['qty'] ?? 1
-                        ]);
+                foreach ($request->items as $index => $itemData) {
+                    
+                    // Log មើល Item នីមួយៗ
+                    // Log::info("🔄 Processing Item #$index:", $itemData);
+
+                    // ពិនិត្យមើលថា Product ID មានពិតឬអត់ មុននឹង Save
+                    // ប្រើ App\Models\Product ដើម្បីអោយស្គាល់ vc_products
+                    $productExists = \App\Models\Product::find($itemData['product_id']);
+                    
+                    if (!$productExists) {
+                        // Log::error("❌ Product ID {$itemData['product_id']} not found in DB (vc_products). Skipping...");
+                        // បើរកមិនឃើញ យើងអាច Return Error ឬរំលង
+                        throw new \Exception("Product ID {$itemData['product_id']} not found.");
+                    }
+
+                    $orderItem = OrderItem::create([
+                        'order_id'   => $order->id,
+                        'product_id' => $itemData['product_id'],
+                        'quantity'   => $itemData['qty'],
+                        'price'      => $itemData['price'],
+                        'note'       => $itemData['note'] ?? null,
+                        'is_printed' => false,
+                        'status'     => 'pending',
+                        'created_by' => Auth::id(),
+                    ]);
+                    
+                    $newOrderItems->push($orderItem);
+
+                    if (!empty($itemData['addons'])) {
+                        foreach ($itemData['addons'] as $addon) {
+                            OrderItemAddon::create([
+                                'order_item_id' => $orderItem->id,
+                                'addon_id'      => $addon['id'],
+                                'price'         => $addon['price'],
+                                'quantity'      => $addon['qty'] ?? 1
+                            ]);
+                        }
                     }
                 }
-            }
-            
-            // Recalculate Total immediately
-            $this->recalculateOrderTotal($order->id);
+                
+                $this->recalculateOrderTotal($order->id);
+                // Log::info('💰 Total Recalculated');
 
-            return response()->json([
-                'status'  => 'success',
-                'message' => 'Order placed successfully!',
-                'order_id' => $order->id
-            ]);
+                // ... (ផ្នែក Auto Print រក្សាទុកដដែល ឬលុបចោលសិនក៏បានដើម្បីតេស្ត) ...
+
+                // Log::info('🎉 Order Transaction Completed Successfully!');
+
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Order placed successfully!',
+                    'order_id' => $order->id
+                ]);
+
+            } catch (\Exception $e) {
+                // ចាប់ Error គ្រប់បែបយ៉ាងនៅទីនេះ
+                // Log::error('🔥 [POS ORDER] Exception Error: ' . $e->getMessage());
+                // Log::error($e->getTraceAsString()); // ចង់ដឹងថាខុសនៅបន្ទាត់ណា
+
+                // បោះ Error ទៅ Frontend វិញ
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Server Error: ' . $e->getMessage()
+                ], 500);
+            }
         });
     }
 
