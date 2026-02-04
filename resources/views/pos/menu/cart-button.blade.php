@@ -1,4 +1,7 @@
-<div x-show="cart.length > 0" x-transition class="absolute bottom-4 left-3 right-3 sm:bottom-6 sm:left-4 sm:right-4 md:left-1/2 md:-translate-x-1/2 md:w-96 z-40">
+<div x-show="cart.length > 0" 
+     x-transition 
+     class="fixed bottom-4 left-3 right-3 sm:bottom-6 sm:left-4 sm:right-4 md:left-1/2 md:-translate-x-1/2 md:w-96 z-50">
+    
     <button @click="isCartOpen = true" class="w-full bg-gray-900/95 dark:bg-primary/95 backdrop-blur-md text-white p-1.5 sm:p-2 pr-3 sm:pr-4 pl-1.5 sm:pl-2 rounded-[16px] sm:rounded-[20px] shadow-2xl border border-white/10 flex items-center justify-between group hover:scale-[1.01] sm:hover:scale-[1.02] transition-transform duration-200">
         <div class="flex items-center gap-2 sm:gap-3">
             <div class="bg-white text-gray-900 w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center font-black text-base sm:text-lg shadow-sm" x-text="cartTotalQty"></div>
