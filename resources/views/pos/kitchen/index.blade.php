@@ -1,7 +1,7 @@
 @extends('layouts.blank')
 
 @section('content')
-<div x-data="kitchenDisplay()" x-init="init()" class="min-h-screen bg-gray-900 text-white font-sans flex flex-col overflow-hidden relative">
+<div x-data="kitchenDisplay()" x-init="init()" class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-white font-sans flex flex-col overflow-hidden relative transition-colors duration-300">
     
     {{-- =========================================== --}}
     {{-- 1. TOAST NOTIFICATION (Custom)              --}}
@@ -67,23 +67,45 @@
     {{-- =========================================== --}}
     {{-- 3. HEADER & CONTROLS                        --}}
     {{-- =========================================== --}}
-    <div class="h-14 sm:h-16 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-3 sm:px-6 shrink-0 z-20 shadow-md gap-2">
+    <div class="h-14 sm:h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-3 sm:px-6 shrink-0 z-20 shadow-md gap-2 transition-colors duration-300">
+        
+        {{-- LEFT SIDE: Navigation & Title --}}
         <div class="flex items-center gap-3 sm:gap-6 flex-1 min-w-0">
-            <a href="{{ route('pos.tables') }}" class="text-gray-400 hover:text-white transition shrink-0">
-                <i class="ri-arrow-left-line text-lg sm:text-xl"></i>
-            </a>
-            <h1 class="text-base sm:text-xl font-bold tracking-wide uppercase flex items-center gap-2 truncate">
+            
+            {{-- 1. BACK BUTTON (Hidden for Chef/Bartender) --}}
+            @unlessrole('Chef|Bartender')
+                <a href="{{ route('pos.tables') }}" class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition shrink-0" title="Back to Tables">
+                    <i class="ri-arrow-left-line text-lg sm:text-xl"></i>
+                </a>
+            @endunlessrole
+
+            {{-- Title --}}
+            <h1 class="text-base sm:text-xl font-bold tracking-wide uppercase flex items-center gap-2 truncate text-gray-800 dark:text-white">
                 <i class="ri-fire-line text-orange-500"></i> <span class="hidden xs:inline">KDS System</span>
             </h1>
-            <div class="h-4 sm:h-6 w-px bg-gray-600 hidden xs:block"></div>
-            <span class="text-lg sm:text-2xl font-mono font-bold text-blue-400" x-text="clockString"></span>
+            
+            <div class="h-4 sm:h-6 w-px bg-gray-300 dark:bg-gray-600 hidden xs:block"></div>
+            
+            {{-- Clock --}}
+            <span class="text-lg sm:text-2xl font-mono font-bold text-blue-600 dark:text-blue-400" x-text="clockString"></span>
+
+            {{-- 2. PRODUCTS BUTTON (Permission Based) --}}
+            @can('product-list')
+                <div class="h-4 sm:h-6 w-px bg-gray-300 dark:bg-gray-600 hidden xs:block"></div>
+                <a href="{{ url('/admin/products') }}" 
+                   class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition text-xs sm:text-sm font-bold border border-gray-200 dark:border-gray-600">
+                    <i class="ri-box-3-line text-primary"></i>
+                    <span class="hidden sm:inline">Products</span>
+                </a>
+            @endcan
         </div>
 
-        <div class="flex bg-gray-900 p-0.5 sm:p-1 rounded-lg border border-gray-700 shrink-0 overflow-x-auto custom-scrollbar max-w-[200px] sm:max-w-md">
+        {{-- CENTER: DESTINATION TABS --}}
+        <div class="flex bg-gray-100 dark:bg-gray-900 p-0.5 sm:p-1 rounded-lg border border-gray-200 dark:border-gray-700 shrink-0 overflow-x-auto custom-scrollbar max-w-[200px] sm:max-w-md">
             @foreach($destinations as $dest)
                 <button @click="changeMode({{ $dest->id }})" 
                         class="px-3 sm:px-6 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-bold transition-all flex items-center gap-1 sm:gap-2 whitespace-nowrap"
-                        :class="currentDestinationId == {{ $dest->id }} ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-white'">
+                        :class="currentDestinationId == {{ $dest->id }} ? 'bg-primary text-white shadow-md' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800'">
                     @if(stripos($dest->name, 'bar') !== false || stripos($dest->name, 'drink') !== false)
                         <i class="ri-goblet-line"></i>
                     @else
@@ -94,12 +116,67 @@
             @endforeach
         </div>
 
-        <div class="flex items-center gap-1 sm:gap-2 shrink-0">
-            <span class="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" :class="isLoading ? 'bg-blue-400' : 'bg-green-400'"></span>
-              <span class="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3" :class="isLoading ? 'bg-blue-500' : 'bg-green-500'"></span>
-            </span>
-            <span class="text-[10px] sm:text-xs text-gray-400 font-mono hidden sm:inline" x-text="isLoading ? 'Fetching...' : 'Live'"></span>
+        {{-- RIGHT SIDE: STATUS & ACTIONS --}}
+        <div class="flex items-center gap-3 sm:gap-4 shrink-0">
+            
+            {{-- Live Indicator --}}
+            <div class="flex items-center gap-1 sm:gap-2">
+                <span class="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" :class="isLoading ? 'bg-blue-400' : 'bg-green-400'"></span>
+                  <span class="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3" :class="isLoading ? 'bg-blue-500' : 'bg-green-500'"></span>
+                </span>
+                <span class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-mono hidden sm:inline" x-text="isLoading ? 'Fetching...' : 'Live'"></span>
+            </div>
+
+            <div class="h-6 w-px bg-gray-300 dark:bg-gray-600 hidden sm:block"></div>
+
+            {{-- 3. THEME TOGGLE --}}
+            <button x-data="{ dark: localStorage.getItem('theme') === 'dark' }" 
+                    @click="dark = !dark; localStorage.setItem('theme', dark ? 'dark' : 'light'); 
+                            if(dark) { document.documentElement.classList.add('dark') } else { document.documentElement.classList.remove('dark') }"
+                    class="w-9 h-9 rounded-full flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-yellow-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all active:scale-95 border border-transparent dark:border-gray-600">
+                <i class="text-lg" :class="dark ? 'ri-sun-fill' : 'ri-moon-fill'"></i>
+            </button>
+
+            {{-- 4. PROFILE & LOGOUT --}}
+            <div x-data="{ open: false }" class="relative">
+                <button @click="open = !open" @click.away="open = false" 
+                        class="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 pl-1 pr-3 py-1 rounded-full border border-gray-200 dark:border-gray-600 hover:border-primary/50 transition-all shadow-sm">
+                    <img src="https://ui-avatars.com/api/?name={{ Auth::user()->name ?? 'Chef' }}&background=E11D48&color=fff&size=64" 
+                         class="w-7 h-7 rounded-full object-cover" alt="Avatar">
+                    <div class="hidden md:block text-left">
+                        <p class="text-xs font-bold text-gray-800 dark:text-white leading-none truncate max-w-[80px]">
+                            {{ Auth::user()->name ?? 'Chef' }}
+                        </p>
+                    </div>
+                    <i class="ri-arrow-down-s-line text-xs text-gray-500 dark:text-gray-400"></i>
+                </button>
+
+                {{-- Dropdown Menu --}}
+                <div x-show="open" x-cloak
+                     x-transition:enter="transition ease-out duration-100"
+                     x-transition:enter-start="transform opacity-0 scale-95"
+                     x-transition:enter-end="transform opacity-100 scale-100"
+                     class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 py-1 z-50 origin-top-right">
+                    
+                    {{-- Dashboard Link --}}
+                    @can('dashboard')
+                    <a href="{{ route('admin.dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2">
+                        <i class="ri-dashboard-3-line text-primary"></i> Dashboard
+                    </a>
+                    @endcan
+
+                    <div class="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
+
+                    {{-- Logout Form --}}
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2">
+                            <i class="ri-logout-box-r-line"></i> {{ __('Logout') }}
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 

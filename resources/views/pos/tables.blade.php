@@ -5,6 +5,7 @@
     
     {{-- 1. HEADER --}}
     @include('pos.table.header')
+    
 
     {{-- LOADING STATE --}}
     <div x-show="isLoading && tables.length === 0" class="flex-1 flex flex-col items-center justify-center text-gray-400">

@@ -14,12 +14,8 @@ class AuthController extends Controller
     // ១. បង្ហាញ Form Login និង បង្កើត Captcha Code
     public function showLogin()
     {
-        // បង្កើត Random String ៥ ខ្ទង់សម្រាប់ Captcha
         $captchaCode = strtoupper(Str::random(5));
-        
-        // ដាក់ចូល Session ដើម្បីផ្ទៀងផ្ទាត់ពេលក្រោយ
         session(['captcha_code' => $captchaCode]);
-
         return view('admin.login', compact('captchaCode'));
     }
 
@@ -58,37 +54,45 @@ class AuthController extends Controller
         Auth::login($user);
         session()->forget('captcha_code');
 
-        // ============================================================
-        // [បន្ថែមថ្មី]៖ កត់ត្រាសកម្មភាពចូលប្រព័ន្ធ (User Action Log)
-        // ============================================================
-        activity()
-            ->causedBy($user) // កត់ថា "អ្នកណា" ជាអ្នក Login
-            ->withProperties([
-                'ip' => $request->ip(),            // ចាប់យក IP Address
-                'browser' => $request->userAgent() // ចាប់យក Browser (Chrome, Firefox...)
-            ])
-            ->log('logged in'); // សារដែលចង់បង្ហាញ: "User A logged in"
+        // កត់ត្រាសកម្មភាពចូលប្រព័ន្ធ
+        if(function_exists('activity')) {
+            activity()
+                ->causedBy($user)
+                ->withProperties([
+                    'ip' => $request->ip(),
+                    'browser' => $request->userAgent()
+                ])
+                ->log('logged in');
+        }
 
-        // ត្រឡប់ Link Dashboard ទៅអោយ Javascript ដើម្បី Redirect
+        // ============================================================
+        // 🔥 [ចំណុចកែប្រែ]៖ កំណត់ Route តាម Role របស់អ្នកប្រើប្រាស់
+        // ============================================================
+        
+        $redirectUrl = route('admin.dashboard'); // Default សម្រាប់ Admin, Super Admin និង Role ផ្សេងៗ
+
+        // ១. សម្រាប់អ្នកគិតលុយ (Cashier)
+        if ($user->hasRole('Cashier')) {
+            $redirectUrl = url('/pos/tables'); 
+        } 
+        // ២. សម្រាប់ចុងភៅ និង អ្នកធ្វើភេជ្ជៈ (Chef, Bartender)
+        elseif ($user->hasRole(['Chef', 'Bartender'])) {
+            $redirectUrl = url('/pos/kitchen');
+        }
+        
+        // ត្រឡប់ Link ដែលបានកំណត់ខាងលើទៅឱ្យ Javascript
         return response()->json([
             'status' => 'success',
-            'redirect_url' => route('admin.dashboard')
+            'redirect_url' => $redirectUrl
         ]);
     }
 
     // ៣. Logic សម្រាប់ Logout
     public function logout(Request $request)
     {
-        // Logout user ចេញពីប្រព័ន្ធ
         Auth::logout();
-
-        // លុប Session ចាស់ចោល (Invalided)
         $request->session()->invalidate();
-
-        // បង្កើត Token ថ្មី (ដើម្បីការពារសុវត្ថិភាព CSRF)
         $request->session()->regenerateToken();
-
-        // រុញទៅកាន់ផ្ទាំង Login វិញ
         return redirect()->route('login');
     }
 }

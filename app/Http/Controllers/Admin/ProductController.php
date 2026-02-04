@@ -162,11 +162,26 @@ class ProductController extends Controller
         return response()->json(['status' => 'success', 'message' => __('messages.bulk_delete_success', ['count' => count($products)])]);
     }
 
+    // public function toggleStatus($id)
+    // {
+    //     $product = Product::findOrFail($id);
+    //     $product->is_active = !$product->is_active;
+    //     $product->save();
+    //     return response()->json(['status' => 'success', 'message' => 'Status updated']);
+    // }
+
+
+    // ✅ កែប្រែ៖ បន្ថែម Permission Check
     public function toggleStatus($id)
     {
+        if (!auth()->user()->can('product-edit-status')) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized action.'], 403);
+        }
+
         $product = Product::findOrFail($id);
         $product->is_active = !$product->is_active;
         $product->save();
-        return response()->json(['status' => 'success', 'message' => 'Status updated']);
+        
+        return response()->json(['status' => 'success', 'message' => 'Product status updated successfully']);
     }
 }

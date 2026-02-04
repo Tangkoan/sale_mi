@@ -119,8 +119,16 @@
                             </td>
                             <td class="px-6 py-4 font-bold text-primary" x-text="'$' + parseFloat(item.price).toFixed(2)" x-show="showCols.price"></td>
                             <td class="px-6 py-4">
-                                <button @click="toggleStatus(item.id)" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none" :class="item.is_active ? 'bg-green-500' : 'bg-gray-300'">
-                                    <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform" :class="item.is_active ? 'translate-x-6' : 'translate-x-1'"></span>
+                                {{-- ✅ Check Permission: បើមានសិទ្ធិទើបចុចបាន, បើអត់ទេ Disable --}}
+                                <button 
+                                    @can('product-edit-status') @click="toggleStatus(item.id)" @endcan 
+                                    class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none 
+                                        @cannot('product-edit-status') cursor-not-allowed opacity-60 @endcannot" 
+                                    :class="item.is_active ? 'bg-green-500' : 'bg-gray-300'"
+                                    @cannot('product-edit-status') disabled @endcannot
+                                >
+                                    <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform" 
+                                        :class="item.is_active ? 'translate-x-6' : 'translate-x-1'"></span>
                                 </button>
                             </td>
                             <td class="px-6 py-4 text-right">

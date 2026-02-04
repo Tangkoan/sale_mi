@@ -40,20 +40,23 @@
 
     <nav class="flex-1 overflow-y-auto no-scrollbar py-6 px-4 space-y-2">
 
-        <div class="group relative">
-            <a href="{{ route('admin.dashboard') }}" 
-               class="sidebar-item flex items-center px-4 py-3 rounded-xl transition-all duration-200 menu-item-content
-                      {{ request()->routeIs('admin.dashboard') ? 'btn-primary shadow-lg' : '' }}">
-                {{-- <i class="ri-dashboard-line text-xl menu-icon mr-3"></i> --}}
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
-                </svg>
-                <span class="sidebar-text font-medium px-2">{{ __('sidebar.dashboard') }}</span>
-            </a>
-            <div class="tooltip hidden absolute left-[100%] top-2 ml-4 bg-gray-900 text-white text-xs px-3 py-2 rounded shadow-xl z-50 whitespace-nowrap">
-                {{ __('sidebar.dashboard') }}
+        {{-- ពិនិត្យ Permission: ត្រូវប្រាកដថាឈ្មោះ 'dashboard' ដូចគ្នាទៅនឹងក្នុង Database របស់អ្នក --}}
+        @can('dashboard') 
+            <div class="group relative">
+                <a href="{{ route('admin.dashboard') }}" 
+                class="sidebar-item flex items-center px-4 py-3 rounded-xl transition-all duration-200 menu-item-content
+                        {{ request()->routeIs('admin.dashboard') ? 'btn-primary shadow-lg' : '' }}">
+                    
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
+                    </svg>
+                    <span class="sidebar-text font-medium px-2">{{ __('sidebar.dashboard') }}</span>
+                </a>
+                <div class="tooltip hidden absolute left-[100%] top-2 ml-4 bg-gray-900 text-white text-xs px-3 py-2 rounded shadow-xl z-50 whitespace-nowrap">
+                    {{ __('sidebar.dashboard') }}
+                </div>
             </div>
-        </div>
+        @endcan
  
         {{-- ពិនិត្យមើលសិនថា តើ User មានសិទ្ធិមើល Menu ណាមួយក្នុង Group នេះឬអត់? --}} 
         @if(auth()->user()->can('user-list') || auth()->user()->can('role-list') || auth()->user()->can('permission-list') || auth()->user()->hasRole('Super Admin'))

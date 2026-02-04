@@ -28,7 +28,23 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // 🔥 កូដបន្ថែមសម្រាប់ការ Check Role
+        $user = Auth::user();
+
+        if ($user->hasRole(['Admin', 'Super Admin'])) {
+            return redirect()->intended('/dashboard');
+        }
+
+        if ($user->hasRole('Cashier')) { // ដាក់ឈ្មោះ Role អោយត្រូវនឹងក្នុង DB
+            return redirect()->intended('/pos/tables');
+        }
+
+        if ($user->hasRole(['Chef', 'Bartender'])) { // Role ចុងភៅ និង ភេសជ្ជៈ
+            return redirect()->intended('/pos/kitchen');
+        }
+
+        // Role ផ្សេងៗអោយទៅ Dashboard ដែរ
+        return redirect()->intended('/dashboard');
     }
 
     /**

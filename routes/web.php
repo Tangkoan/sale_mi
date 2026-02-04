@@ -70,7 +70,7 @@ Route::middleware('auth')->group(function () {
     // ======================
     Route::get('/dashboard', function () {
         return view('admin.dashboard');
-    })->name('admin.dashboard');
+    })->name('admin.dashboard')->middleware('permission:dashboard');
 
     // Logout
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
@@ -333,7 +333,7 @@ Route::middleware('auth')->group(function () {
             Route::delete('/products/{id}', 'destroy')->name('products.destroy')->middleware('permission:product-delete');
             
             // Toggle Status (Optional: បិទ/បើក Stock)
-            Route::post('/products/{id}/toggle', 'toggleStatus')->name('products.toggle')->middleware('permission:product-edit');
+            Route::post('/products/{id}/toggle', 'toggleStatus')->name('products.toggle')->middleware('permission:product-edit-status');
         });
 
 
