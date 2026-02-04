@@ -64,6 +64,12 @@
                 <input type="text" x-model="search" @keyup.debounce.500ms="fetchProducts()" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input-border bg-card-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder-secondary text-sm shadow-sm" placeholder="{{ __('messages.search_placeholder') }}">
             </div>
 
+            {{-- 🔥 NEW: Kitchen Button --}}
+            <a href="{{ url('/pos/kitchen') }}" target="_blank" class="w-full sm:w-auto font-bold py-2.5 px-4 rounded-xl flex justify-center items-center gap-2 transition-all border border-input-border bg-card-bg text-text-color hover:bg-input-bg shadow-sm whitespace-nowrap">
+                <i class="ri-fire-line text-orange-500 text-xl"></i>
+                <span class="hidden xl:inline">Kitchen</span>
+            </a>
+
             {{-- Create Button --}}
             <button @can('product-create') @click="openModal('create')" @endcan class="w-full sm:w-auto text-white font-bold py-2.5 px-6 rounded-xl flex justify-center items-center gap-2 transition-all shadow-lg shadow-primary/30 whitespace-nowrap @can('product-create') bg-primary hover:opacity-90 @else bg-gray-400 cursor-not-allowed opacity-70 @endcan" @cannot('product-create') disabled @endcannot>
                 <i class="ri-add-circle-line text-xl"></i><span>{{ __('messages.add_product') }}</span>
@@ -156,6 +162,8 @@
              x-transition:enter="transition ease-out duration-300" 
              x-transition:enter-start="opacity-0 scale-95 translate-y-4" 
              x-transition:enter-end="opacity-100 scale-100 translate-y-0">
+
+             
             
             <div class="px-6 py-4 border-b border-border-color flex justify-between items-center bg-page-bg/30">
                 <div>
