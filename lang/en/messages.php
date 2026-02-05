@@ -333,4 +333,5 @@ return [
     'please_select_table_to_order' => 'Please select a table to start ordering.',
     'available' => 'Available',
     'busy' => 'Busy',
+    
 ];
