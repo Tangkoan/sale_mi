@@ -2,255 +2,54 @@
 
 @section('content')
 
-<div class="w-full h-full px-1 py-1" x-data="addonManagement()">
+<div class="w-full h-full px-2 py-2 sm:px-4 sm:py-4" x-data="addonManagement()">
     
     {{-- 1. HEADER & ACTIONS --}}
-    <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">
-        <div>
-            <h1 class="text-2xl font-bold text-text-color flex items-center gap-2">
-                <i class="ri-puzzle-line"></i>
-                {{ __('messages.addon_management') }}
-            </h1>
-        </div>
+    @include('Admin.addon.partials.header')
 
-        <div class="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
-            
-            {{-- Selected Actions --}}
-            <div x-show="selectedIds.length > 0" x-transition 
-                 class="flex items-center gap-2 mr-2 w-full sm:w-auto justify-between sm:justify-start bg-white dark:bg-gray-800 p-1 rounded-lg border border-border-color shadow-sm">
-                 <span class="text-xs font-bold text-primary bg-primary/10 px-2 py-1.5 rounded ml-1" x-text="selectedIds.length + ' {{ __('messages.selected_items') }}'"></span>
-                
-                <div class="flex gap-1">
-                    @can('addon-edit')
-                    <button @click="startSequentialEdit()" class="text-sm font-bold text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-md transition" title="{{ __('messages.edit_sequence') }}">
-                        <i class="ri-edit-circle-line"></i>
-                    </button>
-                    @endcan
-
-                    @can('addon-delete')
-                    <button @click="confirmBulkDelete()" class="text-sm font-bold text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-md transition" title="{{ __('messages.delete_selected') }}">
-                        <i class="ri-delete-bin-line"></i>
-                    </button>
-                    @endcan
-                </div>
-            </div>
-
-            {{-- Filter Destination (Optional Filter Dropdown) --}}
-            <div class="relative w-full sm:w-40">
-                <select x-model="filterDestination" @change="fetchAddons()" class="w-full px-3 py-2.5 rounded-xl border border-input-border bg-card-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm shadow-sm appearance-none">
-                    <option value="">All Destinations</option>
-                    <template x-for="dest in destinations" :key="dest.id">
-                        <option :value="dest.id" x-text="dest.name"></option>
-                    </template>
-                </select>
-                <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <i class="ri-arrow-down-s-line text-secondary"></i>
-                </div>
-            </div>
-
-            {{-- Search Bar --}}
-            <div class="relative w-full sm:w-64">
-                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-secondary">
-                    <i class="ri-search-line"></i>
-                </span>
-                <input type="text" x-model="search" @keyup.debounce.500ms="fetchAddons()"
-                       class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input-border bg-card-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder-secondary text-sm shadow-sm"
-                       placeholder="{{ __('messages.search_placeholder') }}">
-            </div>
-
-            {{-- Create Button --}}
-            <button 
-                @can('addon-create') @click="openModal('create')" @endcan
-                class="w-full sm:w-auto text-white font-bold py-2.5 px-6 rounded-xl flex justify-center items-center gap-2 transition-all shadow-lg shadow-primary/30 whitespace-nowrap
-                @can('addon-create') bg-primary hover:opacity-90 @else bg-gray-400 cursor-not-allowed opacity-70 @endcan"
-                @cannot('addon-create') disabled @endcannot
-            >
-                <i class="ri-add-circle-line text-xl"></i>
-                <span>{{ __('messages.add_addon') }}</span>
-            </button>
-        </div>
+    {{-- 2. DESKTOP VIEW (TABLE) --}}
+    <div class="hidden md:block">
+        @include('Admin.addon.partials.table')
     </div>
 
-    {{-- 2. TABLE LIST --}}
-    <div class="bg-card-bg rounded-xl shadow-custom border border-border-color overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-page-bg/50 border-b border-border-color text-text-color text-sm uppercase tracking-wider">
-                        <th class="px-6 py-4 w-4">
-                            <input type="checkbox" @change="toggleSelectAll()" x-model="selectAll" class="rounded border-input-border text-primary focus:ring-primary h-4 w-4">
-                        </th>
-                        
-                        {{-- Name --}}
-                        <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" @click="sort('name')">
-                            <div class="flex items-center gap-1">
-                                {{ __('messages.addon_name') }}
-                                <i class="ri-arrow-up-down-fill text-[10px] opacity-50 group-hover:opacity-100" :class="{'text-primary opacity-100': sortBy === 'name'}"></i>
-                            </div>
-                        </th>
-
-                        {{-- Price --}}
-                        <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" @click="sort('price')">
-                            <div class="flex items-center gap-1">
-                                {{ __('messages.price') }}
-                                <i class="ri-arrow-up-down-fill text-[10px] opacity-50 group-hover:opacity-100" :class="{'text-primary opacity-100': sortBy === 'price'}"></i>
-                            </div>
-                        </th>
-
-                        {{-- Destination --}}
-                        <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" @click="sort('destination')">
-                            <div class="flex items-center gap-1">
-                                Destination
-                                <i class="ri-arrow-up-down-fill text-[10px] opacity-50 group-hover:opacity-100" :class="{'text-primary opacity-100': sortBy === 'destination'}"></i>
-                            </div>
-                        </th>
-
-                        <th class="px-6 py-4 font-bold">{{ __('messages.status') }}</th>
-                        <th class="px-6 py-4 font-bold text-right">{{ __('messages.actions') }}</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-border-color">
-                    <template x-for="item in addons" :key="item.id">
-                        <tr class="hover:bg-page-bg/30 transition-colors group" :class="{'bg-primary/5': selectedIds.includes(item.id)}">
-                            <td class="px-6 py-4">
-                                <input type="checkbox" :value="item.id" x-model="selectedIds" class="rounded border-input-border text-primary focus:ring-primary h-4 w-4">
-                            </td>
-                            
-                            <td class="px-6 py-4 font-bold text-text-color" x-text="item.name"></td>
-                            <td class="px-6 py-4 font-bold text-primary" x-text="'$' + parseFloat(item.price).toFixed(2)"></td>
-
-                            {{-- Destination Badge --}}
-                            <td class="px-6 py-4">
-                                <template x-if="item.destination">
-                                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-600 border border-blue-200 inline-flex items-center gap-1">
-                                        <i class="ri-printer-line text-sm"></i>
-                                        <span x-text="item.destination.name"></span>
-                                    </span>
-                                </template>
-                                <template x-if="!item.destination">
-                                    <span class="text-xs text-gray-400 italic">No Destination</span>
-                                </template>
-                            </td>
-
-                            {{-- Status --}}
-                            <td class="px-6 py-4">
-                                <button @click="toggleStatus(item.id)" 
-                                        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
-                                        :class="(item.is_active == 1 || item.is_active == true) ? 'bg-green-500' : 'bg-gray-300'">
-                                    <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm"
-                                          :class="(item.is_active == 1 || item.is_active == true) ? 'translate-x-6' : 'translate-x-1'"></span>
-                                </button>
-                            </td>
-
-                            {{-- Actions --}}
-                            <td class="px-6 py-4 text-right">
-                                <div class="flex justify-end gap-2">
-                                    <button @can('addon-edit') @click="openModal('edit', item)" @endcan class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100"><i class="ri-pencil-line"></i></button>
-                                    <button @can('addon-delete') @click="confirmDelete(item.id)" @endcan class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-red-50 text-red-600 hover:bg-red-100"><i class="ri-delete-bin-line"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                    </template>
-                    <tr x-show="addons.length === 0">
-                        <td colspan="100%" class="px-6 py-12 text-center text-secondary">
-                            <i class="ri-puzzle-line text-4xl mb-2 inline-block"></i>
-                            <p>{{ __('messages.no_users_found_matching_your_search') }}</p>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <x-pagination />
+    {{-- 3. MOBILE VIEW (CARDS) --}}
+    <div class="md:hidden">
+        @include('Admin.addon.partials.mobile_card')
     </div>
+    
+    {{-- 4. PAGINATION --}}
+    @include('Admin.addon.partials.pagination')
 
-    {{-- 3. CREATE / EDIT MODAL --}}
-    <div x-show="isModalOpen" style="display: none;" class="fixed inset-0 z-[100] flex items-center justify-center px-4" x-cloak>
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal()"></div>
+    {{-- 5. MODAL (CREATE / EDIT) --}}
+    @include('Admin.addon.partials.modal')
 
-        <div class="relative w-full max-w-md bg-card-bg rounded-2xl shadow-2xl border border-border-color overflow-hidden"
-             x-transition:enter="transition ease-out duration-300" 
-             x-transition:enter-start="opacity-0 scale-95 translate-y-4" 
-             x-transition:enter-end="opacity-100 scale-100 translate-y-0">
-            
-            <div class="px-6 py-4 border-b border-border-color flex justify-between items-center" :class="isSequenceMode ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-page-bg/30'">
-                <div>
-                    <h3 class="text-lg font-bold text-text-color" x-text="editMode ? '{{ __('messages.edit') }} Addon' : '{{ __('messages.create') }} Addon'"></h3>
-                    <template x-if="isSequenceMode">
-                        <p class="text-xs text-primary font-bold mt-1">
-                            {{ __('messages.edit') }} <span x-text="currentSeqIndex + 1"></span> {{ __('messages.of') }} <span x-text="sequenceQueue.length"></span>
-                        </p>
-                    </template>
-                </div>
-                <button @click="closeModal(true)" class="text-secondary hover:text-text-color"><i class="ri-close-line text-xl"></i></button>
-            </div>
-            
-            <form @submit.prevent="submitForm" class="p-6 space-y-4">
-                {{-- Name --}}
-                <div>
-                    <label class="block text-sm font-bold text-text-color mb-1">{{ __('messages.addon_name') }}</label>
-                    <input type="text" x-model="form.name" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" placeholder="Ex: Extra Shot, Sugar">
-                    <p x-show="errors.name" x-text="errors.name" class="text-red-500 text-xs mt-1"></p>
-                </div>
-
-                {{-- Price --}}
-                <div>
-                    <label class="block text-sm font-bold text-text-color mb-1">{{ __('messages.price') }} ($)</label>
-                    <input type="number" step="0.01" x-model="form.price" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" placeholder="0.00">
-                    <p x-show="errors.price" x-text="errors.price" class="text-red-500 text-xs mt-1"></p>
-                </div>
-
-                {{-- ✅ Destination Dropdown --}}
-                <div>
-                    <label class="block text-sm font-bold text-text-color mb-1">Destination</label>
-                    <div class="relative">
-                        <select x-model="form.kitchen_destination_id" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none appearance-none">
-                            <option value="">Select Destination</option>
-                            <template x-for="dest in destinations" :key="dest.id">
-                                <option :value="dest.id" x-text="dest.name"></option>
-                            </template>
-                        </select>
-                        <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                            <i class="ri-arrow-down-s-line text-secondary"></i>
-                        </div>
-                    </div>
-                    <p x-show="errors.kitchen_destination_id" x-text="errors.kitchen_destination_id" class="text-red-500 text-xs mt-1"></p>
-                </div>
-
-                <div class="pt-4 flex justify-between items-center border-t border-border-color mt-2">
-                    <button type="button" x-show="isSequenceMode" @click="nextInSequence()" class="text-secondary hover:text-text-color text-sm font-bold px-2">
-                        {{ __('messages.skip_this_user') }} <i class="ri-arrow-right-line align-middle"></i>
-                    </button>
-                    <div x-show="!isSequenceMode"></div> 
-
-                    <div class="flex gap-3">
-                        <button type="button" @click="closeModal(true)" class="px-4 py-2 rounded-lg border border-input-border text-text-color hover:bg-page-bg transition">{{ __('messages.cancel') }}</button>
-                        <button type="submit" class="bg-primary text-white px-6 py-2 rounded-lg hover:opacity-90 transition flex items-center gap-2 shadow-lg shadow-primary/30" :disabled="isLoading">
-                            <i x-show="isLoading" class="ri-loader-4-line animate-spin"></i>
-                            <span x-text="isSequenceMode ? (currentSeqIndex + 1 === sequenceQueue.length ? '{{ __('messages.finish') }}' : '{{ __('messages.save_and_next') }}') : (editMode ? '{{ __('messages.update') }}' : '{{ __('messages.save') }}')"></span>
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
 </div>
 
 <script>
     function addonManagement() {
         return {
             addons: [],
-            // ✅ Destinations List
-            destinations: @json($destinations), 
+            destinations: @json($destinations ?? []), 
+            
             search: '',
-            filterDestination: '', // Filter by destination
+            filterDestination: '', 
             perPage: '10',
             currentPage: 1, 
             pagination: { last_page: 1, total: 0 }, 
+            
             isModalOpen: false,
             editMode: false,
             isLoading: false,
             selectedIds: [],
             selectAll: false,
+
+            // Column Config
+            showCols: JSON.parse(localStorage.getItem('addon_table_cols')) || { 
+                name: true, 
+                price: true, 
+                destination: true, 
+                status: true 
+            },
 
             sortBy: 'created_at',
             sortDir: 'desc',
@@ -259,17 +58,35 @@
             sequenceQueue: [],
             currentSeqIndex: 0,
 
-            // ✅ Form (kitchen_destination_id)
             form: { id: null, name: '', price: '', kitchen_destination_id: '' },
             errors: {},
 
-            init() { this.fetchAddons(); },
+            init() { 
+                this.$watch('showCols', (value) => { localStorage.setItem('addon_table_cols', JSON.stringify(value)); });
+                this.fetchAddons(); 
+            },
+
+            get visiblePages() {
+                const total = this.pagination.last_page;
+                const current = this.currentPage;
+                const delta = 2;
+                let pages = [];
+                if (total <= 7) { for (let i = 1; i <= total; i++) pages.push(i); return pages; }
+                pages.push(1);
+                if (current > delta + 2) pages.push('...');
+                let start = Math.max(2, current - delta);
+                let end = Math.min(total - 1, current + delta);
+                for (let i = start; i <= end; i++) pages.push(i);
+                if (current < total - delta - 1) pages.push('...');
+                if (total > 1) pages.push(total);
+                return pages;
+            },
 
             async fetchAddons() {
                 let url = "{{ route('admin.addons.fetch') }}";
                 const params = new URLSearchParams({
                     keyword: this.search,
-                    kitchen_destination_id: this.filterDestination, // ✅ Send destination filter
+                    kitchen_destination_id: this.filterDestination,
                     per_page: this.perPage,
                     page: this.currentPage,
                     sort_by: this.sortBy,
@@ -283,33 +100,43 @@
                     this.addons = data.data;
                     this.pagination = data; 
                     this.currentPage = data.current_page;
+                    this.selectAll = false;
                 } catch (error) { console.error(error); } 
                 finally { this.isLoading = false; }
             },
 
             sort(col) {
-                if (this.sortBy === col) this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
-                else { this.sortBy = col; this.sortDir = 'desc'; }
+                if (this.sortBy === col) {
+                    this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    this.sortBy = col;
+                    this.sortDir = 'desc';
+                }
                 this.fetchAddons();
             },
 
-            gotoPage(page) { this.currentPage = page; this.fetchAddons(); },
+            gotoPage(page) { if(page === '...') return; this.currentPage = page; this.fetchAddons(); },
             
-            toggleSelectAll() { this.selectedIds = this.selectAll ? this.addons.map(t => t.id) : []; },
+            toggleSelectAll() {
+                this.selectedIds = this.selectAll ? this.addons.map(c => c.id) : [];
+            },
 
             async toggleStatus(id) {
                 const index = this.addons.findIndex(item => item.id === id);
                 if (index === -1) return;
+                
                 const originalState = this.addons[index].is_active;
-                this.addons[index].is_active = (originalState == 1 || originalState == true) ? 0 : 1;
+                this.addons[index].is_active = !originalState; 
 
                 try {
                     const response = await fetch(`/admin/addons/${id}/toggle`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') 
+                        }
                     });
                     if (!response.ok) throw new Error('Failed');
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Status updated successfully' } }));
                 } catch(e) { 
                     console.error(e);
                     this.addons[index].is_active = originalState;
@@ -317,6 +144,71 @@
                 }
             },
 
+            // ================= MODAL LOGIC =================
+            loadDataToForm(item) {
+                this.editMode = true;
+                this.errors = {};
+                this.form = { 
+                    id: item.id, 
+                    name: item.name, 
+                    price: item.price, 
+                    kitchen_destination_id: item.kitchen_destination_id || '' 
+                };
+            },
+
+            openModal(mode, item = null) {
+                this.isSequenceMode = false;
+                this.isModalOpen = true;
+                this.errors = {};
+                if (mode === 'edit') {
+                    this.loadDataToForm(item);
+                } else {
+                    this.editMode = false;
+                    this.form = { id: null, name: '', price: '', kitchen_destination_id: '' };
+                }
+            },
+
+            closeModal(force = false) {
+                 if (!force && this.isSequenceMode && !confirm("{{ __('messages.confirm_stop_sequence') }}")) return;
+                this.isModalOpen = false;
+                this.isSequenceMode = false;
+                this.selectedIds = [];
+                this.selectAll = false;
+                this.fetchAddons(); 
+            },
+
+            async submitForm() {
+                this.isLoading = true;
+                this.errors = {};
+                let url = this.editMode ? `/admin/addons/${this.form.id}` : "{{ route('admin.addons.store') }}";
+                let method = this.editMode ? 'PUT' : 'POST';
+
+                try {
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') 
+                        },
+                        body: JSON.stringify(this.form)
+                    });
+                    const data = await response.json();
+                    if (!response.ok) {
+                        if (response.status === 422) {
+                            this.errors = data.errors;
+                            window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "{{ __('messages.fix_errors') }}" } }));
+                        } else {
+                            window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: data.message || 'Error' } }));
+                        }
+                    } else {
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: data.message } }));
+                        if (this.isSequenceMode) { this.nextInSequence(); } else { this.closeModal(); this.fetchAddons(); }
+                    }
+                } catch (error) { console.error(error); } 
+                finally { this.isLoading = false; }
+            },
+
+            // ================= SEQUENCE & DELETE =================
             startSequentialEdit() {
                 const selectedIdsString = this.selectedIds.map(id => String(id));
                 this.sequenceQueue = this.addons.filter(item => selectedIdsString.includes(String(item.id)));
@@ -339,72 +231,17 @@
                     window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: "{{ __('messages.all_users_updated') }}" } }));
                 }
             },
-
-            loadDataToForm(item) {
-                this.editMode = true;
-                this.errors = {};
-                // ✅ Load kitchen_destination_id
-                this.form = { 
-                    id: item.id, 
-                    name: item.name, 
-                    price: item.price, 
-                    kitchen_destination_id: item.kitchen_destination_id || '' 
-                };
+            
+            async confirmDelete(id) {
+                if(typeof askConfirm !== 'undefined') { askConfirm(async () => { await this.performDelete([id]); }); }
+                else if(confirm("Are you sure?")) { await this.performDelete([id]); }
             },
 
-            openModal(mode, item = null) {
-                this.isSequenceMode = false;
-                this.isModalOpen = true;
-                this.errors = {};
-                if (mode === 'edit') {
-                    this.loadDataToForm(item);
-                } else {
-                    this.editMode = false;
-                    // Reset Form
-                    this.form = { id: null, name: '', price: '', kitchen_destination_id: '' };
-                }
+            async confirmBulkDelete() {
+                if (this.selectedIds.length === 0) return;
+                if(typeof askConfirm !== 'undefined') { askConfirm(async () => { await this.performDelete(this.selectedIds, true); }); }
+                else if(confirm("Delete selected?")) { await this.performDelete(this.selectedIds, true); }
             },
-
-            closeModal(force = false) {
-                 if (!force && this.isSequenceMode && !confirm("{{ __('messages.confirm_stop_sequence') }}")) return;
-                this.isModalOpen = false;
-                this.isSequenceMode = false;
-                this.selectedIds = [];
-                this.selectAll = false;
-                this.fetchAddons(); 
-            },
-
-            async submitForm() {
-                this.isLoading = true;
-                this.errors = {};
-                
-                let url = this.editMode ? `/admin/addons/${this.form.id}` : "{{ route('admin.addons.store') }}";
-                let method = this.editMode ? 'PUT' : 'POST';
-
-                try {
-                    const response = await fetch(url, {
-                        method: method,
-                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
-                        body: JSON.stringify(this.form)
-                    });
-                    const data = await response.json();
-                    if (!response.ok) {
-                        if (response.status === 422) {
-                            this.errors = data.errors;
-                            window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "{{ __('messages.fix_errors') }}" } }));
-                        } else {
-                            window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: data.message || 'Error' } }));
-                        }
-                    } else {
-                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: data.message } }));
-                        if (this.isSequenceMode) { this.nextInSequence(); } else { this.closeModal(); this.fetchAddons(); }
-                    }
-                } catch (error) { console.error(error); } 
-                finally { this.isLoading = false; }
-            },
-
-            async confirmDelete(id) { askConfirm(async () => { await this.performDelete([id]); }); },
-            async confirmBulkDelete() { if (this.selectedIds.length === 0) return; askConfirm(async () => { await this.performDelete(this.selectedIds, true); }); },
 
             async performDelete(ids, isBulk = false) {
                 let url = isBulk ? "{{ route('admin.addons.bulk_delete') }}" : `/admin/addons/${ids[0]}`;
