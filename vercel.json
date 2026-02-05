@@ -1,0 +1,30 @@
+{
+    "version": 2,
+    "framework": null,
+    "functions": {
+        "api/*.php": { "runtime": "vercel-php@0.7.0" },
+        "public/index.php": { "runtime": "vercel-php@0.7.0" }
+    },
+    "routes": [
+        {
+            "src": "/(css|js|images|storage)/(.*)",
+            "dest": "/public/$1/$2"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/public/index.php"
+        }
+    ],
+    "env": {
+        "APP_ENV": "production",
+        "APP_DEBUG": "true",
+        "APP_URL": "https://your-project-name.vercel.app",
+        "APP_KEY": "base64:toGhHR+C7xzOYLB2n4JPdXRSN8dCSJL5AVzKUMRXptc=", 
+        "DB_CONNECTION": "mysql",
+        "DB_HOST": "gateway01.ap-southeast-1.prod.aws.tidbcloud.com", 
+        "DB_PORT": "4000",
+        "DB_DATABASE": "test",
+        "DB_USERNAME": "2DtzS4ZzewNtg2H.root",
+        "DB_PASSWORD": "2VYcjeNX96zm8PKq"
+    }
+}
