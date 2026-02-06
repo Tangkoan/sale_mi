@@ -5,19 +5,25 @@
     </h1>
     
     <div class="hidden md:flex gap-2">
+        {{-- ✅ Add Permission: pos-kitchen --}}
+        @can('pos-kitchen')
         <a href="{{ url('/pos/kitchen') }}" target="_blank" class="font-bold py-2.5 px-4 rounded-xl flex items-center gap-2 border border-input-border bg-card-bg text-text-color hover:bg-input-bg shadow-sm">
             <i class="ri-fire-line text-orange-500 text-xl"></i> <span>Kitchen</span>
         </a>
-        <button @can('product-create') @click="openModal('create')" @endcan class="bg-primary text-white font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-primary/30 hover:opacity-90 flex items-center gap-2">
+        @endcan
+
+        @can('product-create')
+        <button @click="openModal('create')" class="bg-primary text-white font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-primary/30 hover:opacity-90 flex items-center gap-2">
             <i class="ri-add-circle-line text-xl"></i><span>{{ __('messages.add_product') }}</span>
         </button>
+        @endcan
     </div>
 </div>
 
 <div class="flex flex-col md:flex-row gap-3 mb-4 sm:mb-6">
     <div class="flex items-center gap-2 w-full md:w-auto flex-1">
         
-        {{-- Category --}}
+        {{-- Category Filter --}}
         <div class="w-1/3 md:w-48">
             <select x-model="filterCategory" @change="fetchProducts()" class="w-full px-2 py-2.5 rounded-xl border border-input-border bg-card-bg text-text-color text-xs sm:text-sm shadow-sm outline-none focus:ring-2 focus:ring-primary/20 truncate">
                 <option value="">{{ __('messages.all_categories') }}</option>
@@ -60,23 +66,29 @@
 
     {{-- Mobile Action Buttons --}}
     <div class="flex gap-2 md:hidden">
+        {{-- ✅ Add Permission: pos-kitchen --}}
+        @can('pos-kitchen')
         <a href="{{ url('/pos/kitchen') }}" target="_blank" class="flex-1 font-bold py-2.5 px-4 rounded-xl flex justify-center items-center gap-2 border border-input-border bg-card-bg text-text-color hover:bg-input-bg shadow-sm">
             <i class="ri-fire-line text-orange-500 text-lg"></i>
         </a>
-        <button @can('product-create') @click="openModal('create')" @endcan class="flex-[3] bg-primary text-white font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-primary/30 hover:opacity-90 flex justify-center items-center gap-2">
+        @endcan
+
+        @can('product-create')
+        <button @click="openModal('create')" class="flex-[3] bg-primary text-white font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-primary/30 hover:opacity-90 flex justify-center items-center gap-2">
             <i class="ri-add-circle-line text-xl"></i><span>{{ __('messages.add_product') }}</span>
         </button>
+        @endcan
     </div>
 
     {{-- Selected Items --}}
     <div x-show="selectedIds.length > 0" x-transition class="flex items-center gap-2 w-full md:w-auto justify-between bg-primary/10 border border-primary/20 p-2 rounded-xl">
-            <span class="text-xs font-bold text-primary px-2" x-text="selectedIds.length + ' {{ __('messages.selected_items') }}'"></span>
+        <span class="text-xs font-bold text-primary px-2"><span x-text="selectedIds.length"></span> {{ __('messages.selected_items') }}</span>
         <div class="flex gap-1">
             @can('product-edit')
-            <button @click="startSequentialEdit()" class="h-8 w-8 flex items-center justify-center rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200 transition"><i class="ri-edit-circle-line"></i></button>
+            <button @click="startSequentialEdit()" class="h-8 w-8 flex items-center justify-center rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200 transition" title="{{ __('messages.edit') }}"><i class="ri-edit-circle-line"></i></button>
             @endcan
             @can('product-delete')
-            <button @click="confirmBulkDelete()" class="h-8 w-8 flex items-center justify-center rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition"><i class="ri-delete-bin-line"></i></button>
+            <button @click="confirmBulkDelete()" class="h-8 w-8 flex items-center justify-center rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition" title="{{ __('messages.delete') }}"><i class="ri-delete-bin-line"></i></button>
             @endcan
         </div>
     </div>

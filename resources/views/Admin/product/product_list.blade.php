@@ -147,6 +147,7 @@
             async filterAddonsByType(categoryId) {
                 if (!categoryId) { this.visibleAddons = []; return; }
                 let selectedCat = this.categories.find(c => c.id == categoryId);
+                // Fallback: search in loaded products if category not in initial list
                 if (!selectedCat && this.products.length > 0) {
                      const product = this.products.find(p => p.category_id == categoryId);
                      if (product && product.category) selectedCat = product.category;
@@ -201,7 +202,7 @@
                 const selectedIdsString = this.selectedIds.map(id => String(id));
                 this.sequenceQueue = this.products.filter(item => selectedIdsString.includes(String(item.id)));
                 if (this.sequenceQueue.length === 0) {
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "{{ __('messages.select_users_first') }}" } })); 
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "{{ __('messages.select_items_first') }}" } })); 
                     return;
                 }
                 this.isSequenceMode = true;
@@ -215,7 +216,7 @@
                     this.loadDataToForm(this.sequenceQueue[this.currentSeqIndex]);
                 } else {
                     this.closeModal(true); 
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: "{{ __('messages.all_users_updated') }}" } }));
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: "{{ __('messages.all_items_updated') }}" } }));
                 }
             },
 
@@ -295,8 +296,15 @@
                 finally { this.isLoading = false; }
             },
 
-            async confirmDelete(id) { askConfirm(async () => { await this.performDelete([id]); }); },
-            async confirmBulkDelete() { if (this.selectedIds.length === 0) return; askConfirm(async () => { await this.performDelete(this.selectedIds, true); }); },
+            async confirmDelete(id) { 
+                if(typeof askConfirm !== 'undefined') { askConfirm(async () => { await this.performDelete([id]); }); }
+                else if(confirm("{{ __('messages.confirm_delete') }}")) { await this.performDelete([id]); }
+            },
+            async confirmBulkDelete() { 
+                if (this.selectedIds.length === 0) return; 
+                if(typeof askConfirm !== 'undefined') { askConfirm(async () => { await this.performDelete(this.selectedIds, true); }); }
+                else if(confirm("{{ __('messages.confirm_bulk_delete') }}")) { await this.performDelete(this.selectedIds, true); }
+            },
 
             async performDelete(ids, isBulk = false) {
                 let url = isBulk ? "{{ route('admin.products.bulk_delete') }}" : `/admin/products/${ids[0]}`;

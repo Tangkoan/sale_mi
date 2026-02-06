@@ -394,7 +394,7 @@ Route::middleware('auth')->group(function () {
 
             // === KITCHEN & BAR ROUTES ===
             // ទំព័រដើមសម្រាប់មើលអេក្រង់
-            Route::get('/kitchen', [KitchenController::class, 'index'])->name('kitchen.view'); 
+            Route::get('/kitchen', [KitchenController::class, 'index'])->name('kitchen.view')->middleware('permission:pos-kitchen');
             // APIs សម្រាប់ហៅដោយ JavaScript (AJAX)
             Route::get('/kitchen/fetch', [KitchenController::class, 'fetchOrders'])->name('kitchen.fetch');
             Route::post('/kitchen/update-item', [KitchenController::class, 'updateItemStatus'])->name('kitchen.update_item');
@@ -402,7 +402,6 @@ Route::middleware('auth')->group(function () {
 
             // update status
             Route::get('/products/status', [PosController::class, 'getProductStatuses'])->name('products.status');
-
             Route::get('/addons/status', [PosController::class, 'getAddonStatuses'])->name('addons.status');
         });
 
