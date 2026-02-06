@@ -14,16 +14,16 @@
         {{-- ========================================== --}}
         
         {{-- សូមកែ 'pos_access' ទៅតាមឈ្មោះ Permission របស់អ្នក ឧទាហរណ៍: 'create_sale' ឬ 'view_pos' --}}
-        @can('pos_access') 
+        @can('pos') 
         <a href="{{ url('/pos/tables') }}" 
-           class="hidden sm:flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg shadow-sm transition-all duration-200 transform hover:scale-105 mr-1">
+           class="hidden sm:flex items-center gap-2 btn-primary px-4 py-1.5 rounded-lg shadow-sm transition-all duration-200 transform hover:scale-105 mr-1">
             <i class="ri-computer-line"></i> {{-- ឬប្រើ icon ri-shopping-cart-line --}}
             <span class="font-medium text-sm">Sale</span>
         </a>
         
         {{-- ប៊ូតុងសម្រាប់ទូរស័ព្ទ (បង្ហាញតែ Icon) --}}
         <a href="{{ url('/pos/tables') }}" 
-           class="sm:hidden flex items-center justify-center bg-blue-600 text-white h-8 w-8 rounded-full shadow-sm mr-1">
+           class="sm:hidden flex items-center justify-center btn-primary h-8 w-8 rounded-full shadow-sm mr-1">
             <i class="ri-computer-line"></i>
         </a>
         @endcan

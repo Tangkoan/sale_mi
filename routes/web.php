@@ -361,7 +361,7 @@ Route::middleware('auth')->group(function () {
         Route::middleware(['auth'])->prefix('pos')->name('pos.')->group(function () {
             
             // Table Selection Screen
-            Route::get('/tables', [PosController::class, 'index'])->name('tables');
+            Route::get('/tables', [PosController::class, 'index'])->name('tables')->middleware('permission:pos');
             Route::get('/tables/fetch', [PosController::class, 'fetchTables'])->name('tables.fetch');
             
             // Action ពេលចុចលើតុ

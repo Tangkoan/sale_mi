@@ -13,7 +13,7 @@
         @endcan
 
         @can('product-create')
-        <button @click="openModal('create')" class="bg-primary text-white font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-primary/30 hover:opacity-90 flex items-center gap-2">
+        <button @click="openModal('create')" class="btn-primary font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-primary/30 hover:opacity-90 flex items-center gap-2">
             <i class="ri-add-circle-line text-xl"></i><span>{{ __('messages.add_product') }}</span>
         </button>
         @endcan
