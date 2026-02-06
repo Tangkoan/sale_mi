@@ -213,7 +213,7 @@
                 const selectedIdsString = this.selectedIds.map(id => String(id));
                 this.sequenceQueue = this.addons.filter(item => selectedIdsString.includes(String(item.id)));
                 if (this.sequenceQueue.length === 0) {
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "{{ __('messages.select_users_first') }}" } })); 
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "{{ __('messages.select_items_first') }}" } })); 
                     return;
                 }
                 this.isSequenceMode = true;
@@ -228,19 +228,19 @@
                     this.loadDataToForm(this.sequenceQueue[this.currentSeqIndex]);
                 } else {
                     this.closeModal(true); 
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: "{{ __('messages.all_users_updated') }}" } }));
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: "{{ __('messages.all_items_updated') }}" } }));
                 }
             },
             
             async confirmDelete(id) {
                 if(typeof askConfirm !== 'undefined') { askConfirm(async () => { await this.performDelete([id]); }); }
-                else if(confirm("Are you sure?")) { await this.performDelete([id]); }
+                else if(confirm("{{ __('messages.confirm_delete') }}")) { await this.performDelete([id]); }
             },
 
             async confirmBulkDelete() {
                 if (this.selectedIds.length === 0) return;
                 if(typeof askConfirm !== 'undefined') { askConfirm(async () => { await this.performDelete(this.selectedIds, true); }); }
-                else if(confirm("Delete selected?")) { await this.performDelete(this.selectedIds, true); }
+                else if(confirm("{{ __('messages.confirm_bulk_delete') }}")) { await this.performDelete(this.selectedIds, true); }
             },
 
             async performDelete(ids, isBulk = false) {
