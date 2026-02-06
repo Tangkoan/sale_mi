@@ -8,7 +8,7 @@
         
         <div class="px-6 py-4 border-b border-border-color flex justify-between items-center" :class="isSequenceMode ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-page-bg/30'">
             <div>
-                <h3 class="text-lg font-bold text-text-color" x-text="editMode ? '{{ __('messages.edit') }} Category' : '{{ __('messages.create') }} Category'"></h3>
+                <h3 class="text-lg font-bold text-text-color" x-text="editMode ? '{{ __('messages.edit_category') }}' : '{{ __('messages.create_category') }}'"></h3>
                 <template x-if="isSequenceMode">
                     <p class="text-xs text-primary font-bold mt-1">
                         {{ __('messages.edit') }} <span x-text="currentSeqIndex + 1"></span> {{ __('messages.of') }} <span x-text="sequenceQueue.length"></span>
@@ -28,10 +28,10 @@
 
             {{-- Destination --}}
             <div>
-                <label class="block text-sm font-bold text-text-color mb-1">Destination</label>
+                <label class="block text-sm font-bold text-text-color mb-1">{{ __('messages.destination') }}</label>
                 <div class="relative">
                     <select x-model="form.kitchen_destination_id" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none appearance-none">
-                        <option value="">Select Destination</option>
+                        <option value="">{{ __('messages.select_destination') }}</option>
                         <template x-for="dest in destinations" :key="dest.id">
                             <option :value="dest.id" x-text="dest.name"></option>
                         </template>
@@ -57,7 +57,7 @@
                     </div>
                     <div class="flex-1">
                         <input type="file" @change="handleFileUpload" accept="image/*" class="block w-full text-sm text-secondary file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-primary file:text-white hover:file:bg-primary/90 cursor-pointer">
-                        <p class="text-[10px] text-secondary mt-1">Supported: JPEG, PNG, JPG (Max 2MB)</p>
+                        <p class="text-[10px] text-secondary mt-1">{{ __('messages.supported_images') }}</p>
                     </div>
                 </div>
                 <p x-show="errors.image" x-text="errors.image" class="text-red-500 text-xs mt-1"></p>
@@ -66,7 +66,7 @@
             {{-- Footer --}}
             <div class="pt-4 flex justify-between items-center border-t border-border-color mt-2">
                 <button type="button" x-show="isSequenceMode" @click="nextInSequence()" class="text-secondary hover:text-text-color text-sm font-bold px-2">
-                    {{ __('messages.skip_this_user') }} <i class="ri-arrow-right-line align-middle"></i>
+                    {{ __('messages.skip_this') }} <i class="ri-arrow-right-line align-middle"></i>
                 </button>
                 <div x-show="!isSequenceMode"></div> 
 

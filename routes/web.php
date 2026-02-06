@@ -104,8 +104,8 @@ Route::middleware('auth')->group(function () {
         // Shop Info CRUD
         // ======================
         Route::controller(ShopInfoController::class)->group(function () {
-            Route::get('/shop-info', [ShopInfoController::class, 'index'])->name('shop_info.index');
-            Route::post('/shop-info/save', [ShopInfoController::class, 'save'])->name('shop_info.save');
+            Route::get('/shop-info', [ShopInfoController::class, 'index'])->name('shop_info.index')->middleware('permission:setting-shop_info');
+            Route::post('/shop-info/save', [ShopInfoController::class, 'save'])->name('shop_info.save')->middleware('permission:setting-shop_info');
         });
         
         // ======================
@@ -256,17 +256,17 @@ Route::middleware('auth')->group(function () {
         // ======================
         Route::controller(CategoryController::class)->group(function () { 
             // 1. Route ធម្មតា និង Bulk Action (ដាក់នៅពីលើគេ)
-            Route::get('/categories', 'index')->name('categories.index');
+            Route::get('/categories', 'index')->name('categories.index')->middleware('permission:category-list');
             Route::get('/categories/fetch', 'fetchCategories')->name('categories.fetch');
-            Route::post('/categories', 'store')->name('categories.store');
+            Route::post('/categories', 'store')->name('categories.store')->middleware('permission:category-create');
 
             // !!! សំខាន់៖ ដាក់ Bulk Delete នៅពីលើ Route {id} !!!
-            Route::post('/categories/bulk-delete', 'bulkDelete')->name('categories.bulk_delete');
+            Route::post('/categories/bulk-delete', 'bulkDelete')->name('categories.bulk_delete')->middleware('permission:category-delete');
 
             // 2. Route ដែលមាន ID (ដាក់នៅខាងក្រោម)
             // Update (ប្រើ POST ជំនួស PUT សម្រាប់ File Upload)
-            Route::post('/categories/{id}', 'update')->name('categories.update');
-            Route::delete('/categories/{id}', 'destroy')->name('categories.destroy');
+            Route::post('/categories/{id}', 'update')->name('categories.update')->middleware('permission:category-edit');
+            Route::delete('/categories/{id}', 'destroy')->name('categories.destroy')->middleware('permission:category-delete');
         });
 
         
@@ -341,12 +341,12 @@ Route::middleware('auth')->group(function () {
         // Destinations CRUD
         // ======================
         Route::controller(AddonController::class)->group(function () {
-            Route::get('/destinations', [KitchenDestinationController::class, 'index'])->name('destinations.index');
+            Route::get('/destinations', [KitchenDestinationController::class, 'index'])->name('destinations.index')->middleware('permission:destinations-list');
             Route::get('/destinations/fetch', [KitchenDestinationController::class, 'fetchDestinations'])->name('destinations.fetch');
-            Route::post('/destinations/store', [KitchenDestinationController::class, 'store'])->name('destinations.store');
-            Route::post('/destinations/{id}', [KitchenDestinationController::class, 'update'])->name('destinations.update'); // For Edit
-            Route::post('/destinations/{id}/delete', [KitchenDestinationController::class, 'destroy'])->name('destinations.delete');
-            Route::post('/destinations/bulk-delete', [KitchenDestinationController::class, 'bulkDelete'])->name('destinations.bulk_delete');
+            Route::post('/destinations/store', [KitchenDestinationController::class, 'store'])->name('destinations.store')->middleware('permission:destinations-add');
+            Route::post('/destinations/{id}', [KitchenDestinationController::class, 'update'])->name('destinations.update')->middleware('permission:destinations-edit'); // For Edit
+            Route::post('/destinations/{id}/delete', [KitchenDestinationController::class, 'destroy'])->name('destinations.delete')->middleware('permission:destinations-delete');
+            Route::post('/destinations/bulk-delete', [KitchenDestinationController::class, 'bulkDelete'])->name('destinations.bulk_delete')->middleware('permission:destinations-delete');
         });
         
         
