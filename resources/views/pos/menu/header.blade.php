@@ -48,7 +48,7 @@
                         <span class="hidden sm:inline" x-text="isAddonMode ? 'Back' : 'Add-ons'"></span>
                     </button>
 
-                    {{-- 🔥 RESTORED: Kitchen View Button --}}
+                    {{-- Kitchen View Button --}}
                     <a href="{{ route('pos.kitchen.view') }}" target="_blank" 
                        class="flex items-center justify-center w-9 h-9 rounded-full bg-orange-50 text-orange-600 hover:bg-orange-100 dark:bg-orange-900/20 dark:text-orange-400 border border-orange-100 dark:border-orange-800 transition">
                         <i class="ri-fire-line text-lg"></i>
@@ -64,15 +64,82 @@
                 {{-- B. DIVIDER --}}
                 <div class="h-8 w-px bg-gray-300 dark:bg-gray-600 hidden sm:block"></div>
 
-                {{-- C. SYSTEM ACTIONS (Dark Mode & Profile) --}}
+                {{-- C. SYSTEM ACTIONS --}}
                 <div class="flex items-center gap-2">
                     
-                    {{-- Dark Mode Toggle --}}
-                    <button x-data="{ dark: localStorage.getItem('theme') === 'dark' }" 
-                            @click="dark = !dark; localStorage.setItem('theme', dark ? 'dark' : 'light'); 
-                                    if(dark) { document.documentElement.classList.add('dark') } else { document.documentElement.classList.remove('dark') }"
-                            class="w-9 h-9 rounded-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-yellow-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all border border-transparent dark:border-gray-700">
-                        <i class="text-lg" :class="dark ? 'ri-sun-fill' : 'ri-moon-fill'"></i>
+                    {{-- Language Switcher --}}
+                    <div x-data="{ languageOpen: false }" class="relative">
+                        <button @click="languageOpen = !languageOpen" class="w-9 h-9 rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors border border-transparent dark:border-gray-700">
+                            @if(App::getLocale() == 'km')
+                                <img src="https://flagcdn.com/w40/kh.png" alt="Khmer" class="w-5 h-auto rounded-sm shadow-sm object-cover">
+                            @else
+                                <img src="https://flagcdn.com/w40/us.png" alt="English" class="w-5 h-auto rounded-sm shadow-sm object-cover">
+                            @endif
+                        </button>
+
+                        <div x-show="languageOpen" 
+                             @click.outside="languageOpen = false"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 scale-95"
+                             x-transition:enter-end="opacity-100 scale-100"
+                             x-cloak
+                             class="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-xl py-1 border border-gray-100 dark:border-gray-700 z-50 origin-top-right">
+                            
+                            <a href="{{ route('switch.language', 'km') }}" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors {{ App::getLocale() == 'km' ? 'bg-gray-50 dark:bg-gray-700/50 text-blue-600 font-semibold' : '' }}">
+                                <img src="https://flagcdn.com/w40/kh.png" alt="Khmer" class="w-5 h-auto rounded-sm shadow-sm">
+                                <span>ភាសាខ្មែរ</span>
+                                @if(App::getLocale() == 'km') <i class="ri-check-line ml-auto text-blue-600"></i> @endif
+                            </a>
+
+                            <a href="{{ route('switch.language', 'en') }}" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors {{ App::getLocale() == 'en' ? 'bg-gray-50 dark:bg-gray-700/50 text-blue-600 font-semibold' : '' }}">
+                                <img src="https://flagcdn.com/w40/us.png" alt="English" class="w-5 h-auto rounded-sm shadow-sm">
+                                <span>English</span>
+                                @if(App::getLocale() == 'en') <i class="ri-check-line ml-auto text-blue-600"></i> @endif
+                            </a>
+                        </div>
+                    </div>
+
+                    {{-- Theme Toggle (Self-Contained Logic) --}}
+                    <button x-data="{ 
+                                darkMode: localStorage.getItem('theme_mode') === 'dark',
+                                toggle() {
+                                    this.darkMode = !this.darkMode;
+                                    localStorage.setItem('theme_mode', this.darkMode ? 'dark' : 'light');
+                                    if (this.darkMode) document.documentElement.classList.add('dark');
+                                    else document.documentElement.classList.remove('dark');
+                                },
+                                init() {
+                                    if (this.darkMode) document.documentElement.classList.add('dark');
+                                }
+                            }" 
+                            @click="toggle()" 
+                            class="relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 focus:outline-none border border-gray-200 dark:border-gray-600 hidden sm:flex" 
+                            :class="!darkMode ? 'bg-gray-200' : 'bg-primary'"
+                            :style="darkMode ? 'background-color: var(--primary, #308D71)' : ''">
+                        <span class="sr-only">Toggle Dark Mode</span>
+                        <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition duration-300 ease-in-out flex items-center justify-center" 
+                            :class="darkMode ? 'translate-x-6' : 'translate-x-1'">
+                            <i x-show="!darkMode" class="ri-sun-fill text-yellow-500 text-[10px]"></i>
+                            <i x-show="darkMode" class="ri-moon-fill text-[10px] text-primary" :style="'color: var(--primary, #308D71)'"></i>
+                        </span>
+                    </button>
+
+                    {{-- Mobile Theme Toggle --}}
+                    <button x-data="{ 
+                                darkMode: localStorage.getItem('theme_mode') === 'dark',
+                                toggle() {
+                                    this.darkMode = !this.darkMode;
+                                    localStorage.setItem('theme_mode', this.darkMode ? 'dark' : 'light');
+                                    if (this.darkMode) document.documentElement.classList.add('dark');
+                                    else document.documentElement.classList.remove('dark');
+                                },
+                                init() {
+                                    if (this.darkMode) document.documentElement.classList.add('dark');
+                                }
+                            }" 
+                            @click="toggle()" 
+                            class="sm:hidden w-9 h-9 rounded-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-yellow-400">
+                        <i class="text-lg" :class="darkMode ? 'ri-moon-fill' : 'ri-sun-fill'"></i>
                     </button>
 
                     {{-- User Profile Dropdown --}}
@@ -96,14 +163,12 @@
                              x-transition:enter-end="transform opacity-100 scale-100"
                              class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 py-1 z-50 origin-top-right">
                             
-                            {{-- Dashboard --}}
                             <a href="{{ route('admin.dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2">
                                 <i class="ri-dashboard-3-line text-primary"></i> Dashboard
                             </a>
 
                             <div class="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
 
-                            {{-- Logout --}}
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
                                 <button type="submit" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2">
@@ -118,7 +183,7 @@
         </div>
 
         {{-- =============================================== --}}
-        {{-- SEARCH BAR & CATEGORIES (រក្សាទុកដដែល) --}}
+        {{-- SEARCH BAR & CATEGORIES --}}
         {{-- =============================================== --}}
 
         {{-- Search Bar --}}
@@ -155,7 +220,7 @@
         </div>
     </div>
 
-    {{-- MODAL: Exchange Rate (រក្សាទុកដដែល) --}}
+    {{-- MODAL: Exchange Rate --}}
     <div x-show="isExchangeModalOpen" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" x-cloak x-transition.opacity>
         <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all" @click.away="isExchangeModalOpen = false" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-90 translate-y-4" x-transition:enter-end="opacity-100 scale-100 translate-y-0">
             <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
