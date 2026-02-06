@@ -1,5 +1,7 @@
 @extends('admin.dashboard')
 
+@section('title', 'Table Management')
+
 @section('content')
 
 <div class="w-full h-full px-2 py-2 sm:px-4 sm:py-4" x-data="tableManagement()">

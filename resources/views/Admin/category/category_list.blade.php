@@ -1,5 +1,8 @@
 @extends('admin.dashboard') {{-- ឬ Layout របស់អ្នក --}}
 
+
+@section('title', 'Category Management')
+
 @section('content')
 
 {{-- x-data ដាក់នៅទីនេះដើម្បីអោយ Component ខាងក្នុងអាចប្រើ variables រួមគ្នាបាន --}}

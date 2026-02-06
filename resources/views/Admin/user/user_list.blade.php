@@ -3,6 +3,9 @@
 
 @section('content')
 
+@section('title', 'User Management')
+
+
 <div class="w-full h-full px-2 py-2 sm:px-4 sm:py-4" x-data="userManagement()">
     
     {{-- 1. HEADER & ACTIONS --}}

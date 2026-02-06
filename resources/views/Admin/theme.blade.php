@@ -1,5 +1,7 @@
 @extends('admin.dashboard')
 
+@section('title', 'Theme Management')
+
 <style>
     /* Mobile (Default) */
     #actionBar { left: 1.5rem; right: 1.5rem; transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }

@@ -1,5 +1,7 @@
 @extends('admin.dashboard')
 
+@section('title', 'Shop Info Management')
+
 @section('content')
 
 {{-- Error Alert --}}
