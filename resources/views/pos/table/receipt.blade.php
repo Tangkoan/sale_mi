@@ -1,3 +1,19 @@
+<link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+    /* បង្កើត Class ថ្មីសម្រាប់បង្ខំឱ្យប្រើ Font ខ្មែរ */
+    .font-khmer {
+        font-family: 'Battambang', 'Khmer OS Battambang', sans-serif !important;
+    }
+    
+    /* ពេល Print ត្រូវប្រាកដថា Font នៅតែដើរ */
+    @media print {
+        body {
+            font-family: 'Battambang', 'Khmer OS Battambang', sans-serif !important;
+        }
+    }
+</style>
+
 <div id="receipt-print-area" class="hidden">
     <div class="w-[78mm] mx-auto p-2 font-mono text-black text-[12px] leading-tight">
         

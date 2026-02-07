@@ -19,51 +19,75 @@ use Illuminate\Validation\Rule; // Import នៅខាងលើ
 use Illuminate\Support\Facades\Log;       // ✅ បន្ថែម
 use Illuminate\Support\Facades\Validator; // ✅ បន្ថែម
 
+// 🔥 ផ្នែកសំខាន់: ហៅ Library ដែលទើបដំឡើងមកប្រើ
+use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
+use Mike42\Escpos\Printer;
+use Mike42\Escpos\EscposImage; // កុំភ្លេចដាក់ខាងលើ Controller
+
 class OrderController extends Controller
 {
-    // ... (store function នៅដដែល)
+
+    /**
+     * Function បង្កើតរូបភាពពីអក្សរខ្មែរ
+     */
+    protected function createKhmerImage($text, $size = 28) // ដំឡើង Size បន្តិចអោយច្បាស់
+    {
+        $fontPath = public_path('fonts/khmer.ttf');
+
+        if (!file_exists($fontPath)) {
+            Log::error("Font missing: " . $fontPath);
+            return null;
+        }
+
+        // គណនាទំហំ
+        $bbox = imagettfbbox($size, 0, $fontPath, $text);
+        $width = abs($bbox[4] - $bbox[0]) + 20;
+        $height = abs($bbox[5] - $bbox[1]) + 20;
+
+        // 🔥 កែប្រែ៖ ប្រើ imagecreatetruecolor ដើម្បីគុណភាពល្អជាង
+        $im = imagecreatetruecolor($width, $height);
+        
+        // កំណត់ពណ៌
+        $white = imagecolorallocate($im, 255, 255, 255);
+        $black = imagecolorallocate($im, 0, 0, 0);
+
+        // 🔥 កែប្រែ៖ ចាក់ពណ៌សពេញផ្ទៃរូបភាព (សំខាន់ណាស់!)
+        imagefill($im, 0, 0, $white);
+
+        // សរសេរអក្សរ
+        imagettftext($im, $size, 0, 10, $size + 5, $black, $fontPath, $text);
+
+        // Save
+        $filename = 'print_' . uniqid() . '.png';
+        $tempPath = storage_path('app/public/' . $filename);
+        
+        if (!file_exists(dirname($tempPath))) {
+            mkdir(dirname($tempPath), 0777, true);
+        }
+
+        imagepng($im, $tempPath);
+        imagedestroy($im);
+
+        return $tempPath;
+    }
 
     public function store(Request $request)
     {
-        // ---------------------------------------------------------
-        // ជំហានទី ១: កត់ត្រាទិន្នន័យដែលទទួលបានពី Frontend (Log Input)
-        // ---------------------------------------------------------
-        // Log::info('🟢 [POS ORDER] Starting Store Process...');
-        // Log::info('📥 Data Received:', $request->all());
-
-        // ---------------------------------------------------------
-        // ជំហានទី ២: ធ្វើ Validation ដោយដៃ (Manual Validation)
-        // ---------------------------------------------------------
+        // 1. Validation
         $validator = Validator::make($request->all(), [
-            'table_id' => 'required', // ដាក់ធម្មតាសិន ដើម្បីចង់ដឹងថាវាជាប់អត់
+            'table_id' => 'required',
             'items'    => 'required|array|min:1',
-            
-            // 🔥 កន្លែងរសើប: យើង Log មើលសិន កុំទាន់អាលតឹងរ៉ឹងពេក
-            'items.*.product_id' => 'required', 
+            'items.*.product_id' => 'required',
             'items.*.qty'        => 'required|integer|min:1',
         ]);
 
-        // បើ Validation បរាជ័យ -> កត់ចូល Log ភ្លាម
         if ($validator->fails()) {
-            // Log::error('❌ [POS ORDER] Validation Failed:', $validator->errors()->toArray());
-            
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Validation Error',
-                'errors'  => $validator->errors()
-            ], 422);
+            return response()->json(['status' => 'error', 'errors' => $validator->errors()], 422);
         }
 
         return DB::transaction(function () use ($request) {
             try {
-                // ---------------------------------------------------------
-                // ជំហានទី ៣: ចាប់ផ្តើមបង្កើត Order
-                // ---------------------------------------------------------
-                
-                // 1. Check Table
-                // យើងប្រើឈ្មោះ Model ផ្ទាល់ដើម្បីអោយវាស្គាល់ Prefix 'vc_' ដោយស្វ័យប្រវត្តិ
-                // បើបងប្រើ Table ឈ្មោះ 'vc_tables' ត្រូវប្រាកដថា Model Table មាន $table = 'tables' ឬអត់កំណត់
-                
+                // 2. បង្កើត Order
                 $order = Order::firstOrCreate(
                     ['table_id' => $request->table_id, 'status' => 'pending'],
                     [
@@ -72,33 +96,19 @@ class OrderController extends Controller
                         'total_amount'   => 0,
                     ]
                 );
-                
-                // Log::info('✅ Order Created/Found ID: ' . $order->id);
 
                 // Update Table Status
-                $table = \App\Models\Table::find($request->table_id);
+                $table = Table::find($request->table_id);
                 if ($table) {
                     $table->update(['status' => 'busy']);
-                } else {
-                    Log::warning('⚠️ Table ID ' . $request->table_id . ' not found in DB');
                 }
 
-                $newOrderItems = new \Illuminate\Database\Eloquent\Collection();
+                // 📝 បង្កើត Collection ទុកដាក់ Item ថ្មីៗសម្រាប់យកទៅ Print
+                $newItemsForPrint = new \Illuminate\Database\Eloquent\Collection();
 
-                foreach ($request->items as $index => $itemData) {
-                    
-                    // Log មើល Item នីមួយៗ
-                    // Log::info("🔄 Processing Item #$index:", $itemData);
-
-                    // ពិនិត្យមើលថា Product ID មានពិតឬអត់ មុននឹង Save
-                    // ប្រើ App\Models\Product ដើម្បីអោយស្គាល់ vc_products
-                    $productExists = \App\Models\Product::find($itemData['product_id']);
-                    
-                    if (!$productExists) {
-                        // Log::error("❌ Product ID {$itemData['product_id']} not found in DB (vc_products). Skipping...");
-                        // បើរកមិនឃើញ យើងអាច Return Error ឬរំលង
-                        throw new \Exception("Product ID {$itemData['product_id']} not found.");
-                    }
+                foreach ($request->items as $itemData) {
+                    $product = Product::find($itemData['product_id']);
+                    if (!$product) throw new \Exception("Product ID {$itemData['product_id']} not found.");
 
                     $orderItem = OrderItem::create([
                         'order_id'   => $order->id,
@@ -110,8 +120,8 @@ class OrderController extends Controller
                         'status'     => 'pending',
                         'created_by' => Auth::id(),
                     ]);
-                    
-                    $newOrderItems->push($orderItem);
+
+                    $newItemsForPrint->push($orderItem);
 
                     if (!empty($itemData['addons'])) {
                         foreach ($itemData['addons'] as $addon) {
@@ -124,32 +134,139 @@ class OrderController extends Controller
                         }
                     }
                 }
-                
+
                 $this->recalculateOrderTotal($order->id);
-                // Log::info('💰 Total Recalculated');
 
-                // ... (ផ្នែក Auto Print រក្សាទុកដដែល ឬលុបចោលសិនក៏បានដើម្បីតេស្ត) ...
+                // =========================================================
+                // 🔥 ចាប់ផ្តើម AUTO PRINT (Direct LAN)
+                // =========================================================
+                
+                // ១. Load Relationship អោយគ្រប់ (Product -> Category -> KitchenDestination)
+                $newItemsForPrint->load(['product.category.kitchenDestination', 'addons.addon']);
 
-                // Log::info('🎉 Order Transaction Completed Successfully!');
+                // ២. ហៅ Function Print ខាងក្រោម
+                $tableName = $table ? $table->name : 'Unknown';
+                $this->processAutoPrint($newItemsForPrint, $tableName, $order->invoice_number);
+
+                // =========================================================
 
                 return response()->json([
                     'status' => 'success',
-                    'message' => 'Order placed successfully!',
+                    'message' => 'Order placed and sent to kitchen!',
                     'order_id' => $order->id
                 ]);
 
             } catch (\Exception $e) {
-                // ចាប់ Error គ្រប់បែបយ៉ាងនៅទីនេះ
-                // Log::error('🔥 [POS ORDER] Exception Error: ' . $e->getMessage());
-                // Log::error($e->getTraceAsString()); // ចង់ដឹងថាខុសនៅបន្ទាត់ណា
-
-                // បោះ Error ទៅ Frontend វិញ
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Server Error: ' . $e->getMessage()
-                ], 500);
+                return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
             }
         });
+    }
+
+
+    /**
+     * 🔥 Function សម្រាប់បែងចែកមុខម្ហូប និងបញ្ជាទៅ Printer
+     */
+    protected function processAutoPrint($orderItems, $tableName, $invoiceNumber)
+    {
+        // កែសម្រួល៖ ប្រើ optional() ដើម្បីការពារកុំអោយគាំង បើ Product អត់មាន Category
+        $groupedItems = $orderItems->groupBy(function ($item) {
+            
+            // ១. ពិនិត្យមើលថាមាន Product និង Category ដែរឬទេ?
+            if (!$item->product || !$item->product->category) {
+                return 0; // ដាក់ចូលក្រុម "អត់មានកន្លែង Print"
+            }
+
+            // ២. យក ID ផ្ទះបាយ (បើអត់មាន ដាក់ 0)
+            return $item->product->category->kitchen_destination_id ?? 0;
+        });
+
+        foreach ($groupedItems as $destId => $items) {
+            if ($destId == 0) continue; // រំលងក្រុមដែលអត់មានកន្លែង Print
+
+            // រក IP Printer
+            $destination = KitchenDestination::find($destId);
+            $printerIp = $destination ? $destination->printnode_id : null;
+
+            if ($printerIp) {
+                try {
+                    // ដាក់ Timeout ខ្លី ដើម្បីកុំអោយវាគាំងយូរ បើ Printer បិទ
+                    $this->sendToPrinter($printerIp, $items, $destination->name, $tableName, $invoiceNumber);
+                } catch (\Exception $e) {
+                    // Log Error ទុក តែមិនអោយគាំងដល់ User ទេ
+                    Log::error("❌ Print Error for {$destination->name} ($printerIp): " . $e->getMessage());
+                }
+            }
+        }
+    }
+
+
+    /**
+     * Function Print ជាក់ស្តែង (កែសម្រួលថ្មី)
+     */
+    protected function sendToPrinter($ip, $items, $stationName, $tableName, $invoiceNumber)
+    {
+        try {
+            $connector = new NetworkPrintConnector($ip, 9100);
+            $printer = new Printer($connector);
+            
+            // HEADER
+            $printer->initialize();
+            $printer->setJustification(Printer::JUSTIFY_CENTER);
+            $printer->setTextSize(2, 2);
+            $printer->text("$stationName\n");
+            $printer->setTextSize(1, 1);
+            $printer->text("--------------------------------\n");
+            $printer->text("Table: $tableName\n");
+            $printer->text("Inv: $invoiceNumber\n");
+            $printer->text("--------------------------------\n");
+
+            // ITEMS
+            $printer->setJustification(Printer::JUSTIFY_LEFT);
+            
+            foreach ($items as $item) {
+                
+                // ១. បង្កើតរូបភាព
+                $imagePath = $this->createKhmerImage($item->product->name, 28);
+
+                if ($imagePath && file_exists($imagePath)) {
+                    try {
+                        $escposImage = EscposImage::load($imagePath, false);
+                        
+                        // 🔥 កែប្រែ៖ សាកល្បងប្រើ graphics() ជំនួស bitImage()
+                        // បើ graphics() នៅតែមិនចេញ សូមដូរទៅ bitImageColumnFormat()
+                        $printer->graphics($escposImage); 
+                        
+                    } catch (\Exception $e) {
+                        // បើ Error អោយ Print អក្សរជំនួស
+                        $printer->text($item->product->name);
+                    }
+                    
+                    // លុបរូបចោល
+                    unlink($imagePath);
+                } else {
+                    $printer->text($item->product->name);
+                }
+
+                // ចុះបន្ទាត់ដើម្បីកុំអោយរូបជាប់គ្នាពេក
+                $printer->feed(1); 
+                $printer->text("   Qty: " . $item->quantity . "\n");
+                
+                // Note
+                if ($item->note) {
+                    $printer->text("   (Note: {$item->note})\n");
+                }
+                
+                $printer->text("----------------\n"); // ដាក់បន្ទាត់ខណ្ឌបន្តិច
+            }
+
+            // FOOTER
+            $printer->feed(3);
+            $printer->cut();
+            $printer->close();
+
+        } catch (\Exception $e) {
+            Log::error("Print Error: " . $e->getMessage());
+        }
     }
 
     // 🔥 FUNCTION ថ្មីសម្រាប់កែចំនួន ឬលុបមុខម្ហូប
