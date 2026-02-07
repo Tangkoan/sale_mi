@@ -382,6 +382,8 @@ Route::middleware('auth')->group(function () {
             // 3. Route សម្រាប់បំបែកវិក្កយបត្រ (Split)
             Route::post('/order/split', [OrderController::class, 'splitPayment'])->name('order.split');
             Route::get('/order/items-for-merge/{tableId}', [OrderController::class, 'getItemsForMerge']);
+
+            Route::post('/table/move', [OrderController::class, 'moveTable'])->name('table.move');
     
             // ✅ ត្រូវតែមាន Route នេះដាច់ខាត ទើប Modal ស្គាល់ទិន្នន័យ
             Route::get('/order-details/{table_id}', [PosController::class, 'getOrderDetails'])->name('order.details');

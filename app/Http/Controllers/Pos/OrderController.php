@@ -553,4 +553,71 @@ class OrderController extends Controller
             ]);
         });
     }
+
+
+    // =========================================================
+    // 🔥 FIXED FUNCTION: MOVE TABLE (With Error Handling)
+    // =========================================================
+    public function moveTable(Request $request)
+    {
+        // 1. Validation (កុំទាន់ដាក់ exists:vc_tables ដើម្បីការពារបញ្ហា Table Name ខុស)
+        $validator = Validator::make($request->all(), [
+            'current_table_id' => 'required',
+            'target_table_id'  => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'message' => $validator->errors()->first()], 422);
+        }
+
+        try {
+            return DB::transaction(function () use ($request) {
+                
+                // A. រកតុថ្មី (Target Table)
+                $targetTable = Table::find($request->target_table_id);
+                if (!$targetTable) {
+                    throw new \Exception("រកមិនឃើញតុគោលដៅ (ID: {$request->target_table_id})");
+                }
+                
+                if ($targetTable->status !== 'available') {
+                    throw new \Exception("តុ {$targetTable->name} មិនទំនេរទេ (Status: {$targetTable->status})");
+                }
+
+                // B. រក Order នៃតុបច្ចុប្បន្ន
+                $order = Order::where('table_id', $request->current_table_id)
+                              ->where('status', 'pending') // យកតែ Order ដែលមិនទាន់គិតលុយ
+                              ->first();
+
+                if (!$order) {
+                    throw new \Exception("តុបច្ចុប្បន្នគ្មានការកម្មង់ទេ (ឬត្រូវបានគិតលុយរួចរាល់)");
+                }
+
+                // C. ដំណើរការប្ដូរ (Update)
+                // 1. ប្ដូរលេខតុនៅក្នុង Order
+                $order->update(['table_id' => $request->target_table_id]);
+
+                // 2. Update Status តុចាស់ -> Available
+                Table::where('id', $request->current_table_id)->update(['status' => 'available']);
+                
+                // 3. Update Status តុថ្មី -> Busy
+                $targetTable->update(['status' => 'busy']);
+
+                return response()->json([
+                    'status'  => 'success',
+                    'message' => "បានប្ដូរទៅតុ {$targetTable->name} ជោគជ័យ!"
+                ]);
+            });
+
+        } catch (\Exception $e) {
+            // កត់ត្រាទុកក្នុង Log (storage/logs/laravel.log)
+            Log::error('MOVE TABLE ERROR: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+
+            // បោះ Error មក Frontend ដើម្បីអោយដឹងថាខុសអី
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'System Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

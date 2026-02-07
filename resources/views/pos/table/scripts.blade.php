@@ -13,9 +13,11 @@
             isLoadingOrder: false,
             isProcessing: false,
             
-            // Merge & Split State
+            // Merge, Move & Split State
             isMergeModalOpen: false,
+            isMoveModalOpen: false, // 🔥 New
             busyTables: [],
+            availableTables: [], // 🔥 New
             isSplitMode: false,
             selectedSplitItems: [],
             
@@ -24,7 +26,7 @@
             paymentMethod: 'cash',
             receivedAmount: '',
             
-            // Exchange Rate State (ADDED FOR TABLE VIEW)
+            // Exchange Rate State
             isExchangeModalOpen: false,
             exchangeRate: localStorage.getItem('pos_exchange_rate') || 4100,
             tempExchangeRate: 4100,
@@ -95,7 +97,7 @@
             },
 
             // ==========================================
-            // EXCHANGE RATE FUNCTIONS (ADDED)
+            // EXCHANGE RATE FUNCTIONS
             // ==========================================
             async loadSystemRate() {
                 try {
@@ -155,7 +157,6 @@
 
                     let khrRate = 0;
                     
-                    // Logic ចាប់យកតម្លៃ (ដូចមុន)
                     if (data.data && typeof data.data === 'object' && !Array.isArray(data.data)) {
                         khrRate = parseFloat(data.data.average || data.data.ask || data.data.bid);
                     } else if (data.data && Array.isArray(data.data)) {
@@ -164,13 +165,8 @@
                     }
 
                     if (khrRate > 0) {
-                        // 2. ដាក់តម្លៃចូល Temp
                         this.tempExchangeRate = khrRate; 
-                        
-                        // 🔥 3. ហៅ Function Save ភ្លាមៗតែម្តង (Auto Save)
                         await this.saveExchangeRate(); 
-
-                        // Note: Function saveExchangeRate() នឹងបិទ Modal និងបង្ហាញ Toast Success ដោយស្វ័យប្រវត្តិ
                     } else {
                         throw new Error("Rate not found in API data");
                     }
@@ -200,10 +196,9 @@
                     if (!response.ok) throw new Error("Order not found");
                     const data = await response.json();
 
-                    // 🔥 CLONE DATA: ទាញមកដាក់ក្នុង Local Variable សិន
                     this.orderDetails = {
                         ...data.order,
-                        items: data.items, // Items នេះអាចកែប្រែបានតាមចិត្តមុនពេល Save
+                        items: data.items,
                         shop: data.shop || null,
                         total: parseFloat(data.order.total_amount || 0)
                     };
@@ -221,7 +216,6 @@
                 }
             },
 
-            // 🔥 Function គណនាលុយក្នុងម៉ាស៊ីន (Local)
             recalculateTotalLocal() {
                 let total = 0;
                 this.orderDetails.items.forEach(item => {
@@ -236,7 +230,6 @@
                 });
                 
                 this.orderDetails.total = total;
-                // Update លុយទទួលអូតូ (បើមិនមែន Split)
                 if (!this.isSplitMode) this.receivedAmount = total;
             },
 
@@ -254,9 +247,9 @@
                     item.quantity++;
                 } else if (action === 'decrease') {
                     if (item.quantity > 1) item.quantity--;
-                    else this.orderDetails.items.splice(index, 1); // លុបចេញពី Array (Local)
+                    else this.orderDetails.items.splice(index, 1);
                 } else if (action === 'remove') {
-                    this.orderDetails.items.splice(index, 1); // លុបចេញពី Array (Local)
+                    this.orderDetails.items.splice(index, 1);
                 }
                 
                 this.recalculateTotalLocal();
@@ -271,7 +264,6 @@
                         if (addonIndex !== -1) {
                             let addon = item.addons[addonIndex];
                             
-                            // Logic: បើជា Extra Item ការដក Addon ស្មើនឹងដក Item ធំ
                             if (this.isExtraItem(item) && item.addons.length === 1 && (action === 'decrease' && addon.quantity === 1 || action === 'remove')) {
                                 this.updateItemQty(item.id, 'remove');
                                 return;
@@ -299,16 +291,14 @@
                     return;
                 }
 
-                // Validation
                 if (this.paymentMethod === 'cash' && (parseFloat(this.receivedAmount || 0) < this.currentTotalUSD)) {
                     this.showToast('ទឹកប្រាក់ទទួលបានមិនគ្រប់គ្រាន់!', 'error');
                     return;
                 }
                 
-                // បើ User លុបម្ហូបអស់ពីវិក្កយបត្រ
                 if (this.orderDetails.items.length === 0) {
                      if(!confirm('ការបញ្ជាទិញគ្មានទិន្នន័យ (បានលុបអស់)។ តើអ្នកចង់ Cancel Order នេះទេ?')) return;
-                     this.confirmEmpty = true; // Allow processing
+                     this.confirmEmpty = true;
                 }
 
                 this.isProcessing = true;
@@ -321,7 +311,7 @@
                             table_id: this.orderDetails.table_id,
                             received_amount: this.receivedAmount,
                             payment_method: this.paymentMethod,
-                            items: this.orderDetails.items // 🔥 សំខាន់៖ បោះទិន្នន័យចុងក្រោយទៅអោយ Server Update (Sync)
+                            items: this.orderDetails.items
                         })
                     });
                     const data = await response.json();
@@ -339,7 +329,7 @@
             },
 
             // ==========================================
-            // 7. MERGE TABLE FEATURES
+            // 7. MERGE & MOVE TABLE FEATURES
             // ==========================================
             async openMergeModal() {
                 if (!this.orderDetails.id) return;
@@ -356,19 +346,14 @@
 
             async confirmMerge(targetTableId) {
                 try {
-                    // 1. ហៅ API ថ្មី៖ គ្រាន់តែយកមុខម្ហូប មិនទាន់កែ Database
                     const response = await fetch(`/pos/order/items-for-merge/${targetTableId}`);
                     const data = await response.json();
 
                     if (data.items && data.items.length > 0) {
-                        // 2. បញ្ចូលមុខម្ហូបថ្មីទៅក្នុង List បច្ចុប្បន្ន (Local State)
                         data.items.forEach(item => {
                             this.orderDetails.items.push(item);
                         });
-
-                        // 3. គណនាលុយសរុបឡើងវិញលើអេក្រង់
                         this.recalculateTotalLocal();
-                        
                         this.showToast('បញ្ចូលតុ (Visual) ជោគជ័យ! សូមចុច Confirm ដើម្បីរក្សាទុក។', 'info');
                         this.isMergeModalOpen = false;
                     } else {
@@ -377,6 +362,44 @@
                 } catch (e) { 
                     console.error(e); 
                     this.showToast('Merge Error', 'error');
+                }
+            },
+
+            // 🔥 MOVE TABLE FEATURE (NEW)
+            openMoveModal() {
+                // Filter យកតែតុដែលទំនេរ (Status = available) ពីក្នុង List ដែលមានស្រាប់
+                this.availableTables = this.tables.filter(t => t.status === 'available');
+                this.isMoveModalOpen = true;
+            },
+
+            async confirmMove(targetTableId) {
+                if (!confirm('តើអ្នកពិតជាចង់ប្ដូរតុនេះមែនទេ?')) return;
+                
+                try {
+                    const response = await fetch("{{ route('pos.table.move') }}", {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            current_table_id: this.selectedTable.id,
+                            target_table_id: targetTableId
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (response.ok && data.status === 'success') {
+                        this.showToast(data.message, 'success');
+                        this.isMoveModalOpen = false;
+                        this.isCheckoutModalOpen = false; // បិទ Modal Check Bill
+                        this.fetchTables(); // Refresh List តុខាងក្រៅ
+                    } else {
+                        this.showToast(data.message || 'Move failed', 'error');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    this.showToast('System Error', 'error');
                 }
             },
 
@@ -449,3 +472,17 @@
         }
     }
 </script>
+
+<style>
+    @media print {
+        body * { visibility: hidden; height: 0; overflow: hidden; }
+        #receipt-print-area {
+            display: block !important; visibility: visible !important;
+            position: absolute; left: 0; top: 0; width: 80mm;
+            margin: 0 auto; padding: 0; height: auto !important;
+            background-color: white !important; color: black !important;
+        }
+        #receipt-print-area * { visibility: visible !important; height: auto !important; }
+        @page { margin: 0; size: auto; }
+    }
+</style>
