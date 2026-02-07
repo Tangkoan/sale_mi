@@ -164,4 +164,104 @@
     </main>
 
 </body>
+
+
+<script>
+    (function() {
+        const dbSettings = @json(auth()->user()->theme_settings ?? null);
+        const isDark = localStorage.getItem('theme_mode') === 'dark' || 
+                       (!('theme_mode' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+        if (isDark) { document.documentElement.classList.add('dark'); } 
+        else { document.documentElement.classList.remove('dark'); }
+
+        if (dbSettings) {
+            const config = isDark ? (dbSettings.dark || {}) : (dbSettings.light || {});
+            const hexToRgb = (hex) => {
+                if (!hex) return '255 255 255';
+                let c;
+                if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){
+                    c= hex.substring(1).split('');
+                    if(c.length== 3) c= [c[0], c[0], c[1], c[1], c[2], c[2]];
+                    c= '0x'+c.join('');
+                    return [(c>>16)&255, (c>>8)&255, c&255].join(' ');
+                }
+                return '255 255 255';
+            };
+            const css = `:root { --page-bg: ${hexToRgb(config.pageBg)}; --sidebar-bg: ${hexToRgb(config.sidebarBg)}; --header-bg: ${hexToRgb(config.headerBg)}; }`;
+            const style = document.createElement('style');
+            style.textContent = css;
+            document.head.appendChild(style);
+        }
+    })();
+</script>
+
+<style x-data x-text="$store.theme.css"></style>
+
+<script>
+    const defaultThemeConfig = {
+        light: {
+            primary: '#3b82f6', primaryText: '#ffffff', secondary: '#64748b',
+            sidebarBg: '#ffffff', sidebarText: '#1e293b', sidebarHoverBg: '#f1f5f9', sidebarHoverText: '#0f172a',
+            headerBg: '#ffffff', pageBg: '#f3f4f6', cardBg: '#ffffff', inputBg: '#ffffff', border: '#e2e8f0',
+            primaryOpacity: 100, secondaryOpacity: 100, sidebarBgOpacity: 100, sidebarTextOpacity: 100, 
+            sidebarHoverBgOpacity: 100, headerBgOpacity: 100, pageBgOpacity: 100, cardBgOpacity: 100, inputBgOpacity: 100, borderOpacity: 100
+        },
+        dark: {
+            primary: '#60a5fa', primaryText: '#ffffff', secondary: '#94a3b8',
+            sidebarBg: '#0f172a', sidebarText: '#f8fafc', sidebarHoverBg: '#ffffff', sidebarHoverText: '#ffffff',
+            headerBg: '#1e293b', pageBg: '#020617', cardBg: '#1e293b', inputBg: '#0f172a', border: '#334155',
+            primaryOpacity: 100, secondaryOpacity: 100, sidebarBgOpacity: 100, sidebarTextOpacity: 100, 
+            sidebarHoverBgOpacity: 10, headerBgOpacity: 100, pageBgOpacity: 100, cardBgOpacity: 100, inputBgOpacity: 100, borderOpacity: 100
+        },
+        shadow: true
+    };
+
+    document.addEventListener('alpine:init', () => {
+        Alpine.store('theme', {
+            darkMode: localStorage.getItem('theme_mode') === 'dark',
+            settings: JSON.parse(JSON.stringify(defaultThemeConfig)),
+
+            init() {
+                const dbSettings = @json(auth()->user()->theme_settings ?? null);
+                if (dbSettings) {
+                    if(dbSettings.light) this.settings.light = { ...this.settings.light, ...dbSettings.light };
+                    if(dbSettings.dark) this.settings.dark = { ...this.settings.dark, ...dbSettings.dark };
+                    if(dbSettings.shadow !== undefined) this.settings.shadow = dbSettings.shadow;
+                }
+                this.applyThemeClass();
+            },
+            setMode(mode) { 
+                if ((mode === 'dark' && !this.darkMode) || (mode === 'light' && this.darkMode)) {
+                    this.darkMode = (mode === 'dark');
+                    this.finalizeMode();
+                }
+            },
+            toggleMode() { this.darkMode = !this.darkMode; this.finalizeMode(); },
+            finalizeMode() { 
+                localStorage.setItem('theme_mode', this.darkMode ? 'dark' : 'light'); 
+                this.applyThemeClass(); 
+            },
+            applyThemeClass() {
+                if (this.darkMode) document.documentElement.classList.add('dark');
+                else document.documentElement.classList.remove('dark');
+            },
+            hexToRgb(hex) {
+                let c;
+                if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){
+                    c= hex.substring(1).split('');
+                    if(c.length== 3) c= [c[0], c[0], c[1], c[1], c[2], c[2]];
+                    c= '0x'+c.join('');
+                    return [(c>>16)&255, (c>>8)&255, c&255].join(' ');
+                }
+                return '0 0 0';
+            },
+            get css() {
+                const l = this.settings.light; const d = this.settings.dark;
+                const shadowVal = this.settings.shadow ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' : 'none';
+                return `:root { --color-primary: ${this.hexToRgb(l.primary)}; --color-primary-text: ${this.hexToRgb(l.primaryText)}; --color-secondary: ${this.hexToRgb(l.secondary)}; --sidebar-bg: ${this.hexToRgb(l.sidebarBg)}; --sidebar-text: ${this.hexToRgb(l.sidebarText)}; --sidebar-hover-bg: ${this.hexToRgb(l.sidebarHoverBg)}; --sidebar-hover-text: ${this.hexToRgb(l.sidebarHoverText)}; --sidebar-hover-opacity: ${l.sidebarHoverBgOpacity / 100}; --header-bg: ${this.hexToRgb(l.headerBg)}; --page-bg: ${this.hexToRgb(l.pageBg)}; --card-bg: ${this.hexToRgb(l.cardBg)}; --input-bg: ${this.hexToRgb(l.inputBg)}; --custom-border: ${this.hexToRgb(l.border)}; --custom-shadow: ${shadowVal}; } .dark { --color-primary: ${this.hexToRgb(d.primary)}; --color-primary-text: ${this.hexToRgb(d.primaryText)}; --color-secondary: ${this.hexToRgb(d.secondary)}; --sidebar-bg: ${this.hexToRgb(d.sidebarBg)}; --sidebar-text: ${this.hexToRgb(d.sidebarText)}; --sidebar-hover-bg: ${this.hexToRgb(d.sidebarHoverBg)}; --sidebar-hover-text: ${this.hexToRgb(d.sidebarHoverText)}; --sidebar-hover-opacity: ${d.sidebarHoverBgOpacity / 100}; --header-bg: ${this.hexToRgb(d.headerBg)}; --page-bg: ${this.hexToRgb(d.pageBg)}; --card-bg: ${this.hexToRgb(d.cardBg)}; --input-bg: ${this.hexToRgb(d.inputBg)}; --custom-border: ${this.hexToRgb(d.border)}; } .btn-primary { background-color: rgb(var(--color-primary)); color: rgb(var(--color-primary-text)); }`;
+            }
+        });
+    });
+</script>
 </html>
