@@ -23,8 +23,14 @@
             selectedTable: null,
             paymentMethod: 'cash',
             receivedAmount: '',
-            exchangeRate: 4100,
-            confirmEmpty: false, // សម្រាប់បញ្ជាក់ពេលលុបម្ហូបអស់
+            
+            // Exchange Rate State (ADDED FOR TABLE VIEW)
+            isExchangeModalOpen: false,
+            exchangeRate: localStorage.getItem('pos_exchange_rate') || 4100,
+            tempExchangeRate: 4100,
+            isFetchingRate: false,
+
+            confirmEmpty: false, 
             
             orderDetails: {
                 id: null,
@@ -40,6 +46,9 @@
             // ==========================================
             init() {
                 this.fetchTables();
+                this.loadSystemRate(); // Load Rate on Init
+                this.tempExchangeRate = this.exchangeRate;
+
                 // Refresh តុម្តងរាល់ 5 វិនាទី (បើមិនកំពុង Check bill)
                 this.interval = setInterval(() => { 
                     if(!this.isCheckoutModalOpen) this.fetchTables(true); 
@@ -83,6 +92,93 @@
 
             get totalRiel() {
                 return Math.ceil(this.currentTotalUSD * this.exchangeRate).toLocaleString('km-KH');
+            },
+
+            // ==========================================
+            // EXCHANGE RATE FUNCTIONS (ADDED)
+            // ==========================================
+            async loadSystemRate() {
+                try {
+                    const response = await fetch("{{ route('system.exchange-rate.get') }}");
+                    const data = await response.json();
+                    if(data.rate) {
+                        this.exchangeRate = parseFloat(data.rate);
+                        this.tempExchangeRate = this.exchangeRate;
+                        localStorage.setItem('pos_exchange_rate', this.exchangeRate);
+                    }
+                } catch (e) { console.error("Failed to load rate", e); }
+            },
+
+            openExchangeModal() {
+                this.tempExchangeRate = this.exchangeRate;
+                this.isExchangeModalOpen = true;
+            },
+
+            formatNumber(num) {
+                return new Intl.NumberFormat('en-US').format(num);
+            },
+
+            async saveExchangeRate() {
+                if (this.tempExchangeRate > 0) {
+                    try {
+                        const response = await fetch("{{ route('system.exchange-rate.update') }}", {
+                            method: 'POST',
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify({ rate: this.tempExchangeRate })
+                        });
+                        
+                        if(response.ok) {
+                            this.exchangeRate = this.tempExchangeRate;
+                            localStorage.setItem('pos_exchange_rate', this.exchangeRate);
+                            this.isExchangeModalOpen = false;
+                            this.showToast('Exchange rate updated!', 'success');
+                        } else {
+                            throw new Error('Update failed');
+                        }
+                    } catch (e) {
+                        this.showToast('Failed to save rate.', 'error');
+                    }
+                }
+            },
+
+            async fetchRateFromApi() {
+                this.isFetchingRate = true;
+                try {
+                    // 1. ហៅ API
+                    const response = await fetch("{{ route('system.exchange-rate.fetch-nbc') }}");
+                    const data = await response.json();
+
+                    if (data.status === 'error') throw new Error(data.message);
+
+                    let khrRate = 0;
+                    
+                    // Logic ចាប់យកតម្លៃ (ដូចមុន)
+                    if (data.data && typeof data.data === 'object' && !Array.isArray(data.data)) {
+                        khrRate = parseFloat(data.data.average || data.data.ask || data.data.bid);
+                    } else if (data.data && Array.isArray(data.data)) {
+                        const usdItem = data.data.find(i => i.currency_id === 'USD' || i.symbol === 'USD/KHR');
+                        if (usdItem) khrRate = parseFloat(usdItem.average || usdItem.ask || usdItem.bid);
+                    }
+
+                    if (khrRate > 0) {
+                        // 2. ដាក់តម្លៃចូល Temp
+                        this.tempExchangeRate = khrRate; 
+                        
+                        // 🔥 3. ហៅ Function Save ភ្លាមៗតែម្តង (Auto Save)
+                        await this.saveExchangeRate(); 
+
+                        // Note: Function saveExchangeRate() នឹងបិទ Modal និងបង្ហាញ Toast Success ដោយស្វ័យប្រវត្តិ
+                    } else {
+                        throw new Error("Rate not found in API data");
+                    }
+                } catch (error) {
+                    this.showToast('API Error: ' + error.message, 'error');
+                } finally {
+                    this.isFetchingRate = false;
+                }
             },
 
             // ==========================================
@@ -259,9 +355,6 @@
             },
 
             async confirmMerge(targetTableId) {
-                // លែងសួរ Confirm ពី Server, គ្រាន់តែសួរ User
-                // if (!confirm('Confirm merge locally?')) return;
-
                 try {
                     // 1. ហៅ API ថ្មី៖ គ្រាន់តែយកមុខម្ហូប មិនទាន់កែ Database
                     const response = await fetch(`/pos/order/items-for-merge/${targetTableId}`);
@@ -270,8 +363,6 @@
                     if (data.items && data.items.length > 0) {
                         // 2. បញ្ចូលមុខម្ហូបថ្មីទៅក្នុង List បច្ចុប្បន្ន (Local State)
                         data.items.forEach(item => {
-                            // យើងទុក ID ដើម ដើម្បីអោយ Checkout ស្គាល់ថាវាជា Item មានស្រាប់ក្នុង DB
-                            // Checkout នឹងធ្វើការផ្ទេរ (Move) តាមក្រោយ
                             this.orderDetails.items.push(item);
                         });
 
@@ -349,7 +440,6 @@
                 this.isCheckoutModalOpen = false;
                 this.showToast(`✅ ជោគជ័យ! លុយអាប់: $${parseFloat(data.change).toFixed(2)}`, 'success');
                 this.fetchTables();
-                // ហៅផ្ទាំង Print (អាចប្រើ window.print() ឬ function print ផ្ទាល់ខ្លួន)
                 setTimeout(() => { window.print(); }, 500);
             },
 

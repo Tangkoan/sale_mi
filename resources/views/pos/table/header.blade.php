@@ -1,81 +1,112 @@
-<div class="px-6 py-3 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 z-30 shrink-0 sticky top-0 shadow-sm">
+<div class="px-4 py-3 sm:px-6 bg-white/80 dark:bg-gray-900/90 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 z-30 shrink-0 sticky top-0 shadow-sm transition-all duration-300">
     
-    {{-- MAIN CONTAINER: JUSTIFY-BETWEEN --}}
-    <div class="flex flex-row justify-between items-center gap-4">
+    <div class="flex flex-row justify-between items-center gap-3">
         
-        {{-- 1. LEFT SIDE: TITLE & SUBTITLE --}}
-        <div class="flex flex-col items-start">
-            <h1 class="text-xl sm:text-2xl font-black text-gray-800 dark:text-white flex items-center gap-2">
-                <span class="p-1.5 rounded-lg bg-primary/10 text-primary">
-                    <i class="ri-store-2-fill"></i>
-                </span>
-                <span>{{ __('messages.select_table') }}</span>
-            </h1>
-            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 hidden sm:block pl-10">
-                {{ __('messages.please_select_table_to_order') }}
-            </p>
+        {{-- ========================================================= --}}
+        {{-- 1. LEFT SIDE: BACK BUTTON & BRANDING                      --}}
+        {{-- ========================================================= --}}
+        <div class="flex items-center gap-3 sm:gap-4">
+
+            {{-- 🔥 A. BACK TO ADMIN BUTTON (New Design & Logic) --}}
+            {{-- បង្ហាញតែអ្នកដែលមាន Permission 'dashboard' ប៉ុណ្ណោះ --}}
+            @can('dashboard')
+                <a href="{{ route('admin.dashboard') }}" 
+                   class="group relative flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-primary hover:text-white transition-all duration-300 shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
+                   title="Back to Admin Dashboard">
+                    
+                    {{-- Icon ធម្មតា --}}
+                    <i class="ri-home-4-line text-lg group-hover:scale-0 transition-transform duration-300 absolute"></i>
+                    
+                    {{-- Icon ពេល Hover (Return Arrow) --}}
+                    <i class="ri-arrow-left-line text-lg scale-0 group-hover:scale-100 transition-transform duration-300 absolute"></i>
+                </a>
+
+                {{-- Divider --}}
+                <div class="h-6 w-px bg-gray-300 dark:bg-gray-700 hidden sm:block"></div>
+            @endcan
+
+            {{-- B. TITLE & SUBTITLE --}}
+            <div class="flex flex-col">
+                <h1 class="text-lg sm:text-xl font-black text-gray-800 dark:text-white flex items-center gap-2 tracking-tight leading-none">
+                    <span class="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-emerald-600 text-white shadow-md shadow-primary/30">
+                        <i class="ri-store-2-fill text-sm"></i>
+                    </span>
+                    <span>{{ __('messages.select_table') }}</span>
+                </h1>
+                <p class="text-[10px] sm:text-xs font-medium text-gray-400 dark:text-gray-500 mt-1 hidden sm:block">
+                    {{ __('messages.please_select_table_to_order') }}
+                </p>
+            </div>
+
         </div>
 
-        {{-- 2. RIGHT SIDE: ACTION BUTTONS --}}
-        <div class="flex items-center gap-3">
+        {{-- ========================================================= --}}
+        {{-- 2. RIGHT SIDE: TOOLS & PROFILE                            --}}
+        {{-- ========================================================= --}}
+        <div class="flex items-center gap-2 sm:gap-3">
             
-            {{-- A. Status Legends (Available / Busy) --}}
-            <div class="hidden sm:flex items-center gap-2 bg-gray-50 dark:bg-gray-800 p-1 rounded-lg border border-gray-100 dark:border-gray-700">
+            {{-- A. Status Legends (Hidden on mobile) --}}
+            <div class="hidden md:flex items-center gap-2 bg-gray-50/50 dark:bg-gray-800/50 p-1 rounded-full border border-gray-100 dark:border-gray-700/50">
                 {{-- Available --}}
-                <div class="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white dark:bg-gray-700 shadow-sm">
-                    <span class="relative flex h-2.5 w-2.5">
+                <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-gray-700 shadow-sm border border-gray-100 dark:border-gray-600">
+                    <span class="relative flex h-2 w-2">
                       <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                     </span>
                     <span class="text-[10px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wide">{{ __('Available') }}</span>
                 </div>
                 
                 {{-- Busy --}}
-                <div class="flex items-center gap-1.5 px-2 py-1">
-                    <span class="h-2.5 w-2.5 rounded-full bg-rose-500"></span>
+                <div class="flex items-center gap-1.5 px-3 py-1 opacity-60">
+                    <span class="h-2 w-2 rounded-full bg-rose-500"></span>
                     <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{{ __('Busy') }}</span>
                 </div>
             </div>
 
-            {{-- Divider --}}
-            <div class="hidden sm:block h-6 w-px bg-gray-300 dark:bg-gray-600 mx-1"></div>
+            <div class="hidden md:block h-5 w-px bg-gray-300 dark:bg-gray-600 mx-1"></div>
 
-            {{-- B. Language Switcher --}}
+            {{-- B. Exchange Rate Button --}}
+            <button @click="openExchangeModal()" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white dark:bg-gray-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-gray-200 dark:border-gray-700 hover:border-emerald-200 dark:hover:border-emerald-800 transition-all shadow-sm flex items-center justify-center relative group">
+                <i class="ri-exchange-dollar-line text-lg"></i>
+                <div class="absolute top-full mt-2 right-0 bg-gray-900 text-white text-[10px] px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition pointer-events-none z-50 whitespace-nowrap translate-y-2 group-hover:translate-y-0">
+                    1$ = <span x-text="formatNumber(exchangeRate)"></span>៛
+                </div>
+            </button>
+
+            {{-- C. Language Switcher --}}
             <div x-data="{ languageOpen: false }" class="relative">
-                <button @click="languageOpen = !languageOpen" class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors border border-transparent hover:border-gray-200 dark:hover:border-gray-700">
+                <button @click="languageOpen = !languageOpen" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 flex items-center justify-center transition-all shadow-sm">
                     @if(App::getLocale() == 'km')
-                        <img src="https://flagcdn.com/w40/kh.png" alt="Khmer" class="w-6 h-auto rounded-sm shadow-sm object-cover">
-                        <span class="text-sm font-medium hidden sm:block">KH</span>
+                        <img src="https://flagcdn.com/w40/kh.png" alt="Khmer" class="w-5 h-5 rounded-full object-cover border border-gray-100">
                     @else
-                        <img src="https://flagcdn.com/w40/us.png" alt="English" class="w-6 h-auto rounded-sm shadow-sm object-cover">
-                        <span class="text-sm font-medium hidden sm:block">EN</span>
+                        <img src="https://flagcdn.com/w40/us.png" alt="English" class="w-5 h-5 rounded-full object-cover border border-gray-100">
                     @endif
-                    <i class="ri-arrow-down-s-line transition-transform duration-200" :class="{'rotate-180': languageOpen}"></i>
                 </button>
 
+                {{-- Dropdown --}}
                 <div x-show="languageOpen" 
                      @click.outside="languageOpen = false"
                      x-transition:enter="transition ease-out duration-200"
-                     x-transition:enter-start="opacity-0 scale-95"
-                     x-transition:enter-end="opacity-100 scale-100"
+                     x-transition:enter-start="opacity-0 scale-95 translate-y-2"
+                     x-transition:enter-end="opacity-100 scale-100 translate-y-0"
                      x-cloak
-                     class="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-xl py-1 border border-gray-100 dark:border-gray-700 z-50 origin-top-right">
+                     class="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-800 rounded-xl shadow-xl py-1.5 border border-gray-100 dark:border-gray-700 z-50 origin-top-right ring-1 ring-black/5">
                     
-                    <a href="{{ route('switch.language', 'km') }}" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors {{ App::getLocale() == 'km' ? 'bg-gray-50 dark:bg-gray-700/50 text-blue-600 font-semibold' : '' }}">
-                        <img src="https://flagcdn.com/w40/kh.png" alt="Khmer" class="w-5 h-auto rounded-sm shadow-sm">
+                    <a href="{{ route('switch.language', 'km') }}" class="flex items-center gap-3 px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors {{ App::getLocale() == 'km' ? 'bg-primary/5 text-primary' : '' }}">
+                        <img src="https://flagcdn.com/w40/kh.png" class="w-4 h-4 rounded-full shadow-sm">
                         <span>ភាសាខ្មែរ</span>
-                        @if(App::getLocale() == 'km') <i class="ri-check-line ml-auto text-blue-600"></i> @endif
+                        @if(App::getLocale() == 'km') <i class="ri-check-line ml-auto text-primary"></i> @endif
                     </a>
 
-                    <a href="{{ route('switch.language', 'en') }}" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors {{ App::getLocale() == 'en' ? 'bg-gray-50 dark:bg-gray-700/50 text-blue-600 font-semibold' : '' }}">
-                        <img src="https://flagcdn.com/w40/us.png" alt="English" class="w-5 h-auto rounded-sm shadow-sm">
+                    <a href="{{ route('switch.language', 'en') }}" class="flex items-center gap-3 px-4 py-2.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors {{ App::getLocale() == 'en' ? 'bg-primary/5 text-primary' : '' }}">
+                        <img src="https://flagcdn.com/w40/us.png" class="w-4 h-4 rounded-full shadow-sm">
                         <span>English</span>
-                        @if(App::getLocale() == 'en') <i class="ri-check-line ml-auto text-blue-600"></i> @endif
+                        @if(App::getLocale() == 'en') <i class="ri-check-line ml-auto text-primary"></i> @endif
                     </a>
                 </div>
             </div>
 
-            {{-- C. Theme Toggle (Self-Contained Logic) --}}
+            {{-- D. Theme Toggle --}}
             <button x-data="{ 
                         darkMode: localStorage.getItem('theme_mode') === 'dark',
                         toggle() {
@@ -84,59 +115,103 @@
                             if (this.darkMode) document.documentElement.classList.add('dark');
                             else document.documentElement.classList.remove('dark');
                         },
-                        init() {
-                            if (this.darkMode) document.documentElement.classList.add('dark');
-                        }
+                        init() { if (this.darkMode) document.documentElement.classList.add('dark'); }
                     }" 
                     @click="toggle()" 
-                    class="relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900 border border-gray-200 dark:border-gray-600" 
-                    :class="!darkMode ? 'bg-gray-200' : 'bg-primary'"
-                    :style="darkMode ? 'background-color: var(--primary, #308D71)' : ''">
-                <span class="sr-only">Toggle Dark Mode</span>
-                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition duration-300 ease-in-out flex items-center justify-center" 
-                    :class="darkMode ? 'translate-x-6' : 'translate-x-1'">
-                    <i x-show="!darkMode" class="ri-sun-fill text-yellow-500 text-[10px]"></i>
-                    <i x-show="darkMode" class="ri-moon-fill text-[10px] text-primary" :style="'color: var(--primary, #308D71)'"></i>
-                </span>
+                    class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 flex items-center justify-center transition-all shadow-sm group">
+                <i class="text-lg transition-transform duration-500 rotate-0 dark:-rotate-180" 
+                   :class="darkMode ? 'ri-moon-fill text-yellow-400' : 'ri-sun-fill text-orange-500'"></i>
             </button>
 
-            {{-- D. User Profile Dropdown --}}
-            <div x-data="{ open: false }" class="relative">
+            {{-- E. User Profile --}}
+            <div x-data="{ open: false }" class="relative pl-1">
                 <button @click="open = !open" @click.away="open = false" 
-                        class="flex items-center gap-2 bg-white dark:bg-gray-800 pl-1 pr-3 py-1 rounded-full border border-gray-200 dark:border-gray-700 hover:border-primary/50 transition-all shadow-sm">
+                        class="flex items-center gap-2 bg-white dark:bg-gray-800 pl-1 pr-1.5 py-1 rounded-full border border-gray-200 dark:border-gray-700 hover:border-primary/50 transition-all shadow-sm ring-2 ring-transparent focus:ring-primary/20">
                     <img src="https://ui-avatars.com/api/?name={{ Auth::user()->name ?? 'Cashier' }}&background=0D8ABC&color=fff&size=64" 
-                         class="w-7 h-7 rounded-full object-cover" alt="Avatar">
-                    <div class="hidden md:block text-left">
-                        <p class="text-xs font-bold text-gray-800 dark:text-white leading-none truncate max-w-[80px]">
-                            {{ Auth::user()->name ?? 'Cashier' }}
-                        </p>
-                    </div>
+                         class="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover ring-2 ring-white dark:ring-gray-800" alt="Avatar">
                     <i class="ri-arrow-down-s-line text-xs text-gray-400"></i>
                 </button>
 
-                {{-- Dropdown Menu --}}
                 <div x-show="open" x-cloak
                      x-transition:enter="transition ease-out duration-100"
-                     x-transition:enter-start="transform opacity-0 scale-95"
-                     x-transition:enter-end="transform opacity-100 scale-100"
-                     class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 py-1 z-50 origin-top-right">
+                     x-transition:enter-start="transform opacity-0 scale-95 translate-y-2"
+                     x-transition:enter-end="transform opacity-100 scale-100 translate-y-0"
+                     class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 py-1.5 z-50 origin-top-right ring-1 ring-black/5">
                     
+                    <div class="px-4 py-2 border-b border-gray-100 dark:border-gray-700/50 mb-1">
+                        <p class="text-xs font-bold text-gray-800 dark:text-white truncate">{{ Auth::user()->name ?? 'Cashier' }}</p>
+                        <p class="text-[10px] text-gray-500 dark:text-gray-400 truncate">{{ Auth::user()->email ?? '' }}</p>
+                    </div>
+
                     @can('dashboard')
-                        <a href="{{ route('admin.dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2">
+                        <a href="{{ route('admin.dashboard') }}" class="block px-4 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2">
                             <i class="ri-dashboard-3-line text-primary"></i> Dashboard
                         </a>
                     @endcan
-                    <div class="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
 
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2">
+                        <button type="submit" class="w-full text-left px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 flex items-center gap-2 transition-colors">
                             <i class="ri-logout-box-r-line"></i> {{ __('Logout') }}
                         </button>
                     </form>
                 </div>
             </div>
 
+        </div>
+    </div>
+</div>
+
+{{-- MODAL: Exchange Rate (ដដែល - ដាក់ក្រៅ Header) --}}
+<div x-show="isExchangeModalOpen" 
+     class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" 
+     x-cloak 
+     x-transition.opacity>
+    
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all" 
+         @click.away="isExchangeModalOpen = false" 
+         x-transition:enter="transition ease-out duration-300" 
+         x-transition:enter-start="opacity-0 scale-90 translate-y-4" 
+         x-transition:enter-end="opacity-100 scale-100 translate-y-0">
+        
+        <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                <i class="ri-coins-line text-emerald-500"></i> Exchange Rate
+            </h3>
+            <button @click="isExchangeModalOpen = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                <i class="ri-close-line text-lg"></i>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-5">
+            <div class="text-center p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800">
+                <p class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase mb-1">Current System Rate</p>
+                <div class="text-3xl font-black text-gray-800 dark:text-white">
+                    <span class="text-base text-gray-400 font-medium align-middle mr-1">$1 =</span>
+                    <span x-text="formatNumber(exchangeRate)"></span> 
+                    <span class="text-sm text-gray-500 font-bold align-middle">KHR</span>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-2 ml-1">Set New Rate</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <span class="text-gray-400 font-bold">៛</span>
+                    </div>
+                    <input type="number" x-model="tempExchangeRate" class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold text-xl outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all">
+                </div>
+            </div>
+
+            <button @click="fetchRateFromApi()" class="w-full py-2.5 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 hover:text-primary hover:border-primary transition flex items-center justify-center gap-2 text-sm font-semibold" :disabled="isFetchingRate">
+                <i class="ri-download-cloud-2-line text-lg" :class="isFetchingRate ? 'animate-spin' : ''"></i> 
+                <span x-text="isFetchingRate ? 'Fetching...' : 'Auto Fetch from NBC API'"></span>
+            </button>
+        </div>
+
+        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 flex gap-3">
+            <button @click="isExchangeModalOpen = false" class="flex-1 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-100 transition text-sm">Cancel</button>
+            <button @click="saveExchangeRate()" class="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-500 shadow-lg active:scale-95 transition text-sm">Save Change</button>
         </div>
     </div>
 </div>

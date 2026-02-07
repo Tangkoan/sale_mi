@@ -104,34 +104,35 @@
             async fetchRateFromApi() {
                 this.isFetchingRate = true;
                 try {
+                    // 1. ហៅ API
                     const response = await fetch("{{ route('system.exchange-rate.fetch-nbc') }}");
                     const data = await response.json();
 
-                    if (data.status === 'error') {
-                        throw new Error(data.message);
-                    }
+                    if (data.status === 'error') throw new Error(data.message);
 
                     let khrRate = 0;
-
+                    
+                    // Logic ចាប់យកតម្លៃ (ដូចមុន)
                     if (data.data && typeof data.data === 'object' && !Array.isArray(data.data)) {
                         khrRate = parseFloat(data.data.average || data.data.ask || data.data.bid);
-                    } 
-                    else if (data.data && Array.isArray(data.data)) {
+                    } else if (data.data && Array.isArray(data.data)) {
                         const usdItem = data.data.find(i => i.currency_id === 'USD' || i.symbol === 'USD/KHR');
-                        if (usdItem) {
-                            khrRate = parseFloat(usdItem.average || usdItem.ask || usdItem.bid);
-                        }
+                        if (usdItem) khrRate = parseFloat(usdItem.average || usdItem.ask || usdItem.bid);
                     }
 
                     if (khrRate > 0) {
+                        // 2. ដាក់តម្លៃចូល Temp
                         this.tempExchangeRate = khrRate; 
-                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Rate fetched: ' + khrRate } }));
+                        
+                        // 🔥 3. ហៅ Function Save ភ្លាមៗតែម្តង (Auto Save)
+                        await this.saveExchangeRate(); 
+
+                        // Note: Function saveExchangeRate() នឹងបិទ Modal និងបង្ហាញ Toast Success ដោយស្វ័យប្រវត្តិ
                     } else {
                         throw new Error("Rate not found in API data");
                     }
-
                 } catch (error) {
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'API Error: ' + error.message } }));
+                    this.showToast('API Error: ' + error.message, 'error');
                 } finally {
                     this.isFetchingRate = false;
                 }
