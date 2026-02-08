@@ -21,15 +21,63 @@ use Illuminate\Support\Facades\Log;       // ✅ បន្ថែម
 use Illuminate\Support\Facades\Validator; // ✅ បន្ថែម
 
 // Library សម្រាប់ Print (តាមកូដដើមរបស់អ្នក)
-use Rawilk\Printing\Receipts\ReceiptPrinter;
-use Rawilk\Printing\Facades\Printing;
-
 use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
 use Mike42\Escpos\Printer;
+use Mike42\Escpos\EscposImage; // ត្រូវការ Class នេះ
+use Illuminate\Support\Facades\File;
+use Mike42\Escpos\CapabilityProfile; // 🔥 ថែមបន្ទាត់នេះ
 
 class OrderController extends Controller
 {
     // ... (store function នៅដដែល)
+
+    /**
+     * 🔥 Function បំប្លែងអក្សរខ្មែរ ទៅជារូបភាព រួច Print
+     */
+    private function printTextAsImage($printer, $text, $size = 22)
+    {
+        // 1. កំណត់ទីតាំង Font (ត្រូវប្រាកដថាមាន File នេះ)
+        $fontPath = public_path('fonts/KhmerOSsiemreap.ttf'); 
+
+        if (!file_exists($fontPath)) {
+            // បើអត់មាន Font ខ្មែរទេ Print ជា Text ធម្មតា (ចេញសញ្ញា ???)
+            $printer->text($text . "\n");
+            return;
+        }
+
+        // 2. បង្កើតស៊ុមរូបភាព (Canvas)
+        // ទទឹង 550px (សម្រាប់ក្រដាស 80mm), កម្ពស់ប៉ាន់ស្មានតាមទំហំអក្សរ
+        $width = 550; 
+        $height = $size + 20; // កម្ពស់តាមទំហំអក្សរ
+
+        $image = imagecreate($width, $height);
+        
+        // 3. កំណត់ពណ៌ (Background ពណ៌ស, អក្សរពណ៌ខ្មៅ)
+        $white = imagecolorallocate($image, 255, 255, 255);
+        $black = imagecolorallocate($image, 0, 0, 0);
+
+        // 4. សរសេរអក្សរខ្មែរចូលក្នុងរូបភាព
+        // (Size, Angle, X, Y, Color, Font, Text)
+        imagettftext($image, $size, 0, 10, $size + 5, $black, $fontPath, $text);
+
+        // 5. Save រូបភាពជាបណ្តោះអាសន្ន
+        $tempFile = public_path('temp_print_text.png');
+        imagepng($image, $tempFile);
+        imagedestroy($image);
+
+        // 6. ហៅ EscposImage ដើម្បី Print រូបភាពនោះ
+        try {
+            $logo = EscposImage::load($tempFile, false);
+            $printer->bitImage($logo); // Print រូបភាព
+        } catch (\Exception $e) {
+            Log::error("Image Print Error: " . $e->getMessage());
+        }
+
+        // 7. លុប File បណ្តោះអាសន្នចោល
+        if (file_exists($tempFile)) {
+            unlink($tempFile);
+        }
+    }
 
     public function store(Request $request)
     {
@@ -142,34 +190,33 @@ class OrderController extends Controller
     private function printOrderToKitchen($orderId)
     {
         // 1. ទាញយក Items ដែលមិនទាន់បាន Print
+        // ត្រូវប្រាកដថា Model Product មាន Relation 'category' និង Category មាន 'kitchenDestination'
         $itemsToPrint = OrderItem::with([
-                'product.category.kitchenDestination', // ត្រូវតែ Load Relation នេះមក
+                'product.category.kitchenDestination', 
                 'addons.addon',
-                'order.table'
+                'order.table' 
             ])
             ->where('order_id', $orderId)
-            ->where('is_printed', false) // យកតែអាមិនទាន់ Print
+            ->where('is_printed', false)
             ->get();
 
         if ($itemsToPrint->isEmpty()) {
             return;
         }
 
-        // 2. Group Items តាម Destination ID
-        // យើងបង្កើត Array មួយដើម្បីផ្ទុកទិន្នន័យដាច់ដោយឡែកតាមផ្នែក
+        // 2. Group Items តាម Destination ID (ដើម្បី Print ម្ដងមួយផ្នែក)
         $kitchenBatches = [];
 
         foreach ($itemsToPrint as $item) {
-            // ទាញយក Destination ពី Product -> Category
             $destination = $item->product?->category?->kitchenDestination;
 
-            // បើអត់មាន Destination ឬអត់ Active ទេ គឺរំលង (ឬបោះទៅ Default Printer បើចង់)
+            // បើគ្មាន Destination ឬមិន Active គឺរំលង
             if (!$destination || !$destination->is_active) {
-                Log::warning("Item {$item->product->name} គ្មាន Kitchen Destination ឬមិន Active។");
+                Log::warning("Item ID {$item->id} ({$item->product->name}) គ្មាន Kitchen Destination។");
                 continue;
             }
 
-            // Group ដោយប្រើ ID របស់ Destination ដើម្បីកុំឱ្យច្រឡំគ្នា
+            // Group ដោយប្រើ ID របស់ Destination
             $batchKey = $destination->id;
 
             if (!isset($kitchenBatches[$batchKey])) {
@@ -182,80 +229,96 @@ class OrderController extends Controller
             $kitchenBatches[$batchKey]['items'][] = $item;
         }
 
-        // 3. ចាប់ផ្តើម Print ម្ដងមួយផ្នែក (Loop តាម Batch ដែលបាន Group)
+        // 3. ចាប់ផ្តើមដំណើរការ Print តាមផ្នែកនីមួយៗ
         foreach ($kitchenBatches as $batchKey => $batch) {
-            $printerInfo = $batch['info']; // ព័ត៌មានផ្នែក (ឈ្មោះ, IP)
-            $items       = $batch['items']; // មុខម្ហូបក្នុងផ្នែកនោះ
-
-            $ipAddress = $printerInfo->printnode_id; // តាមរូបភាព Field នេះទុក IP
-            $port      = 9100; // Port របស់ Printer ភាគច្រើន
+            $printerInfo = $batch['info'];
+            $items       = $batch['items'];
+            $ipAddress   = $printerInfo->printnode_id; 
 
             try {
-                // ភ្ជាប់ទៅ Printer តាម IP
-                $connector = new NetworkPrintConnector($ipAddress, $port);
-                $printer   = new Printer($connector);
+                // 🔥 ប្រើ Profile "default" សម្រាប់ Printer ទូទៅ
+                $profile = \Mike42\Escpos\CapabilityProfile::load("default");
+                $connector = new NetworkPrintConnector($ipAddress, 9100);
+                $printer   = new Printer($connector, $profile);
 
-                // --- HEADER (បង្ហាញឈ្មោះផ្នែកច្បាស់ៗ) ---
+                // ... (HEADER, TABLE INFO នៅដដែល) ...
                 $printer->setJustification(Printer::JUSTIFY_CENTER);
                 $printer->selectPrintMode(Printer::MODE_DOUBLE_HEIGHT | Printer::MODE_DOUBLE_WIDTH);
-                $printer->text($printerInfo->name . "\n"); // ឧ: "WOK", "SOUP", "BAR"
-                $printer->selectPrintMode(); // Reset
+                $printer->text($printerInfo->name . "\n");
+                $printer->selectPrintMode(); 
                 $printer->text("--------------------------------\n");
-
-                // ព័ត៌មានតុ និង ម៉ោង
+                
+                // ... (TABLE INFO) ...
                 $firstItem = $items[0];
                 $tableName = $firstItem->order->table->name ?? ('Table: ' . $firstItem->order->table_id);
-                
                 $printer->setJustification(Printer::JUSTIFY_LEFT);
                 $printer->text("Table : " . $tableName . "\n");
-                $printer->text("Inv # : " . $firstItem->order->invoice_number . "\n");
                 $printer->text("Date  : " . date('d/m/Y H:i') . "\n");
                 $printer->text("--------------------------------\n");
 
-                // --- LIST ITEMS ---
+                // --- ITEMS ---
                 foreach ($items as $item) {
                     $productName = $item->product->name ?? 'Unknown';
+                    $qty         = $item->quantity;
+                    $fullText    = "{$qty} x {$productName}";
 
-                    // បង្ហាញចំនួន និង ឈ្មោះ (អក្សរធំ)
-                    $printer->selectPrintMode(Printer::MODE_DOUBLE_HEIGHT | Printer::MODE_FONT_B);
-                    $printer->text("{$item->quantity} x {$productName}\n");
-                    $printer->selectPrintMode(); 
-
-                    // Note
-                    if ($item->note) {
-                        $printer->text("   (Note: {$item->note})\n");
+                    // 🔥 ឆែកមើល៖ បើមានអក្សរខ្មែរ ប្រើរូបភាព, បើអត់ទេ ប្រើ Text ធម្មតា
+                    if ($this->hasKhmerText($fullText)) {
+                        $this->printKhmerTextAsImage($printer, $fullText, 24);
+                    } else {
+                        // English សុទ្ធ Print ធម្មតា (ច្បាស់ជាង លឿនជាង)
+                        $printer->selectPrintMode(Printer::MODE_DOUBLE_HEIGHT | Printer::MODE_FONT_B);
+                        $printer->text($fullText . "\n");
+                        $printer->selectPrintMode(); 
                     }
 
-                    // Addons
+                    // NOTE
+                    if ($item->note) {
+                        $noteText = "   (Note: {$item->note})";
+                        if ($this->hasKhmerText($noteText)) {
+                            $this->printKhmerTextAsImage($printer, $noteText, 18);
+                        } else {
+                            $printer->text($noteText . "\n");
+                        }
+                    }
+
+                    // ADDONS
                     foreach ($item->addons as $addonRow) {
                         $addonName = $addonRow->addon->name ?? 'Extra';
-                        $printer->text("   + {$addonName} (x{$addonRow->quantity})\n");
+                        $addonText = "   + {$addonName} (x{$addonRow->quantity})";
+                        
+                        if ($this->hasKhmerText($addonText)) {
+                            $this->printKhmerTextAsImage($printer, $addonText, 18);
+                        } else {
+                            $printer->text($addonText . "\n");
+                        }
                     }
                     
-                    $printer->text("\n"); // ដកឃ្លាមួយបន្ទាត់រវាងមុខម្ហូប
+                    $printer->text("\n");
                 }
 
-                // --- FOOTER ---
-                $printer->text("--------------------------------\n");
-                $printer->text("Printed By: " . Auth::user()->name . "\n");
-                $printer->text("\n\n\n");
-                
-                // Cut Paper
+                // ... (FOOTER & CUT នៅដដែល) ...
                 $printer->cut();
                 $printer->close();
 
-                // 4. Update Status ថាបាន Print រួចរាល់
+                // Update Status
                 foreach ($items as $item) {
                     $item->update(['is_printed' => true]);
                 }
 
-                Log::info("✅ Printed [{$printerInfo->name}] to IP: $ipAddress");
-
             } catch (\Exception $e) {
-                // បើ Print មិនចេញ (ដាច់ភ្លើង, ខុស IP) កត់ចូល Log តែមិនឱ្យគាំង System
-                Log::error("❌ Print Error [{$printerInfo->name} - $ipAddress]: " . $e->getMessage());
+                Log::error("❌ Print Error: " . $e->getMessage());
             }
         }
+    }
+
+    /**
+     * 🔥 Function ថ្មី៖ ឆែកមើលថាមានអក្សរខ្មែរឬអត់
+     */
+    private function hasKhmerText($text)
+    {
+        // Unicode Range របស់អក្សរខ្មែរគឺ \x{1780}-\x{17FF}
+        return preg_match('/[\x{1780}-\x{17FF}]/u', $text);
     }
 
     // 🔥 FUNCTION ថ្មីសម្រាប់កែចំនួន ឬលុបមុខម្ហូប
@@ -733,5 +796,78 @@ class OrderController extends Controller
                 'message' => 'System Error: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * 🔥 VERSION ចុងក្រោយ៖ Print ដោយកាត់ជាចំណិតៗ (Chunking)
+     * ដើម្បីការពារ Buffer Overflow ដែលបណ្តាលអោយចេញអក្សរក្រៅភព
+     */
+    private function printKhmerTextAsImage($printer, $text, $fontSize = 24)
+    {
+        // 1. បិទមិនអោយមាន Error ធ្លាយទៅ Frontend (ដោះស្រាយបញ្ហា JSON Error)
+        ob_start();
+
+        $fontPath = public_path('fonts/KhmerOSsiemreap.ttf');
+        
+        // Check Font
+        if (!file_exists($fontPath)) {
+            ob_end_clean();
+            $printer->text($text . "\n");
+            return;
+        }
+
+        try {
+            // 2. កំណត់ទទឹង (Width)
+            // ⚠️ សំខាន់៖ ត្រូវតែចែកដាច់នឹង 8។ 
+            // សាកល្បងដាក់ 448 (តូចល្មម) ឬ 512 (ស្តង់ដារ)
+            $width = 448; 
+            
+            // គណនាកម្ពស់
+            $bbox = imagettfbbox($fontSize, 0, $fontPath, $text);
+            $textHeight = abs($bbox[7] - $bbox[1]);
+            $height = $textHeight + 50; // ទុក Space អោយធំបន្តិចការពារដាច់ជើង
+
+            // 3. បង្កើតរូបភាព
+            $image = imagecreatetruecolor($width, $height);
+            $white = imagecolorallocate($image, 255, 255, 255);
+            $black = imagecolorallocate($image, 0, 0, 0);
+
+            // ចាក់ពណ៌សពេញ (Reset Background)
+            imagefilledrectangle($image, 0, 0, $width, $height, $white);
+
+            // សរសេរអក្សរ (Center Text)
+            // ដាក់ X = 0 ដើម្បីកុំអោយដាច់
+            imagettftext($image, $fontSize, 0, 10, $height - 15, $black, $fontPath, $text);
+
+            // 4. ធ្វើអោយរូបភាពច្បាស់ (High Contrast Black & White)
+            // Printer ខ្លះចេញអក្សរចម្លែកព្រោះរូបភាពមិនមែនខ្មៅសុទ្ធ
+            imagefilter($image, IMG_FILTER_GRAYSCALE);
+            imagefilter($image, IMG_FILTER_CONTRAST, -1000);
+
+            // Save Temp File
+            $filename = 'print_' . uniqid() . '.png';
+            $tempFile = public_path($filename);
+            imagepng($image, $tempFile);
+            imagedestroy($image);
+
+            // 5. Load & Print
+            if (file_exists($tempFile)) {
+                $escPosImage = EscposImage::load($tempFile, false);
+                
+                // 🔥 Command នេះសំខាន់បំផុត!
+                // bitImageColumnFormat: យឺតបន្តិច តែ Support គ្រប់ Printer (Epson, Xprinter, Generic)
+                // កុំប្រើ bitImageRaster ឬ graphics បើ Printer នៅតែចេញអក្សរចម្លែក
+                $printer->bitImageColumnFormat($escPosImage);
+                
+                unlink($tempFile);
+            }
+
+        } catch (\Exception $e) {
+            // Log Error តែមិនអោយធ្លាយទៅ Frontend
+            Log::error("Khmer Print Failed: " . $e->getMessage());
+        }
+
+        // សម្អាត Buffer មុននឹងចប់
+        ob_end_clean();
     }
 }

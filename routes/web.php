@@ -414,4 +414,8 @@ Route::prefix('system/exchange-rate')->name('system.exchange-rate.')->group(func
     Route::get('/fetch-nbc', [ExchangeRateController::class, 'fetchFromNBC'])->name('fetch-nbc');
 });
 
+Route::get('/php-info', function () {
+    phpinfo();
+});
+
 // require __DIR__.'/auth.php'; // បិទចោលសិន កុំអោយជាន់គ្នាជាមួយ Custom Auth របស់យើង
