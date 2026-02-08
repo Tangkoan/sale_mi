@@ -22,8 +22,9 @@ class Category extends Model
         return $this->belongsTo(KitchenDestination::class, 'kitchen_destination_id');
     }
 
-
-    public function kitchenDestination() {
-        return $this->belongsTo(KitchenDestination::class);
+    public function kitchenDestination()
+    {
+        // ភ្ជាប់ទៅ Table kitchen_destinations តាមរយៈ kitchen_destination_id
+        return $this->belongsTo(KitchenDestination::class, 'kitchen_destination_id');
     }
 }

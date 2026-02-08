@@ -137,100 +137,123 @@ class OrderController extends Controller
 
 
     /**
-     * 🔥 FUNCTION ថ្មី៖ បែងចែកម្ហូបទៅតាម Printer (Wok, Bar, Soup...)
+     * 🔥 FUNCTION: បោះទៅ Printer តាមផ្នែក (Wok, Soup, Bar...)
      */
     private function printOrderToKitchen($orderId)
     {
         // 1. ទាញយក Items ដែលមិនទាន់បាន Print
-        // 🔥 កែប្រែ៖ ថែម 'order.table' ដើម្បីអាចហៅឈ្មោះតុបាន
         $itemsToPrint = OrderItem::with([
-                'product.category.kitchenDestination', 
+                'product.category.kitchenDestination', // ត្រូវតែ Load Relation នេះមក
                 'addons.addon',
-                'order.table' 
+                'order.table'
             ])
             ->where('order_id', $orderId)
-            ->where('is_printed', false)
+            ->where('is_printed', false) // យកតែអាមិនទាន់ Print
             ->get();
 
         if ($itemsToPrint->isEmpty()) {
             return;
         }
 
-        // 2. Group Items តាម Destination
-        $groupedItems = [];
+        // 2. Group Items តាម Destination ID
+        // យើងបង្កើត Array មួយដើម្បីផ្ទុកទិន្នន័យដាច់ដោយឡែកតាមផ្នែក
+        $kitchenBatches = [];
 
         foreach ($itemsToPrint as $item) {
-            // 🔥 ប្រើសញ្ញា ?-> ដើម្បីការពារ Error ប្រសិនបើ Product ត្រូវបានលុប
-            $destination = $item->product?->category?->kitchenDestination ?? null;
+            // ទាញយក Destination ពី Product -> Category
+            $destination = $item->product?->category?->kitchenDestination;
 
-            if ($destination && $destination->is_active) {
-                $printerId = $destination->printnode_id; // IP Address
-                $destinationName = $destination->name;
-
-                $groupedItems[$printerId]['name'] = $destinationName;
-                $groupedItems[$printerId]['items'][] = $item;
-            } else {
-                Log::warning("Item ID {$item->id} has no kitchen destination or product deleted.");
+            // បើអត់មាន Destination ឬអត់ Active ទេ គឺរំលង (ឬបោះទៅ Default Printer បើចង់)
+            if (!$destination || !$destination->is_active) {
+                Log::warning("Item {$item->product->name} គ្មាន Kitchen Destination ឬមិន Active។");
+                continue;
             }
+
+            // Group ដោយប្រើ ID របស់ Destination ដើម្បីកុំឱ្យច្រឡំគ្នា
+            $batchKey = $destination->id;
+
+            if (!isset($kitchenBatches[$batchKey])) {
+                $kitchenBatches[$batchKey] = [
+                    'info'  => $destination, // ទុកព័ត៌មាន Printer (IP, Name)
+                    'items' => []
+                ];
+            }
+
+            $kitchenBatches[$batchKey]['items'][] = $item;
         }
 
-        // 3. ដំណើរការ Print
-        foreach ($groupedItems as $ipAddress => $data) {
+        // 3. ចាប់ផ្តើម Print ម្ដងមួយផ្នែក (Loop តាម Batch ដែលបាន Group)
+        foreach ($kitchenBatches as $batchKey => $batch) {
+            $printerInfo = $batch['info']; // ព័ត៌មានផ្នែក (ឈ្មោះ, IP)
+            $items       = $batch['items']; // មុខម្ហូបក្នុងផ្នែកនោះ
+
+            $ipAddress = $printerInfo->printnode_id; // តាមរូបភាព Field នេះទុក IP
+            $port      = 9100; // Port របស់ Printer ភាគច្រើន
+
             try {
-                $connector = new NetworkPrintConnector($ipAddress, 9100);
-                $printer = new Printer($connector);
+                // ភ្ជាប់ទៅ Printer តាម IP
+                $connector = new NetworkPrintConnector($ipAddress, $port);
+                $printer   = new Printer($connector);
 
-                // --- HEADER ---
+                // --- HEADER (បង្ហាញឈ្មោះផ្នែកច្បាស់ៗ) ---
                 $printer->setJustification(Printer::JUSTIFY_CENTER);
-                $printer->text("=== KITCHEN ORDER ===\n");
-                $printer->text("Station: " . $data['name'] . "\n");
-                $printer->setJustification(Printer::JUSTIFY_LEFT);
+                $printer->selectPrintMode(Printer::MODE_DOUBLE_HEIGHT | Printer::MODE_DOUBLE_WIDTH);
+                $printer->text($printerInfo->name . "\n"); // ឧ: "WOK", "SOUP", "BAR"
+                $printer->selectPrintMode(); // Reset
                 $printer->text("--------------------------------\n");
 
-                // 🔥 ជួសជុល៖ ហៅឈ្មោះតុ និង ម៉ោង
-                $firstItem = $data['items'][0];
-                $tableName = $firstItem->order->table->name ?? ('ID: ' . $firstItem->order->table_id);
+                // ព័ត៌មានតុ និង ម៉ោង
+                $firstItem = $items[0];
+                $tableName = $firstItem->order->table->name ?? ('Table: ' . $firstItem->order->table_id);
                 
-                $printer->text("Table : " . $tableName . "\n"); // ចេញឈ្មោះតុ
-                $printer->text("Date  : " . date('d/m/Y h:i A') . "\n"); // ចេញម៉ោង (AM/PM)
+                $printer->setJustification(Printer::JUSTIFY_LEFT);
+                $printer->text("Table : " . $tableName . "\n");
+                $printer->text("Inv # : " . $firstItem->order->invoice_number . "\n");
+                $printer->text("Date  : " . date('d/m/Y H:i') . "\n");
                 $printer->text("--------------------------------\n");
 
-                // --- ITEMS ---
-                foreach ($data['items'] as $item) {
-                    $productName = $item->product->name ?? 'Unknown Item';
-                    
-                    // បង្ហាញឈ្មោះមុខម្ហូប និងចំនួន (Double Height/Width អោយច្បាស់)
-                    $printer->selectPrintMode(Printer::MODE_DOUBLE_HEIGHT);
-                    $printer->text("{$item->quantity} x {$productName}\n");
-                    $printer->selectPrintMode(); // Reset មកធម្មតាវិញ
+                // --- LIST ITEMS ---
+                foreach ($items as $item) {
+                    $productName = $item->product->name ?? 'Unknown';
 
-                    // បង្ហាញ Note បើមាន
+                    // បង្ហាញចំនួន និង ឈ្មោះ (អក្សរធំ)
+                    $printer->selectPrintMode(Printer::MODE_DOUBLE_HEIGHT | Printer::MODE_FONT_B);
+                    $printer->text("{$item->quantity} x {$productName}\n");
+                    $printer->selectPrintMode(); 
+
+                    // Note
                     if ($item->note) {
                         $printer->text("   (Note: {$item->note})\n");
                     }
 
-                    // បង្ហាញ Addons បើមាន
+                    // Addons
                     foreach ($item->addons as $addonRow) {
-                        $addonName = $addonRow->addon->name ?? 'Addon';
+                        $addonName = $addonRow->addon->name ?? 'Extra';
                         $printer->text("   + {$addonName} (x{$addonRow->quantity})\n");
                     }
                     
-                    $printer->text("\n"); // ដកឃ្លាមួយបន្ទាត់
+                    $printer->text("\n"); // ដកឃ្លាមួយបន្ទាត់រវាងមុខម្ហូប
                 }
+
+                // --- FOOTER ---
+                $printer->text("--------------------------------\n");
+                $printer->text("Printed By: " . Auth::user()->name . "\n");
+                $printer->text("\n\n\n");
                 
-                $printer->text("\n\n");
+                // Cut Paper
                 $printer->cut();
                 $printer->close();
 
-                Log::info("✅ Printed to IP: $ipAddress");
-
-                // Update status ថាបាន Print ហើយ
-                foreach ($data['items'] as $item) {
+                // 4. Update Status ថាបាន Print រួចរាល់
+                foreach ($items as $item) {
                     $item->update(['is_printed' => true]);
                 }
 
+                Log::info("✅ Printed [{$printerInfo->name}] to IP: $ipAddress");
+
             } catch (\Exception $e) {
-                Log::error("❌ IP Print Error ($ipAddress): " . $e->getMessage());
+                // បើ Print មិនចេញ (ដាច់ភ្លើង, ខុស IP) កត់ចូល Log តែមិនឱ្យគាំង System
+                Log::error("❌ Print Error [{$printerInfo->name} - $ipAddress]: " . $e->getMessage());
             }
         }
     }
