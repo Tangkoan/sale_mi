@@ -21,4 +21,9 @@ class Category extends Model
     {
         return $this->belongsTo(KitchenDestination::class, 'kitchen_destination_id');
     }
+
+
+    public function kitchenDestination() {
+        return $this->belongsTo(KitchenDestination::class);
+    }
 }

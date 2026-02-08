@@ -12,12 +12,20 @@ use App\Models\OrderItemAddon;
 use App\Models\Table;
 use App\Models\Product;
 
-use Rawilk\Printing\Facades\Printing;
-use App\Models\KitchenDestination;
-use Illuminate\Validation\Rule; // Import នៅខាងលើ
 
+use App\Models\KitchenDestination;
+
+
+use Illuminate\Validation\Rule; // Import នៅខាងលើ
 use Illuminate\Support\Facades\Log;       // ✅ បន្ថែម
 use Illuminate\Support\Facades\Validator; // ✅ បន្ថែម
+
+// Library សម្រាប់ Print (តាមកូដដើមរបស់អ្នក)
+use Rawilk\Printing\Receipts\ReceiptPrinter;
+use Rawilk\Printing\Facades\Printing;
+
+use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
+use Mike42\Escpos\Printer;
 
 class OrderController extends Controller
 {
@@ -35,18 +43,14 @@ class OrderController extends Controller
         // ជំហានទី ២: ធ្វើ Validation ដោយដៃ (Manual Validation)
         // ---------------------------------------------------------
         $validator = Validator::make($request->all(), [
-            'table_id' => 'required', // ដាក់ធម្មតាសិន ដើម្បីចង់ដឹងថាវាជាប់អត់
+            'table_id' => 'required',
             'items'    => 'required|array|min:1',
-            
-            // 🔥 កន្លែងរសើប: យើង Log មើលសិន កុំទាន់អាលតឹងរ៉ឹងពេក
-            'items.*.product_id' => 'required', 
+            'items.*.product_id' => 'required',
             'items.*.qty'        => 'required|integer|min:1',
+            'items.*.addons'     => 'nullable|array',
         ]);
 
-        // បើ Validation បរាជ័យ -> កត់ចូល Log ភ្លាម
         if ($validator->fails()) {
-            // Log::error('❌ [POS ORDER] Validation Failed:', $validator->errors()->toArray());
-            
             return response()->json([
                 'status'  => 'error',
                 'message' => 'Validation Error',
@@ -56,14 +60,7 @@ class OrderController extends Controller
 
         return DB::transaction(function () use ($request) {
             try {
-                // ---------------------------------------------------------
-                // ជំហានទី ៣: ចាប់ផ្តើមបង្កើត Order
-                // ---------------------------------------------------------
-                
-                // 1. Check Table
-                // យើងប្រើឈ្មោះ Model ផ្ទាល់ដើម្បីអោយវាស្គាល់ Prefix 'vc_' ដោយស្វ័យប្រវត្តិ
-                // បើបងប្រើ Table ឈ្មោះ 'vc_tables' ត្រូវប្រាកដថា Model Table មាន $table = 'tables' ឬអត់កំណត់
-                
+                // 1. Create/Find Order
                 $order = Order::firstOrCreate(
                     ['table_id' => $request->table_id, 'status' => 'pending'],
                     [
@@ -72,31 +69,18 @@ class OrderController extends Controller
                         'total_amount'   => 0,
                     ]
                 );
-                
-                // Log::info('✅ Order Created/Found ID: ' . $order->id);
 
                 // Update Table Status
-                $table = \App\Models\Table::find($request->table_id);
+                $table = Table::find($request->table_id);
                 if ($table) {
                     $table->update(['status' => 'busy']);
-                } else {
-                    Log::warning('⚠️ Table ID ' . $request->table_id . ' not found in DB');
                 }
 
-                $newOrderItems = new \Illuminate\Database\Eloquent\Collection();
-
-                foreach ($request->items as $index => $itemData) {
+                // 2. Add Items
+                foreach ($request->items as $itemData) {
+                    $product = Product::find($itemData['product_id']);
                     
-                    // Log មើល Item នីមួយៗ
-                    // Log::info("🔄 Processing Item #$index:", $itemData);
-
-                    // ពិនិត្យមើលថា Product ID មានពិតឬអត់ មុននឹង Save
-                    // ប្រើ App\Models\Product ដើម្បីអោយស្គាល់ vc_products
-                    $productExists = \App\Models\Product::find($itemData['product_id']);
-                    
-                    if (!$productExists) {
-                        // Log::error("❌ Product ID {$itemData['product_id']} not found in DB (vc_products). Skipping...");
-                        // បើរកមិនឃើញ យើងអាច Return Error ឬរំលង
+                    if (!$product) {
                         throw new \Exception("Product ID {$itemData['product_id']} not found.");
                     }
 
@@ -106,12 +90,10 @@ class OrderController extends Controller
                         'quantity'   => $itemData['qty'],
                         'price'      => $itemData['price'],
                         'note'       => $itemData['note'] ?? null,
-                        'is_printed' => false,
+                        'is_printed' => false, // ✅ សំខាន់៖ ដាក់ false សិន ដើម្បីចាំ Print
                         'status'     => 'pending',
                         'created_by' => Auth::id(),
                     ]);
-                    
-                    $newOrderItems->push($orderItem);
 
                     if (!empty($itemData['addons'])) {
                         foreach ($itemData['addons'] as $addon) {
@@ -125,12 +107,18 @@ class OrderController extends Controller
                     }
                 }
                 
+                // Recalculate Total
                 $this->recalculateOrderTotal($order->id);
-                // Log::info('💰 Total Recalculated');
 
-                // ... (ផ្នែក Auto Print រក្សាទុកដដែល ឬលុបចោលសិនក៏បានដើម្បីតេស្ត) ...
-
-                // Log::info('🎉 Order Transaction Completed Successfully!');
+                // ---------------------------------------------------------
+                // ជំហានទី ៤ (ថ្មី): ហៅ Function ដើម្បី Print ទៅផ្ទះបាយ
+                // ---------------------------------------------------------
+                try {
+                    $this->printOrderToKitchen($order->id);
+                } catch (\Exception $printError) {
+                    // បើ Print error, កុំអោយខូច Transaction គ្រាន់តែ Log ទុក
+                    Log::error("🖨️ Printing Error: " . $printError->getMessage());
+                }
 
                 return response()->json([
                     'status' => 'success',
@@ -139,17 +127,112 @@ class OrderController extends Controller
                 ]);
 
             } catch (\Exception $e) {
-                // ចាប់ Error គ្រប់បែបយ៉ាងនៅទីនេះ
-                // Log::error('🔥 [POS ORDER] Exception Error: ' . $e->getMessage());
-                // Log::error($e->getTraceAsString()); // ចង់ដឹងថាខុសនៅបន្ទាត់ណា
-
-                // បោះ Error ទៅ Frontend វិញ
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Server Error: ' . $e->getMessage()
                 ], 500);
             }
         });
+    }
+
+
+    /**
+     * 🔥 FUNCTION ថ្មី៖ បែងចែកម្ហូបទៅតាម Printer (Wok, Bar, Soup...)
+     */
+    private function printOrderToKitchen($orderId)
+    {
+        // 1. ទាញយក Items ដែលមិនទាន់បាន Print
+        // 🔥 កែប្រែ៖ ថែម 'order.table' ដើម្បីអាចហៅឈ្មោះតុបាន
+        $itemsToPrint = OrderItem::with([
+                'product.category.kitchenDestination', 
+                'addons.addon',
+                'order.table' 
+            ])
+            ->where('order_id', $orderId)
+            ->where('is_printed', false)
+            ->get();
+
+        if ($itemsToPrint->isEmpty()) {
+            return;
+        }
+
+        // 2. Group Items តាម Destination
+        $groupedItems = [];
+
+        foreach ($itemsToPrint as $item) {
+            // 🔥 ប្រើសញ្ញា ?-> ដើម្បីការពារ Error ប្រសិនបើ Product ត្រូវបានលុប
+            $destination = $item->product?->category?->kitchenDestination ?? null;
+
+            if ($destination && $destination->is_active) {
+                $printerId = $destination->printnode_id; // IP Address
+                $destinationName = $destination->name;
+
+                $groupedItems[$printerId]['name'] = $destinationName;
+                $groupedItems[$printerId]['items'][] = $item;
+            } else {
+                Log::warning("Item ID {$item->id} has no kitchen destination or product deleted.");
+            }
+        }
+
+        // 3. ដំណើរការ Print
+        foreach ($groupedItems as $ipAddress => $data) {
+            try {
+                $connector = new NetworkPrintConnector($ipAddress, 9100);
+                $printer = new Printer($connector);
+
+                // --- HEADER ---
+                $printer->setJustification(Printer::JUSTIFY_CENTER);
+                $printer->text("=== KITCHEN ORDER ===\n");
+                $printer->text("Station: " . $data['name'] . "\n");
+                $printer->setJustification(Printer::JUSTIFY_LEFT);
+                $printer->text("--------------------------------\n");
+
+                // 🔥 ជួសជុល៖ ហៅឈ្មោះតុ និង ម៉ោង
+                $firstItem = $data['items'][0];
+                $tableName = $firstItem->order->table->name ?? ('ID: ' . $firstItem->order->table_id);
+                
+                $printer->text("Table : " . $tableName . "\n"); // ចេញឈ្មោះតុ
+                $printer->text("Date  : " . date('d/m/Y h:i A') . "\n"); // ចេញម៉ោង (AM/PM)
+                $printer->text("--------------------------------\n");
+
+                // --- ITEMS ---
+                foreach ($data['items'] as $item) {
+                    $productName = $item->product->name ?? 'Unknown Item';
+                    
+                    // បង្ហាញឈ្មោះមុខម្ហូប និងចំនួន (Double Height/Width អោយច្បាស់)
+                    $printer->selectPrintMode(Printer::MODE_DOUBLE_HEIGHT);
+                    $printer->text("{$item->quantity} x {$productName}\n");
+                    $printer->selectPrintMode(); // Reset មកធម្មតាវិញ
+
+                    // បង្ហាញ Note បើមាន
+                    if ($item->note) {
+                        $printer->text("   (Note: {$item->note})\n");
+                    }
+
+                    // បង្ហាញ Addons បើមាន
+                    foreach ($item->addons as $addonRow) {
+                        $addonName = $addonRow->addon->name ?? 'Addon';
+                        $printer->text("   + {$addonName} (x{$addonRow->quantity})\n");
+                    }
+                    
+                    $printer->text("\n"); // ដកឃ្លាមួយបន្ទាត់
+                }
+                
+                $printer->text("\n\n");
+                $printer->cut();
+                $printer->close();
+
+                Log::info("✅ Printed to IP: $ipAddress");
+
+                // Update status ថាបាន Print ហើយ
+                foreach ($data['items'] as $item) {
+                    $item->update(['is_printed' => true]);
+                }
+
+            } catch (\Exception $e) {
+                Log::error("❌ IP Print Error ($ipAddress): " . $e->getMessage());
+            }
+        }
     }
 
     // 🔥 FUNCTION ថ្មីសម្រាប់កែចំនួន ឬលុបមុខម្ហូប
@@ -330,19 +413,27 @@ class OrderController extends Controller
     // Helper Function
     private function recalculateOrderTotal($orderId)
     {
-        $order = Order::with(['items.addons'])->find($orderId);
+        // Load relationship 'addons' អោយហើយ
+        $order = Order::with(['items.addons'])->find($orderId); 
         $totalAmount = 0;
 
-        foreach ($order->items as $item) {
-            $itemTotal = $item->price * $item->quantity;
-            $addonTotal = 0;
-            foreach ($item->addons as $addon) {
-                $addonTotal += ($addon->price * ($addon->quantity ?? 1));
-            }
-            $totalAmount += ($itemTotal + $addonTotal);
-        }
+        if ($order && $order->items) {
+            foreach ($order->items as $item) {
+                $itemTotal = $item->price * $item->quantity;
+                $addonTotal = 0;
 
-        $order->update(['total_amount' => $totalAmount]);
+                // 🔥 កែត្រង់នេះ៖ ពី $item->items_addons មកជា $item->addons
+                // ថែម ( ?? [] ) ដើម្បីការពារកុំអោយ Error បើវាអត់មាន Addons
+                foreach ($item->addons ?? [] as $addon) { 
+                    $addonTotal += ($addon->price * ($addon->quantity ?? 1));
+                }
+                
+                $totalAmount += ($itemTotal + $addonTotal);
+            }
+
+            $order->update(['total_amount' => $totalAmount]);
+        }
+        
         return $totalAmount;
     }
 
