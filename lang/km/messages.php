@@ -390,4 +390,57 @@ return [
     'fix_errors'            => 'សូមពិនិត្យមើលកំហុសខាងក្រោម។',
     'confirm_delete'        => 'តើអ្នកពិតជាចង់លុបប្រភេទនេះមែនទេ?',
     'confirm_bulk_delete'   => 'តើអ្នកពិតជាចង់លុបប្រភេទដែលបានជ្រើសរើសមែនទេ?',
+
+
+
+
+    // Header & Nav
+    'kitchen_system' => 'ប្រព័ន្ធផ្ទះបាយ (KDS)',
+    'back_to_tables' => 'ត្រឡប់ទៅតុ',
+    'products' => 'ទំនិញ',
+    'dashboard' => 'ផ្ទាំងគ្រប់គ្រង',
+    'logout' => 'ចាកចេញ',
+    'live' => 'កំពុងដំណើរការ',
+    'fetching' => 'កំពុងទាញយក...',
+    
+    // Status & Feedback
+    'success' => 'ជោគជ័យ',
+    'error' => 'បរាជ័យ',
+    'connection_lost' => 'បាត់ការតភ្ជាប់',
+    
+    // Empty State
+    'all_orders_completed' => 'ការបញ្ជាទិញទាំងអស់បានរួចរាល់',
+    'waiting_new_orders' => 'កំពុងរង់ចាំការបញ្ជាទិញថ្មី...',
+    
+    // Order Card
+    'unknown_table' => 'មិនស្គាល់តុ',
+    'unknown_product' => 'មិនស្គាល់ទំនិញ',
+    'deleted_item' => 'ទំនិញត្រូវបានលុប',
+    'unknown_addon' => 'មិនស្គាល់',
+    'done_all' => 'រួចរាល់ទាំងអស់',
+    
+    // Modal
+    'confirm_title' => 'តើអ្នកប្រាកដទេ?',
+    'confirm_message' => 'តើអ្នកបានធ្វើមុខម្ហូបទាំងអស់សម្រាប់វិក្កយបត្រនេះរួចរាល់ហើយមែនទេ?',
+    'btn_cancel' => 'បោះបង់',
+    'btn_confirm' => 'យល់ព្រម',
+    
+    // JS Notifications
+    'item_marked_ready' => 'មុខម្ហូបបានរួចរាល់!',
+    'failed_update_item' => 'បរាជ័យក្នុងការកែប្រែ',
+    'order_completed' => 'ការបញ្ជាទិញបានបញ្ចប់ដោយជោគជ័យ!',
+    'error_completing_order' => 'មានបញ្ហាក្នុងការបញ្ចប់ការបញ្ជាទិញ',
+
+    'rule_management' => 'គ្រប់គ្រងសិទ្ធកំណត់',
+    
+    'action_management' => 'គ្រប់គ្រងសកម្មភាព',
+    'kitchen_management' => 'គ្រប់គ្រងផ្ទះបាយ',
+    'theme_management' => 'គ្រប់គ្រងពណ៌',
+    'shop_management' => 'គ្រប់គ្រងពត៌មានហាង',
+    'pos_management' => 'គ្រប់គ្រងការលក់(POS)',
+    'menu_management' => 'បញ្ជីមុខម្លូប',
+
+
+
+
 ];

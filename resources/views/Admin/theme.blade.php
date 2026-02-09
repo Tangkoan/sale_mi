@@ -1,6 +1,6 @@
 @extends('admin.dashboard')
 
-@section('title', 'Theme Management')
+@section('title', __('messages.theme_management'))
 
 <style>
     /* Mobile (Default) */

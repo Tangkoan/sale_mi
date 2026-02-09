@@ -388,4 +388,55 @@ return [
     'fix_errors'            => 'Please fix the errors below.',
     'confirm_delete'        => 'Are you sure you want to delete this category?',
     'confirm_bulk_delete'   => 'Are you sure you want to delete selected categories?',
+
+
+    // Header & Nav
+    'kitchen_system' => 'KDS System',
+    'back_to_tables' => 'Back to Tables',
+    'products' => 'Products',
+    'dashboard' => 'Dashboard',
+    'logout' => 'Logout',
+    'live' => 'Live',
+    'fetching' => 'Fetching...',
+    
+    // Status & Feedback
+    'success' => 'Success',
+    'error' => 'Error',
+    'connection_lost' => 'Connection lost',
+    
+    // Empty State
+    'all_orders_completed' => 'All Orders Completed',
+    'waiting_new_orders' => 'Waiting for new orders...',
+    
+    // Order Card
+    'unknown_table' => 'Unknown Table',
+    'unknown_product' => 'Unknown Product',
+    'deleted_item' => 'Deleted Item',
+    'unknown_addon' => 'Unknown',
+    'done_all' => 'Done All',
+    
+    // Modal
+    'confirm_title' => 'Are you sure?',
+    'confirm_message' => 'Have you finished all items for this order?',
+    'btn_cancel' => 'Cancel',
+    'btn_confirm' => 'Confirm',
+    
+    // JS Notifications
+    'item_marked_ready' => 'Item marked as ready!',
+    'failed_update_item' => 'Failed to update item',
+    'order_completed' => 'Order completed successfully!',
+    'error_completing_order' => 'Error completing order',
+
+    'rule_management' => 'Rule Management',
+    'action_management' => 'Action Management',
+    'kitchen_management' => 'Kitchen Management',
+    'theme_management' => 'Theme Management',
+    'shop_management' => 'Shop Management',
+    'pos_management' => 'POS Management',
+    'menu_management' => 'Menu Management',
+
+    
+    
+    
+
 ];

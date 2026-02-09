@@ -1,6 +1,6 @@
 @extends('admin.dashboard')
 
-@section('title', 'Rule Management')
+@section('title', __('messages.rule_management'))
 
 @section('content')
 

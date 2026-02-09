@@ -1,6 +1,7 @@
 @extends('admin.dashboard')
 
-@section('title', 'Activity Logs')
+@section('title', __('messages.action_management'))
+
 
 @section('content')
 

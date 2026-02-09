@@ -1,6 +1,7 @@
 @extends('admin.dashboard')
 
-@section('title', 'Permission Management')
+
+@section('title', __('messages.permission_management'))
 
 @section('content')
 

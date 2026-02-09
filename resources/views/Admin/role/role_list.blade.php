@@ -1,7 +1,7 @@
 @extends('admin.dashboard')
 
 
-@section('title', 'Role Management')
+@section('title', __('messages.role_management'))
 
 @section('content')
 

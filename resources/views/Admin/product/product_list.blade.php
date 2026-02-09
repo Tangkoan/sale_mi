@@ -1,6 +1,7 @@
 @extends('admin.dashboard')
 
-@section('title', 'Product Management')
+
+@section('title', __('messages.product_management'))
 
 @section('content')
 

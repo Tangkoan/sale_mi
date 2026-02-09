@@ -1,6 +1,7 @@
 @extends('admin.dashboard')
 
-@section('title', 'Addon Management')
+
+@section('title', __('messages.addon_management'))
 
 @section('content')
 

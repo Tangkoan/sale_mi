@@ -3,7 +3,7 @@
 
 @section('content')
 
-@section('title', 'User Management')
+@section('title', __('messages.user_management'))
 
 
 <div class="w-full h-full px-2 py-2 sm:px-4 sm:py-4" x-data="userManagement()">

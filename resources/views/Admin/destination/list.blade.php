@@ -1,6 +1,9 @@
 @extends('admin.dashboard')
 
-@section('title', 'Kitchen Management')
+
+
+@section('title', __('messages.kitchen_management'))
+
 
 @section('content')
 

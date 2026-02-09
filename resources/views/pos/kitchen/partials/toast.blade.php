@@ -1,6 +1,3 @@
-{{-- =========================================== --}}
-{{-- TOAST NOTIFICATION (Custom)                 --}}
-{{-- =========================================== --}}
 <div class="fixed top-5 right-5 z-[60] flex flex-col gap-2 pointer-events-none">
     <div x-show="toast.show" 
             x-transition:enter="transition ease-out duration-300"
@@ -15,7 +12,7 @@
         
         <i class="text-xl" :class="toast.type === 'success' ? 'ri-checkbox-circle-fill' : 'ri-error-warning-fill'"></i>
         <div>
-            <h4 class="font-bold text-sm" x-text="toast.type === 'success' ? 'Success' : 'Error'"></h4>
+            <h4 class="font-bold text-sm" x-text="toast.type === 'success' ? TRANS.success : TRANS.error"></h4>
             <p class="text-xs text-gray-300" x-text="toast.message"></p>
         </div>
     </div>

@@ -1,26 +1,36 @@
 @extends('layouts.blank')
 
-@section('title', 'Kitchen And Bar')
+@section('title', __('messages.kitchen_system'))
 
 @section('content')
-<div x-data="kitchenDisplay()" x-init="init()" class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-white font-sans flex flex-col overflow-hidden relative transition-colors duration-300">
+<div x-data="kitchenDisplay()" x-init="init()" class="h-dvh w-full bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-white font-sans flex flex-col overflow-hidden relative transition-colors duration-300">
     
-    {{-- 1. INCLUDE TOAST --}}
     @include('pos.kitchen.partials.toast')
-
-    {{-- 2. INCLUDE MODAL --}}
     @include('pos.kitchen.partials.modal')
 
-    {{-- 3. INCLUDE HEADER --}}
-    @include('pos.kitchen.partials.header')
+    <div class="shrink-0 z-20">
+        @include('pos.kitchen.partials.header')
+    </div>
 
-    {{-- 4. INCLUDE ORDERS LIST --}}
-    @include('pos.kitchen.partials.order-list')
+    <div class="flex-1 overflow-hidden relative z-10">
+        @include('pos.kitchen.partials.order-list')
+    </div>
 
 </div>
 
-{{-- JAVASCRIPT LOGIC (រក្សា Logic ទាំងស្រុងដដែល) --}}
 <script>
+    // ✅ បោះតម្លៃភាសាពី Laravel ចូលទៅក្នុង JS
+    const TRANS = {
+        success: "{{ __('messages.success') }}",
+        error: "{{ __('messages.error') }}",
+        confirm_message: "{{ __('messages.confirm_message') }}",
+        item_marked_ready: "{{ __('messages.item_marked_ready') }}",
+        failed_update_item: "{{ __('messages.failed_update_item') }}",
+        order_completed: "{{ __('messages.order_completed') }}",
+        error_completing_order: "{{ __('messages.error_completing_order') }}",
+        connection_lost: "{{ __('messages.connection_lost') }}"
+    };
+
     function kitchenDisplay() {
         return {
             orders: [],
@@ -33,11 +43,7 @@
             currentTimeTrigger: Date.now(), 
             timerInterval: null,
             pollingInterval: null,
-
-            // ✅ STATE សម្រាប់ Toast
             toast: { show: false, message: '', type: 'success' },
-
-            // ✅ STATE សម្រាប់ Modal
             modal: { show: false, message: '', orderIdToConfirm: null },
 
             init() {
@@ -64,7 +70,6 @@
                 this.fetchOrders();
             },
 
-            // --- NOTIFICATION HELPERS ---
             showToast(message, type = 'success') {
                 this.toast.message = message;
                 this.toast.type = type;
@@ -72,10 +77,10 @@
                 setTimeout(() => this.toast.show = false, 3000);
             },
 
-            // --- MODAL HELPERS ---
             openConfirmModal(orderId) {
                 this.modal.orderIdToConfirm = orderId;
-                this.modal.message = 'Have you finished all items for this order?';
+                // ✅ ប្រើភាសាពី Variable TRANS
+                this.modal.message = TRANS.confirm_message;
                 this.modal.show = true;
             },
 
@@ -91,7 +96,6 @@
                 this.closeModal();
             },
 
-            // --- FETCH & API ---
             async fetchOrders() {
                 if(this.currentDestinationId === 0) return;
                 if(this.orders.length === 0) this.isLoading = true;
@@ -101,7 +105,7 @@
                     const data = await response.json();
                     this.orders = data;
                 } catch (error) {
-                    console.error("Connection lost:", error);
+                    console.error(TRANS.connection_lost, error);
                 } finally {
                     this.isLoading = false;
                 }
@@ -149,14 +153,14 @@
                             const item = order.items.find(i => i.id === itemId);
                             if(item) item.status = 'ready';
                         });
-                        this.showToast('Item marked as ready!', 'success'); 
+                        // ✅ ប្រើភាសាពី Variable TRANS
+                        this.showToast(TRANS.item_marked_ready, 'success'); 
                     }
                 } catch (e) { 
-                    this.showToast('Failed to update item', 'error'); 
+                    this.showToast(TRANS.failed_update_item, 'error'); 
                 }
             },
 
-            // 🔥 Function នេះហៅដោយ Modal "Confirm"
             async processOrderDone(orderId) {
                 try {
                     const response = await fetch("{{ route('pos.kitchen.done_all') }}", {
@@ -166,10 +170,11 @@
                     });
                     if (response.ok) {
                         this.orders = this.orders.filter(o => o.id !== orderId);
-                        this.showToast('Order completed successfully!', 'success'); 
+                        // ✅ ប្រើភាសាពី Variable TRANS
+                        this.showToast(TRANS.order_completed, 'success'); 
                     }
                 } catch (e) { 
-                    this.showToast('Error completing order', 'error');
+                    this.showToast(TRANS.error_completing_order, 'error');
                 }
             }
         }
