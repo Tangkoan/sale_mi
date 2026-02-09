@@ -69,19 +69,43 @@
                                     <div x-show="isSplitMode" class="pt-1">
                                         <input type="checkbox" @change="toggleSplitItem(item)" :checked="isItemSplitted(item.id)" class="w-5 h-5 rounded text-primary focus:ring-primary border-gray-300 cursor-pointer">
                                     </div>
-                                    <div class="text-gray-800 dark:text-gray-200 text-base">
+                                    <div class="text-gray-800 dark:text-gray-200 text-base flex-1">
                                         {{-- ឈ្មោះផលិតផល --}}
-                                        <div class="font-bold" x-text="item.product ? item.product.name : 'Item'"></div>
+                                        <div class="font-bold text-lg" x-text="item.product ? item.product.name : 'Item'"></div>
                                         
-                                        {{-- 🔥 កែត្រង់នេះ៖ បង្ហាញ Addon ព្រមទាំងតម្លៃរបស់វា --}}
+                                        {{-- 🔥 KHMER CODE: កែផ្នែកបង្ហាញ Addon អោយមានប៊ូតុងគ្រប់គ្រង --}}
                                         <template x-if="item.addons && item.addons.length > 0">
-                                            <div class="mt-1 space-y-0.5">
-                                                <template x-for="ad in item.addons">
-                                                    <div class="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded inline-block mr-1 mb-1 border border-blue-100">
-                                                        <span>+ <span x-text="ad.addon?.name"></span></span>
-                                                        {{-- បង្ហាញតម្លៃ Addon --}}
-                                                        <span x-show="parseFloat(ad.price) > 0" x-text="'($' + parseFloat(ad.price).toFixed(2) + ')'" class="font-bold ml-1"></span>
-                                                        <span x-text="'x' + (ad.quantity || 1)" class="ml-1 text-gray-500"></span>
+                                            <div class="mt-2 space-y-1 border-t border-dashed border-gray-200 dark:border-gray-700 pt-1">
+                                                <template x-for="(ad, index) in item.addons" :key="index">
+                                                    <div class="flex items-center justify-between text-sm bg-gray-50 dark:bg-gray-700/50 p-1.5 rounded-lg group">
+                                                        
+                                                        {{-- ឈ្មោះ និង តម្លៃ Addon --}}
+                                                        <div class="flex items-center gap-1">
+                                                            <i class="ri-add-circle-fill text-blue-500 text-xs"></i>
+                                                            <span class="text-gray-600 dark:text-gray-300 font-medium" x-text="ad.addon?.name || ad.name"></span>
+                                                            <span x-show="parseFloat(ad.price) > 0" class="text-xs text-gray-500" x-text="'($' + parseFloat(ad.price).toFixed(2) + ')'"></span>
+                                                        </div>
+
+                                                        {{-- ប៊ូតុងគ្រប់គ្រង Addon (+ - Delete) --}}
+                                                        <div class="flex items-center gap-2" :class="isSplitMode ? 'hidden' : ''">
+                                                            {{-- Qty Control --}}
+                                                            <div class="flex items-center bg-white dark:bg-gray-600 rounded border border-gray-200 dark:border-gray-500 h-6">
+                                                                <button @click="updateAddonQty(item.id, ad.id, 'decrease')" class="px-1.5 text-gray-500 hover:text-red-500 border-r border-gray-200 dark:border-gray-500 h-full flex items-center">-</button>
+                                                                <span class="px-1.5 font-bold text-xs text-gray-800 dark:text-white" x-text="ad.quantity || 1"></span>
+                                                                <button @click="updateAddonQty(item.id, ad.id, 'increase')" class="px-1.5 text-gray-500 hover:text-blue-500 border-l border-gray-200 dark:border-gray-500 h-full flex items-center">+</button>
+                                                            </div>
+                                                            
+                                                            {{-- Delete Button --}}
+                                                            <button @click="updateAddonQty(item.id, ad.id, 'remove')" class="text-red-400 hover:text-red-600 p-0.5 rounded hover:bg-red-50 transition">
+                                                                <i class="ri-close-line"></i>
+                                                            </button>
+                                                        </div>
+                                                        
+                                                        {{-- បង្ហាញតែចំនួនទេ បើស្ថិតក្នុង Split Mode --}}
+                                                        <div x-show="isSplitMode" class="text-xs font-bold text-gray-500">
+                                                            x<span x-text="ad.quantity || 1"></span>
+                                                        </div>
+
                                                     </div>
                                                 </template>
                                             </div>

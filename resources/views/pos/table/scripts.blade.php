@@ -263,22 +263,39 @@
                 this.recalculateTotalLocal();
             },
 
-            updateAddonQty(addonId, action) {
+            updateAddonQty(itemId, addonId, action) {
+                // 1. ហាមកែពេលកំពុង Split Bill
                 if (this.isSplitMode) return; 
-                for (let item of this.orderDetails.items) {
-                    if (item.addons) {
-                        let addonIndex = item.addons.findIndex(a => a.id === addonId);
-                        if (addonIndex !== -1) {
-                            let addon = item.addons[addonIndex];
-                            if (this.isExtraItem(item) && item.addons.length === 1 && (action === 'decrease' && addon.quantity === 1 || action === 'remove')) {
-                                this.updateItemQty(item.id, 'remove'); return;
-                            }
-                            if (action === 'increase') addon.quantity++;
-                            else if (action === 'decrease') { if (addon.quantity > 1) addon.quantity--; else item.addons.splice(addonIndex, 1); } 
-                            else if (action === 'remove') item.addons.splice(addonIndex, 1);
-                            this.recalculateTotalLocal(); return;
+
+                // 2. រក Item ជាក់លាក់នោះសិន (កុំអោយច្រឡំជាមួយ Item ផ្សេងដែលមាន Addon ដូចគ្នា)
+                let item = this.orderDetails.items.find(i => i.id === itemId);
+                if (!item || !item.addons) return;
+
+                // 3. រក Addon ក្នុង Item នោះ
+                let addonIndex = item.addons.findIndex(a => a.id === addonId);
+                if (addonIndex !== -1) {
+                    let addon = item.addons[addonIndex];
+                    
+                    // Ensure quantity is integer
+                    let currentQty = parseInt(addon.quantity || 1);
+
+                    if (action === 'increase') {
+                        addon.quantity = currentQty + 1;
+                    } 
+                    else if (action === 'decrease') {
+                        if (currentQty > 1) {
+                            addon.quantity = currentQty - 1;
+                        } else {
+                            // បើនៅសល់ 1 ចុចដក គឺលុបចោលតែម្តង
+                            item.addons.splice(addonIndex, 1);
                         }
+                    } 
+                    else if (action === 'remove') {
+                        item.addons.splice(addonIndex, 1);
                     }
+
+                    // 4. គណនាលុយសរុបឡើងវិញភ្លាមៗ
+                    this.recalculateTotalLocal();
                 }
             },
 
