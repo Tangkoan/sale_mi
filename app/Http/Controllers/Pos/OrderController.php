@@ -27,57 +27,12 @@ use Mike42\Escpos\EscposImage; // ត្រូវការ Class នេះ
 use Illuminate\Support\Facades\File;
 use Mike42\Escpos\CapabilityProfile; // 🔥 ថែមបន្ទាត់នេះ
 
+use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
+use Mike42\Escpos\ImagickEscposImage;
+
 class OrderController extends Controller
 {
-    // ... (store function នៅដដែល)
-
-    /**
-     * 🔥 Function បំប្លែងអក្សរខ្មែរ ទៅជារូបភាព រួច Print
-     */
-    private function printTextAsImage($printer, $text, $size = 22)
-    {
-        // 1. កំណត់ទីតាំង Font (ត្រូវប្រាកដថាមាន File នេះ)
-        $fontPath = public_path('fonts/KhmerOSsiemreap.ttf'); 
-
-        if (!file_exists($fontPath)) {
-            // បើអត់មាន Font ខ្មែរទេ Print ជា Text ធម្មតា (ចេញសញ្ញា ???)
-            $printer->text($text . "\n");
-            return;
-        }
-
-        // 2. បង្កើតស៊ុមរូបភាព (Canvas)
-        // ទទឹង 550px (សម្រាប់ក្រដាស 80mm), កម្ពស់ប៉ាន់ស្មានតាមទំហំអក្សរ
-        $width = 550; 
-        $height = $size + 20; // កម្ពស់តាមទំហំអក្សរ
-
-        $image = imagecreate($width, $height);
-        
-        // 3. កំណត់ពណ៌ (Background ពណ៌ស, អក្សរពណ៌ខ្មៅ)
-        $white = imagecolorallocate($image, 255, 255, 255);
-        $black = imagecolorallocate($image, 0, 0, 0);
-
-        // 4. សរសេរអក្សរខ្មែរចូលក្នុងរូបភាព
-        // (Size, Angle, X, Y, Color, Font, Text)
-        imagettftext($image, $size, 0, 10, $size + 5, $black, $fontPath, $text);
-
-        // 5. Save រូបភាពជាបណ្តោះអាសន្ន
-        $tempFile = public_path('temp_print_text.png');
-        imagepng($image, $tempFile);
-        imagedestroy($image);
-
-        // 6. ហៅ EscposImage ដើម្បី Print រូបភាពនោះ
-        try {
-            $logo = EscposImage::load($tempFile, false);
-            $printer->bitImage($logo); // Print រូបភាព
-        } catch (\Exception $e) {
-            Log::error("Image Print Error: " . $e->getMessage());
-        }
-
-        // 7. លុប File បណ្តោះអាសន្នចោល
-        if (file_exists($tempFile)) {
-            unlink($tempFile);
-        }
-    }
+    
 
     public function store(Request $request)
     {
@@ -264,7 +219,11 @@ class OrderController extends Controller
                 // ... (HEADER, TABLE INFO នៅដដែល) ...
                 $printer->setJustification(Printer::JUSTIFY_CENTER);
                 $printer->selectPrintMode(Printer::MODE_DOUBLE_HEIGHT | Printer::MODE_DOUBLE_WIDTH);
-                $printer->text($printerInfo->name . "\n");
+                if ($this->hasKhmerText($printerInfo->name)) {
+                    $this->printKhmerTextAsImage($printer, $printerInfo->name, 28);
+                } else {
+                    $printer->text($printerInfo->name . "\n");
+                }
                 $printer->selectPrintMode(); 
                 $printer->text("--------------------------------\n");
                 
@@ -278,44 +237,47 @@ class OrderController extends Controller
 
                 // --- ITEMS ---
                 foreach ($items as $item) {
-                    $productName = $item->product->name ?? 'Unknown';
-                    $qty         = $item->quantity;
-                    $fullText    = "{$qty} x {$productName}";
 
-                    // 🔥 ឆែកមើល៖ បើមានអក្សរខ្មែរ ប្រើរូបភាព, បើអត់ទេ ប្រើ Text ធម្មតា
-                    if ($this->hasKhmerText($fullText)) {
-                        $this->printKhmerTextAsImage($printer, $fullText, 24);
+                    $productName = $item->product->name ?? 'Unknown';
+                    $qty = $item->quantity;
+                    $line = "{$qty} x {$productName}";
+
+                    // 🔥 Product Name
+                    if ($this->hasKhmerText($line)) {
+                        $this->printKhmerTextAsImage($printer, $line, 26);
                     } else {
-                        // English សុទ្ធ Print ធម្មតា (ច្បាស់ជាង លឿនជាង)
-                        $printer->selectPrintMode(Printer::MODE_DOUBLE_HEIGHT | Printer::MODE_FONT_B);
-                        $printer->text($fullText . "\n");
-                        $printer->selectPrintMode(); 
+                        $printer->selectPrintMode(
+                            Printer::MODE_DOUBLE_HEIGHT | Printer::MODE_DOUBLE_WIDTH
+                        );
+                        $printer->text($line . "\n");
+                        $printer->selectPrintMode();
                     }
 
-                    // NOTE
+                    // 🔸 Note
                     if ($item->note) {
-                        $noteText = "   (Note: {$item->note})";
-                        if ($this->hasKhmerText($noteText)) {
-                            $this->printKhmerTextAsImage($printer, $noteText, 18);
+                        $note = "   📝 {$item->note}";
+                        if ($this->hasKhmerText($note)) {
+                            $this->printKhmerTextAsImage($printer, $note, 18);
                         } else {
-                            $printer->text($noteText . "\n");
+                            $printer->text($note . "\n");
                         }
                     }
 
-                    // ADDONS
+                    // 🔸 Addons
                     foreach ($item->addons as $addonRow) {
                         $addonName = $addonRow->addon->name ?? 'Extra';
-                        $addonText = "   + {$addonName} (x{$addonRow->quantity})";
-                        
-                        if ($this->hasKhmerText($addonText)) {
-                            $this->printKhmerTextAsImage($printer, $addonText, 18);
+                        $addonLine = "   + {$addonName} (x{$addonRow->quantity})";
+
+                        if ($this->hasKhmerText($addonLine)) {
+                            $this->printKhmerTextAsImage($printer, $addonLine, 18);
                         } else {
-                            $printer->text($addonText . "\n");
+                            $printer->text($addonLine . "\n");
                         }
                     }
-                    
+
                     $printer->text("\n");
                 }
+
 
                 // ... (FOOTER & CUT នៅដដែល) ...
                 $printer->cut();
@@ -818,62 +780,64 @@ class OrderController extends Controller
         }
     }
 
-    /**
-     * 🔥 VERSION ចុងក្រោយ៖ Print ដោយកាត់ជាចំណិតៗ (Chunking)
-     * ដើម្បីការពារ Buffer Overflow ដែលបណ្តាលអោយចេញអក្សរក្រៅភព
-     */
-    private function printKhmerTextAsImage($printer, $text, $fontSize = 24)
-    {
-        // យើងមិនចាំបាច់ ob_start នៅទីនេះទៀតទេ ព្រោះយើងបានធ្វើនៅ store() ហើយ
-        // តែដាក់ក៏មិនអីដែរ ដើម្បី double safety
 
+
+    /**
+     * ✅ FINAL & STABLE Khmer Print for ESC/POS (EPSON M188B)
+     */
+    private function printKhmerTextAsImage(Printer $printer, string $text, int $fontSize = 24)
+    {
         $fontPath = public_path('fonts/KhmerOSsiemreap.ttf');
+
         if (!file_exists($fontPath)) {
             $printer->text($text . "\n");
             return;
         }
 
         try {
-            // ✅ EPSON Standard Width: 512 dots
-            $width = 512; 
-            $image = imagecreatetruecolor($width, $height);
-            $white = imagecolorallocate($image, 255, 255, 255);
-            imagefilledrectangle($image, 0, 0, $width, $height, $white); // សំខាន់ណាស់!
-            
-            // គណនាកម្ពស់អក្សរ
+            // 🔥 Width MUST be multiple of 8
+            $width = 512;
+
+            // Calculate height dynamically
             $bbox = imagettfbbox($fontSize, 0, $fontPath, $text);
             $textHeight = abs($bbox[7] - $bbox[1]);
-            $height = $textHeight + 45; // ទុក Space លើក្រោមអោយធំបន្តិច
+            $height = $textHeight + 20;
 
-            
-            $black = imagecolorallocate($image, 0, 0, 0);
+            // Create image
+            $img = imagecreatetruecolor($width, $height);
+            $white = imagecolorallocate($img, 255, 255, 255);
+            $black = imagecolorallocate($img, 0, 0, 0);
+            imagefilledrectangle($img, 0, 0, $width, $height, $white);
 
-            // Background ស
-            imagefilledrectangle($image, 0, 0, $width, $height, $white);
+            // Draw Khmer text
+            imagettftext(
+                $img,
+                $fontSize,
+                0,
+                5,
+                $height - 5,
+                $black,
+                $fontPath,
+                $text
+            );
 
-            // សរសេរអក្សរ
-            imagettftext($image, $fontSize, 0, 0, $height - 15, $black, $fontPath, $text);
+            // Save temp image
+            $temp = storage_path('app/khmer_' . uniqid() . '.png');
+            imagepng($img, $temp);
+            imagedestroy($img);
 
-            // ស-ខ្មៅ (High Contrast)
-            imagefilter($image, IMG_FILTER_GRAYSCALE);
-            imagefilter($image, IMG_FILTER_CONTRAST, -1000);
+            // Load and print image
+            $image = EscposImage::load($temp, false);
+            $printer->bitImageColumnFormat($image);
+            $printer->feed(1);
 
-            $tempFile = public_path('epson_' . uniqid() . '.png');
-            imagepng($image, $tempFile);
-            imagedestroy($image);
-
-            if (file_exists($tempFile)) {
-                $escPosImage = EscposImage::load($tempFile, false);
-                
-                // 🔥 EPSON Special Command 🔥
-                // bitImageRaster គឺជា Command ល្អបំផុតសម្រាប់ Epson TM Series
-                $printer->bitImageRaster($escPosImage);
-                
-                unlink($tempFile);
-            }
+            unlink($temp);
 
         } catch (\Exception $e) {
-            Log::error("Epson Image Error: " . $e->getMessage());
+            Log::error('KHMER PRINT FAIL: ' . $e->getMessage());
+            $printer->text($text . "\n");
         }
     }
+
+
 }
