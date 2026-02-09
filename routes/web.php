@@ -374,6 +374,7 @@ Route::middleware('auth')->group(function () {
             // ======================
             // ORDER ROUTES (បន្ថែមថ្មី)
             // ======================
+            Route::get('/order-details/{tableId}', [OrderController::class, 'getOrderDetails'])->name('order.details');
             Route::post('/order/store', [OrderController::class, 'store'])->name('order.store');
             Route::post('/checkout', [OrderController::class, 'checkout'])->name('pos.order.checkout');
             // 1. API សម្រាប់ទាញយកតុដែលរវល់ (Busy Tables)

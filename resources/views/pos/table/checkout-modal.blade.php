@@ -56,41 +56,59 @@
             </div>
             
             {{-- ITEMS LIST Container --}}
-            <div class="flex-1 overflow-y-auto p-2 md:p-4 custom-scrollbar bg-gray-50 dark:bg-gray-900/50 relative">
-                {{-- ... (Content ក្នុង List ម្ហូប រក្សាទុកដូចដើម) ... --}}
-                <div class="space-y-3">
-                    <template x-for="item in orderDetails.items" :key="'item-' + item.id">
-                         {{-- ... (Item Card Code ដូចចាស់) ... --}}
-                         <div class="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col gap-2 transition-all"
-                             :class="isSplitMode && isItemSplitted(item.id) ? 'ring-2 ring-primary border-primary bg-blue-50/50' : ''">
-                            {{-- ... (ដាក់កូដ Item Card ចាស់នៅទីនេះ) ... --}}
-                            <div class="flex flex-col gap-2">
-                                <div class="flex justify-between items-start">
-                                    <div class="flex items-start gap-3">
-                                        <div x-show="isSplitMode" class="pt-1">
-                                            <input type="checkbox" @change="toggleSplitItem(item)" :checked="isItemSplitted(item.id)" class="w-5 h-5 rounded text-primary focus:ring-primary border-gray-300 cursor-pointer">
-                                        </div>
-                                        <div class="font-bold text-gray-800 dark:text-gray-200 text-base">
-                                            <span x-text="item.product ? item.product.name : 'Item'"></span>
-                                        </div>
+            {{-- ITEMS LIST Container --}}
+        <div class="flex-1 overflow-y-auto p-2 md:p-4 custom-scrollbar bg-gray-50 dark:bg-gray-900/50 relative">
+            <div class="space-y-3">
+                <template x-for="item in orderDetails.items" :key="'item-' + item.id">
+                    <div class="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col gap-2 transition-all"
+                        :class="isSplitMode && isItemSplitted(item.id) ? 'ring-2 ring-primary border-primary bg-blue-50/50' : ''">
+                        
+                        <div class="flex flex-col gap-2">
+                            <div class="flex justify-between items-start">
+                                <div class="flex items-start gap-3">
+                                    <div x-show="isSplitMode" class="pt-1">
+                                        <input type="checkbox" @change="toggleSplitItem(item)" :checked="isItemSplitted(item.id)" class="w-5 h-5 rounded text-primary focus:ring-primary border-gray-300 cursor-pointer">
                                     </div>
-                                    <div class="font-bold text-gray-900 dark:text-white">
-                                        <span x-text="'$' + (item.price * item.quantity).toFixed(2)"></span>
+                                    <div class="text-gray-800 dark:text-gray-200 text-base">
+                                        {{-- ឈ្មោះផលិតផល --}}
+                                        <div class="font-bold" x-text="item.product ? item.product.name : 'Item'"></div>
+                                        
+                                        {{-- 🔥 កែត្រង់នេះ៖ បង្ហាញ Addon ព្រមទាំងតម្លៃរបស់វា --}}
+                                        <template x-if="item.addons && item.addons.length > 0">
+                                            <div class="mt-1 space-y-0.5">
+                                                <template x-for="ad in item.addons">
+                                                    <div class="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded inline-block mr-1 mb-1 border border-blue-100">
+                                                        <span>+ <span x-text="ad.addon?.name"></span></span>
+                                                        {{-- បង្ហាញតម្លៃ Addon --}}
+                                                        <span x-show="parseFloat(ad.price) > 0" x-text="'($' + parseFloat(ad.price).toFixed(2) + ')'" class="font-bold ml-1"></span>
+                                                        <span x-text="'x' + (ad.quantity || 1)" class="ml-1 text-gray-500"></span>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
                                     </div>
                                 </div>
-                                <div class="flex items-center justify-between" :class="isSplitMode ? 'opacity-50 pointer-events-none' : ''">
-                                    <button @click="updateItemQty(item.id, 'remove')" class="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-lg"><i class="ri-delete-bin-line text-lg"></i></button>
-                                    <div class="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5">
-                                        <button @click="updateItemQty(item.id, 'decrease')" class="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm hover:text-red-500">-</button>
-                                        <span class="w-8 text-center font-bold text-gray-800 text-sm" x-text="item.quantity"></span>
-                                        <button @click="updateItemQty(item.id, 'increase')" class="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm hover:text-green-500">+</button>
-                                    </div>
+                                
+                                {{-- តម្លៃសរុបក្នុងមួយមុខ (Price + Addons) * Quantity --}}
+                                <div class="font-bold text-gray-900 dark:text-white text-lg">
+                                    <span x-text="'$' + formatNumber((parseFloat(item.price) + (item.addons ? item.addons.reduce((sum, ad) => sum + (parseFloat(ad.price) * (ad.quantity || 1)), 0) : 0)) * item.quantity)"></span>
                                 </div>
                             </div>
-                         </div>
-                    </template>
-                </div>
+
+                            {{-- ... (ផ្នែក Button ដក/ថែម ចំនួន រក្សាទុកដដែល) ... --}}
+                            <div class="flex items-center justify-between" :class="isSplitMode ? 'opacity-50 pointer-events-none' : ''">
+                                <button @click="updateItemQty(item.id, 'remove')" class="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-lg"><i class="ri-delete-bin-line text-lg"></i></button>
+                                <div class="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5">
+                                    <button @click="updateItemQty(item.id, 'decrease')" class="w-8 h-8 flex items-center justify-center rounded-md bg-white shadow-sm hover:text-red-500 font-bold">-</button>
+                                    <span class="w-8 text-center font-bold text-gray-800 text-sm" x-text="item.quantity"></span>
+                                    <button @click="updateItemQty(item.id, 'increase')" class="w-8 h-8 flex items-center justify-center rounded-md bg-white shadow-sm hover:text-green-500 font-bold">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
             </div>
+        </div>
 
             <div class="p-4 border-t border-gray-100 bg-white dark:bg-gray-800 shrink-0 shadow-sm z-10">
                 <div class="flex justify-between items-center text-sm md:text-base">
