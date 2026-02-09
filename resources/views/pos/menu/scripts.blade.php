@@ -104,15 +104,12 @@
             async fetchRateFromApi() {
                 this.isFetchingRate = true;
                 try {
-                    // 1. ហៅ API
                     const response = await fetch("{{ route('system.exchange-rate.fetch-nbc') }}");
                     const data = await response.json();
 
                     if (data.status === 'error') throw new Error(data.message);
 
                     let khrRate = 0;
-                    
-                    // Logic ចាប់យកតម្លៃ (ដូចមុន)
                     if (data.data && typeof data.data === 'object' && !Array.isArray(data.data)) {
                         khrRate = parseFloat(data.data.average || data.data.ask || data.data.bid);
                     } else if (data.data && Array.isArray(data.data)) {
@@ -121,13 +118,8 @@
                     }
 
                     if (khrRate > 0) {
-                        // 2. ដាក់តម្លៃចូល Temp
                         this.tempExchangeRate = khrRate; 
-                        
-                        // 🔥 3. ហៅ Function Save ភ្លាមៗតែម្តង (Auto Save)
                         await this.saveExchangeRate(); 
-
-                        // Note: Function saveExchangeRate() នឹងបិទ Modal និងបង្ហាញ Toast Success ដោយស្វ័យប្រវត្តិ
                     } else {
                         throw new Error("Rate not found in API data");
                     }
@@ -179,15 +171,11 @@
             get filteredProducts() {
                 let items = [];
 
-                // MODE: ADDON
                 if (this.viewMode === 'addon') {
                     items = this.addons.filter(a => a.is_active == 1 || a.is_active == true);
-
                     if (this.search) {
                         items = items.filter(a => a.name.toLowerCase().includes(this.search.toLowerCase()));
                     }
-
-                    // Smart Filter: Show Addons based on Category Destination
                     if (this.activeCategory !== 'all') {
                         const selectedCat = this.categories.find(c => c.id == this.activeCategory);
                         if (selectedCat && selectedCat.kitchen_destination_id) {
@@ -196,24 +184,21 @@
                             items = items.filter(a => !a.kitchen_destination_id); 
                         }
                     }
-
                     return items.map(addon => ({
                         id: addon.id, name: addon.name, price: addon.price,
-                        image: null, category_id: 'addon', is_active: true, type: 'addon_item' // ✅ សម្គាល់ថាជា Addon
+                        image: null, category_id: 'addon', is_active: true, type: 'addon_item' 
                     }));
                 }
 
-                // MODE: MENU
                 items = this.products;
                 if (this.activeCategory !== 'all') items = items.filter(p => p.category_id == this.activeCategory);
                 if (this.search) items = items.filter(p => p.name.toLowerCase().includes(this.search.toLowerCase()));
-                // លាក់ Extra ពី Menu ធម្មតា (ដើម្បីកុំអោយច្រឡំ)
                 items = items.filter(p => !p.name.toLowerCase().includes('extra'));
 
                 return items;
             },
 
-            // ... (Helpers) ...
+            // --- Helpers ---
             get availableAddons() {
                 if (this.tempItem.type === 'addon_item') return [];
                 if (!this.tempItem.id) return [];
@@ -223,12 +208,8 @@
                 return [];
             },
 
-            // 🔥 FUNCTION ថ្មី៖ សម្រាប់ចុច Addon ផ្ទាល់ (Addon Mode)
             addStandaloneAddon(addonItem) {
-                // 1. ស្វែងរកផលិតផលឈ្មោះ "Extra" នៅក្នុងបញ្ជី Products ដោយមិនខ្វល់ពី ID
                 let wrapperProduct = this.products.find(p => p.name.toLowerCase().includes('extra'));
-
-                // បើរកមិនឃើញ សូម Alert
                 if (!wrapperProduct) {
                     window.dispatchEvent(new CustomEvent('notify', { 
                         detail: { type: 'error', message: "System Error: Please create a product named 'Extra' (Price: 0) in Admin first!" } 
@@ -236,29 +217,22 @@
                     return;
                 }
 
-                // 2. បង្កើត Cart Item ដោយប្រើ ID របស់ "Extra" ជាអ្នកដឹកមុខ
                 let cartItem = {
-                    product_id: wrapperProduct.id, // ✅ ប្រើ ID របស់ Extra (ឧ. លេខ 7 ឬលេខផ្សេង)
-                    name: addonItem.name, // បង្ហាញឈ្មោះ Addon
+                    product_id: wrapperProduct.id, 
+                    name: addonItem.name, 
                     image: null,
-                    base_price: 0, // Extra តម្លៃ $0
+                    base_price: 0, 
                     qty: 1,
                     note: '',
-                    is_addon_item: true, // សម្គាល់ថាជា Addon សុទ្ធ
-                    
-                    // ដាក់ Addon ចូលទៅក្នុង List Addons
+                    is_addon_item: true, 
                     addons: [{
                         id: addonItem.id,
                         name: addonItem.name,
                         price: parseFloat(addonItem.price),
                         qty: 1
                     }],
-                    
-                    // តម្លៃសរុបគឺស្មើនឹងតម្លៃ Addon
                     total_price_calculated: parseFloat(addonItem.price) 
                 };
-
-                // 3. បញ្ចូលទៅក្នុង Cart
                 this.cart.push(cartItem);
                 window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Added: ' + addonItem.name } }));
             },
@@ -275,34 +249,23 @@
                 this.isProductModalOpen = true;
             },
 
-            // សម្រាប់ប៊ូតុង Quick Addon (បើមាន)
             openQuickAddon() {
                 let extraProduct = this.products.find(p => p.name.toLowerCase().includes('extra'));
-                
                 if (!extraProduct) {
                     window.dispatchEvent(new CustomEvent('notify', { 
                         detail: { type: 'error', message: "System Config Error: Please create a product named 'Extra' (Price: 0) in Admin first!" } 
                     }));
                     return;
                 }
-                
                 this.tempItem = {
-                    id: extraProduct.id, 
-                    name: "Extra / Addon Only", 
-                    image: null, 
-                    base_price: parseFloat(extraProduct.price), 
-                    qty: 1, 
-                    note: 'Addon Only', 
-                    selectedAddons: [], 
-                    category_id: extraProduct.category_id, 
-                    category_name: 'Special'
+                    id: extraProduct.id, name: "Extra / Addon Only", image: null, base_price: parseFloat(extraProduct.price), 
+                    qty: 1, note: 'Addon Only', selectedAddons: [], category_id: extraProduct.category_id, category_name: 'Special'
                 };
                 this.isProductModalOpen = true;
             },
 
             closeProductModal() { this.isProductModalOpen = false; },
             
-            // Cart Logic
             isAddonSelected(id) { return this.tempItem.selectedAddons.some(a => a.id === id); },
             getAddonQty(id) { const addon = this.tempItem.selectedAddons.find(a => a.id === id); return addon ? addon.qty : 0; },
             toggleAddon(addon) {
@@ -319,9 +282,10 @@
                 let ads = 0; this.tempItem.selectedAddons.forEach(ad => ads += (ad.price * ad.qty));
                 return main + ads;
             },
+
+            // --- MAIN CART LOGIC (UPDATED) ---
             addToCart() {
                 try {
-                    // 1. រៀបចំទិន្នន័យ Addons (Sort តាម ID ដើម្បីងាយស្រួលផ្ទៀងផ្ទាត់)
                     const finalAddons = this.tempItem.selectedAddons.map(ad => ({
                         id: ad.id, name: ad.name, price: ad.price, qty: ad.qty
                     })).sort((a, b) => a.id - b.id);
@@ -331,14 +295,12 @@
                         name: this.tempItem.name,
                         base_price: parseFloat(this.tempItem.base_price),
                         qty: parseInt(this.tempItem.qty),
-                        note: this.tempItem.note || '', // ធានាថាវាជា String ទទេ បើមិនមាន Note
+                        note: this.tempItem.note || '', 
                         addons: finalAddons,
                         total_price_calculated: this.calculateItemTotal(),
                         is_addon_item: (this.tempItem.type === 'addon_item')
                     };
 
-                    // 2. ពិនិត្យមើលថាតើមានទំនិញនេះក្នុង Cart រួចហើយឬនៅ?
-                    // លក្ខខណ្ឌ៖ Product ID ដូចគ្នា + Note ដូចគ្នា + Addons (ប្រភេទនិងចំនួន) ដូចគ្នា
                     const existingIndex = this.cart.findIndex(item => {
                         return item.product_id === newItem.product_id && 
                             (item.note || '') === newItem.note &&
@@ -346,21 +308,16 @@
                     });
 
                     if (existingIndex !== -1) {
-                        // === ករណីមានហើយ (MERGE) ===
-                        // បូក Qty ចូលគ្នា
                         let existingItem = this.cart[existingIndex];
                         existingItem.qty += newItem.qty;
                         existingItem.total_price_calculated += newItem.total_price_calculated;
-
-                        // បូក Qty របស់ Addons ចូលគ្នាផងដែរ (បើមាន)
+                        
                         if (existingItem.addons && existingItem.addons.length > 0) {
                             existingItem.addons.forEach((ad, i) => {
-                                // ដោយសារយើងបាន Sort ដូចគ្នា យើងអាចបូកតាម Index បាន ឬអាចរកតាម ID
                                 ad.qty += newItem.addons[i].qty;
                             });
                         }
                     } else {
-                        // === ករណីថ្មី (NEW ROW) ===
                         this.cart.push(newItem);
                     }
 
@@ -368,14 +325,62 @@
                     window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Added to cart' } }));
                 } catch (e) { console.error(e); }
             },
+
+            // 1. Update Main Item Qty
+            updateCartQty(index, change) {
+                let item = this.cart[index];
+                item.qty += change;
+                if (item.qty <= 0) {
+                    if(confirm('Remove this item?')) {
+                        this.removeFromCart(index);
+                        return;
+                    } else {
+                        item.qty = 1;
+                    }
+                }
+                this.recalculateCartItemTotal(index);
+            },
+
+            // 2. Update Addon Qty inside Cart
+            updateCartAddonQty(cartIndex, addonIndex, change) {
+                let item = this.cart[cartIndex];
+                let addon = item.addons[addonIndex];
+                
+                addon.qty += change;
+
+                // If addon qty becomes 0, remove it
+                if (addon.qty <= 0) {
+                    this.removeAddonFromCart(cartIndex, addonIndex);
+                    return; 
+                }
+
+                this.recalculateCartItemTotal(cartIndex);
+            },
+
+            // 3. Remove Addon
+            removeAddonFromCart(cartIndex, addonIndex) {
+                this.cart[cartIndex].addons.splice(addonIndex, 1);
+                this.recalculateCartItemTotal(cartIndex);
+            },
+
+            // 4. Recalculate Logic
+            recalculateCartItemTotal(index) {
+                let item = this.cart[index];
+                let baseTotal = parseFloat(item.base_price) * parseInt(item.qty);
+                let addonsTotal = 0;
+
+                if (item.addons && item.addons.length > 0) {
+                    item.addons.forEach(ad => {
+                        addonsTotal += (parseFloat(ad.price) * parseInt(ad.qty));
+                    });
+                }
+                item.total_price_calculated = baseTotal + addonsTotal;
+            },
+
             removeFromCart(index) { this.cart.splice(index, 1); if(this.cart.length === 0) this.isCartOpen = false; },
-            get cartTotalQty() { return this.cart.reduce((sum, item) => sum + parseInt(item.qty), 0); },
+            
             get cartTotalPrice() {
-                return this.cart.reduce((sum, item) => {
-                    if (item.total_price_calculated) return sum + item.total_price_calculated;
-                    let ads = 0; if(item.addons) item.addons.forEach(ad => ads += (ad.price * (ad.qty || 1)));
-                    return sum + (item.base_price * item.qty) + ads;
-                }, 0);
+                return this.cart.reduce((sum, item) => sum + (item.total_price_calculated || 0), 0);
             },
 
             async submitOrder() {
@@ -400,7 +405,7 @@
                         method: "POST",
                         headers: { 
                             "Content-Type": "application/json", 
-                            "Accept": "application/json", // 🔥 សំខាន់សម្រាប់ចាប់ Error Validation
+                            "Accept": "application/json",
                             "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute('content') 
                         },
                         body: JSON.stringify(payload)
@@ -414,7 +419,6 @@
                         this.isCartOpen = false; 
                         window.location.href = "{{ route('pos.tables') }}";
                     } else {
-                        console.error(data);
                         let msg = data.message || "Validation Error";
                         if(data.errors) {
                             msg = Object.values(data.errors)[0][0];
