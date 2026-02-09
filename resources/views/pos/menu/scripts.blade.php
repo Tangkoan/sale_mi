@@ -321,16 +321,49 @@
             },
             addToCart() {
                 try {
+                    // 1. រៀបចំទិន្នន័យ Addons (Sort តាម ID ដើម្បីងាយស្រួលផ្ទៀងផ្ទាត់)
                     const finalAddons = this.tempItem.selectedAddons.map(ad => ({
                         id: ad.id, name: ad.name, price: ad.price, qty: ad.qty
-                    }));
-                    this.cart.push({
-                        product_id: this.tempItem.id, name: this.tempItem.name,
-                        base_price: parseFloat(this.tempItem.base_price), qty: parseInt(this.tempItem.qty),
-                        note: this.tempItem.note, addons: finalAddons, 
+                    })).sort((a, b) => a.id - b.id);
+
+                    const newItem = {
+                        product_id: this.tempItem.id,
+                        name: this.tempItem.name,
+                        base_price: parseFloat(this.tempItem.base_price),
+                        qty: parseInt(this.tempItem.qty),
+                        note: this.tempItem.note || '', // ធានាថាវាជា String ទទេ បើមិនមាន Note
+                        addons: finalAddons,
                         total_price_calculated: this.calculateItemTotal(),
                         is_addon_item: (this.tempItem.type === 'addon_item')
+                    };
+
+                    // 2. ពិនិត្យមើលថាតើមានទំនិញនេះក្នុង Cart រួចហើយឬនៅ?
+                    // លក្ខខណ្ឌ៖ Product ID ដូចគ្នា + Note ដូចគ្នា + Addons (ប្រភេទនិងចំនួន) ដូចគ្នា
+                    const existingIndex = this.cart.findIndex(item => {
+                        return item.product_id === newItem.product_id && 
+                            (item.note || '') === newItem.note &&
+                            JSON.stringify(item.addons) === JSON.stringify(newItem.addons);
                     });
+
+                    if (existingIndex !== -1) {
+                        // === ករណីមានហើយ (MERGE) ===
+                        // បូក Qty ចូលគ្នា
+                        let existingItem = this.cart[existingIndex];
+                        existingItem.qty += newItem.qty;
+                        existingItem.total_price_calculated += newItem.total_price_calculated;
+
+                        // បូក Qty របស់ Addons ចូលគ្នាផងដែរ (បើមាន)
+                        if (existingItem.addons && existingItem.addons.length > 0) {
+                            existingItem.addons.forEach((ad, i) => {
+                                // ដោយសារយើងបាន Sort ដូចគ្នា យើងអាចបូកតាម Index បាន ឬអាចរកតាម ID
+                                ad.qty += newItem.addons[i].qty;
+                            });
+                        }
+                    } else {
+                        // === ករណីថ្មី (NEW ROW) ===
+                        this.cart.push(newItem);
+                    }
+
                     this.closeProductModal();
                     window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Added to cart' } }));
                 } catch (e) { console.error(e); }
