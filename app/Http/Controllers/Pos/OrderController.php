@@ -158,15 +158,27 @@ class OrderController extends Controller
                 // Recalculate Total
                 $this->recalculateOrderTotal($order->id);
 
-                // ---------------------------------------------------------
-                // ជំហានទី ៤ (ថ្មី): ហៅ Function ដើម្បី Print ទៅផ្ទះបាយ
-                // ---------------------------------------------------------
+               // 1. ចាប់ផ្តើម "ចាប់" ទិន្នន័យទាំងអស់កុំអោយធ្លាយទៅ Frontend
+                ob_start();
+
                 try {
+                    // ហៅទៅ Print (ទោះវាបោះ Error ឬ Warning អីក៏ដោយ វានឹងចូលក្នុង Buffer)
                     $this->printOrderToKitchen($order->id);
                 } catch (\Exception $printError) {
-                    // បើ Print error, កុំអោយខូច Transaction គ្រាន់តែ Log ទុក
                     Log::error("🖨️ Printing Error: " . $printError->getMessage());
                 }
+
+                // 2. "លុបចោល" អ្វីៗទាំងអស់ដែលបាន Print ឬ Warning ចេញមក
+                // ដើម្បីកុំអោយវាទៅកូរ JSON Response
+                ob_end_clean();
+
+                // 3. មុននឹង Return, ឆែកម្តងទៀតអោយប្រាកដថាស្អាត ១០០%
+                if (ob_get_level() > 0) {
+                    ob_clean();
+                }
+
+          
+                
 
                 return response()->json([
                     'status' => 'success',
@@ -175,6 +187,11 @@ class OrderController extends Controller
                 ]);
 
             } catch (\Exception $e) {
+                // សម្អាត Buffer ក្នុងករណី Server Error ដូចគ្នា
+                if (ob_get_level() > 0) {
+                    ob_clean();
+                }
+                
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Server Error: ' . $e->getMessage()
@@ -237,10 +254,13 @@ class OrderController extends Controller
 
             try {
                 // 🔥 ប្រើ Profile "default" សម្រាប់ Printer ទូទៅ
-                $profile = \Mike42\Escpos\CapabilityProfile::load("default");
-                $connector = new NetworkPrintConnector($ipAddress, 9100);
-                $printer   = new Printer($connector, $profile);
+                // $profile = \Mike42\Escpos\CapabilityProfile::load("default");
 
+                $profile = CapabilityProfile::load("simple");
+                $connector = new NetworkPrintConnector($ipAddress, 9100, 3);
+                $printer = new Printer($connector, $profile);
+
+            
                 // ... (HEADER, TABLE INFO នៅដដែល) ...
                 $printer->setJustification(Printer::JUSTIFY_CENTER);
                 $printer->selectPrintMode(Printer::MODE_DOUBLE_HEIGHT | Printer::MODE_DOUBLE_WIDTH);
@@ -804,70 +824,56 @@ class OrderController extends Controller
      */
     private function printKhmerTextAsImage($printer, $text, $fontSize = 24)
     {
-        // 1. បិទមិនអោយមាន Error ធ្លាយទៅ Frontend (ដោះស្រាយបញ្ហា JSON Error)
-        ob_start();
+        // យើងមិនចាំបាច់ ob_start នៅទីនេះទៀតទេ ព្រោះយើងបានធ្វើនៅ store() ហើយ
+        // តែដាក់ក៏មិនអីដែរ ដើម្បី double safety
 
         $fontPath = public_path('fonts/KhmerOSsiemreap.ttf');
-        
-        // Check Font
         if (!file_exists($fontPath)) {
-            ob_end_clean();
             $printer->text($text . "\n");
             return;
         }
 
         try {
-            // 2. កំណត់ទទឹង (Width)
-            // ⚠️ សំខាន់៖ ត្រូវតែចែកដាច់នឹង 8។ 
-            // សាកល្បងដាក់ 448 (តូចល្មម) ឬ 512 (ស្តង់ដារ)
-            $width = 448; 
-            
-            // គណនាកម្ពស់
-            $bbox = imagettfbbox($fontSize, 0, $fontPath, $text);
-            $textHeight = abs($bbox[7] - $bbox[1]);
-            $height = $textHeight + 50; // ទុក Space អោយធំបន្តិចការពារដាច់ជើង
-
-            // 3. បង្កើតរូបភាព
+            // ✅ EPSON Standard Width: 512 dots
+            $width = 512; 
             $image = imagecreatetruecolor($width, $height);
             $white = imagecolorallocate($image, 255, 255, 255);
+            imagefilledrectangle($image, 0, 0, $width, $height, $white); // សំខាន់ណាស់!
+            
+            // គណនាកម្ពស់អក្សរ
+            $bbox = imagettfbbox($fontSize, 0, $fontPath, $text);
+            $textHeight = abs($bbox[7] - $bbox[1]);
+            $height = $textHeight + 45; // ទុក Space លើក្រោមអោយធំបន្តិច
+
+            
             $black = imagecolorallocate($image, 0, 0, 0);
 
-            // ចាក់ពណ៌សពេញ (Reset Background)
+            // Background ស
             imagefilledrectangle($image, 0, 0, $width, $height, $white);
 
-            // សរសេរអក្សរ (Center Text)
-            // ដាក់ X = 0 ដើម្បីកុំអោយដាច់
-            imagettftext($image, $fontSize, 0, 10, $height - 15, $black, $fontPath, $text);
+            // សរសេរអក្សរ
+            imagettftext($image, $fontSize, 0, 0, $height - 15, $black, $fontPath, $text);
 
-            // 4. ធ្វើអោយរូបភាពច្បាស់ (High Contrast Black & White)
-            // Printer ខ្លះចេញអក្សរចម្លែកព្រោះរូបភាពមិនមែនខ្មៅសុទ្ធ
+            // ស-ខ្មៅ (High Contrast)
             imagefilter($image, IMG_FILTER_GRAYSCALE);
             imagefilter($image, IMG_FILTER_CONTRAST, -1000);
 
-            // Save Temp File
-            $filename = 'print_' . uniqid() . '.png';
-            $tempFile = public_path($filename);
+            $tempFile = public_path('epson_' . uniqid() . '.png');
             imagepng($image, $tempFile);
             imagedestroy($image);
 
-            // 5. Load & Print
             if (file_exists($tempFile)) {
                 $escPosImage = EscposImage::load($tempFile, false);
                 
-                // 🔥 Command នេះសំខាន់បំផុត!
-                // bitImageColumnFormat: យឺតបន្តិច តែ Support គ្រប់ Printer (Epson, Xprinter, Generic)
-                // កុំប្រើ bitImageRaster ឬ graphics បើ Printer នៅតែចេញអក្សរចម្លែក
-                $printer->bitImageColumnFormat($escPosImage);
+                // 🔥 EPSON Special Command 🔥
+                // bitImageRaster គឺជា Command ល្អបំផុតសម្រាប់ Epson TM Series
+                $printer->bitImageRaster($escPosImage);
                 
                 unlink($tempFile);
             }
 
         } catch (\Exception $e) {
-            // Log Error តែមិនអោយធ្លាយទៅ Frontend
-            Log::error("Khmer Print Failed: " . $e->getMessage());
+            Log::error("Epson Image Error: " . $e->getMessage());
         }
-
-        // សម្អាត Buffer មុននឹងចប់
-        ob_end_clean();
     }
 }

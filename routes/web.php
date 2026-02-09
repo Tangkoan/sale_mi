@@ -1,5 +1,6 @@
 <?php
 
+
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\AuthController;
@@ -416,6 +417,41 @@ Route::prefix('system/exchange-rate')->name('system.exchange-rate.')->group(func
 
 Route::get('/php-info', function () {
     phpinfo();
+});
+
+
+Route::get('/test-image', function () {
+    // 1. កំណត់ Path Font
+    $fontPath = public_path('fonts/KhmerOSsiemreap.ttf');
+
+    // Check 1: តើមាន Font នេះអត់?
+    if (!file_exists($fontPath)) {
+        return "❌ រកមិនឃើញ Font នៅ: " . $fontPath;
+    }
+
+    // 2. បង្កើតរូបភាព
+    $width = 512;
+    $height = 100;
+    $fontSize = 24;
+    $text = "សួស្តី នេះជាការតេស្ត";
+
+    $image = imagecreatetruecolor($width, $height);
+    
+    // កំណត់ពណ៌
+    $white = imagecolorallocate($image, 255, 255, 255);
+    $black = imagecolorallocate($image, 0, 0, 0);
+
+    // ចាក់ពណ៌ស (Background)
+    imagefilledrectangle($image, 0, 0, $width, $height, $white);
+
+    // សរសេរអក្សរខ្មៅ
+    // ចំណាំ៖ Path Font ត្រូវតែត្រឹមត្រូវ
+    imagettftext($image, $fontSize, 0, 10, 60, $black, $fontPath, $text);
+
+    // បង្ហាញរូបភាពមក Browser ផ្ទាល់
+    header('Content-Type: image/png');
+    imagepng($image);
+    imagedestroy($image);
 });
 
 // require __DIR__.'/auth.php'; // បិទចោលសិន កុំអោយជាន់គ្នាជាមួយ Custom Auth របស់យើង
