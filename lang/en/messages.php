@@ -474,6 +474,43 @@ return [
     'confirm' => 'Confirm',
     'confirm_print' => 'Confirm & Print',
 
+    // Labels & Placeholders
+    'edit_destination' => 'Edit Destination',
+    'add_destination'  => 'Add Destination',
+    'destination_name' => 'Destination Name',
+    'name_placeholder' => 'e.g. Wok, Soup, Bar',
+    'printnode_id'     => 'PrintNode ID',
+    'id_placeholder'   => 'e.g. 123456',
+    'editing'          => 'Editing',
+    'of'               => 'of',
+    'items'            => 'Items',
+    'no_id'            => 'No ID',
+    'active'           => 'Active',
+    'no_destinations'  => 'No destinations found.',
+    'kitchen_management' => 'Kitchen Management',
+
+    // Buttons
+    'skip'       => 'Skip',
+    'cancel'     => 'Cancel',
+    'finish'     => 'Finish',
+    'save_next'  => 'Save & Next',
+    'update'     => 'Update',
+    'save'       => 'Save',
+    'select_all' => 'Select All',
+
+    // JS Alerts & Notifications
+    'select_items_first'      => 'Please select items first',
+    'all_items_updated'       => 'All items updated!',
+    'stop_bulk_editing'       => 'Stop bulk editing?',
+    'error'                   => 'Error',
+    'are_you_sure'            => 'Are you sure?',
+    'deleted_successfully'    => 'Deleted successfully',
+    'delete_selected_items'   => 'Delete selected items?',
+    'bulk_deleted_success'    => 'Bulk Deleted Successfully',
+    'destination_created'     => 'Destination created successfully', // ពី Controller
+    'destination_updated'     => 'Destination updated successfully', // ពី Controller
+    'selected_items_deleted'  => 'Selected items deleted', // ពី Controller
+
     
 
     

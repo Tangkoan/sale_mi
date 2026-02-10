@@ -10,8 +10,8 @@
     {{-- ================================================= --}}
     {{-- MAIN CHECKOUT MODAL --}}
     {{-- ================================================= --}}
-    {{-- ផ្លាស់ប្តូរ bg-gray-100 ទៅ bg-page-bg --}}
-    <div class="relative w-full max-w-5xl bg-page-bg rounded-t-[20px] md:rounded-[24px] shadow-2xl overflow-hidden flex flex-col md:flex-row h-[95vh] md:h-[700px] transition-transform duration-300 transform"
+    {{-- 🔥 FIX: ប្ដូរ md:h-[700px] ទៅ md:h-[85vh] ដើម្បីកុំអោយដាច់លើ Laptop --}}
+    <div class="relative w-full max-w-5xl bg-page-bg rounded-t-[20px] md:rounded-[24px] shadow-2xl overflow-hidden flex flex-col md:flex-row h-[95vh] md:h-[85vh] transition-transform duration-300 transform"
          x-show="isCheckoutModalOpen"
          x-transition:enter="transition ease-out duration-300" 
          x-transition:enter-start="translate-y-full opacity-0" 
@@ -21,37 +21,32 @@
          x-transition:leave-end="translate-y-full opacity-0">
 
         {{-- LEFT SIDE: ITEMS LIST --}}
-        {{-- ប្រើ bg-card-bg និង border-bor-color --}}
         <div class="flex flex-col h-[55%] md:h-full md:flex-[1.5] border-b md:border-b-0 md:border-r border-bor-color bg-card-bg relative">
             
-            {{-- HEADER MODIFIED --}}
+            {{-- HEADER --}}
             <div class="p-4 border-b border-bor-color shrink-0 bg-card-bg z-10 flex flex-col gap-3">
                 
                 {{-- Row 1: Title & Invoice --}}
                 <div class="flex justify-between items-center">
                     <h3 class="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                        {{-- Icon ប្រើ primary color --}}
                         <span class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-sm"><i class="ri-file-list-3-fill"></i></span>
                         <span x-text="isSplitMode ? 'Select Items to Split' : 'Order Details'"></span>
                     </h3>
                     <p class="text-xs text-gray-500 bg-input-bg px-2 py-1 rounded border border-bor-color" x-text="orderDetails.invoice_number"></p>
                 </div>
 
-                {{-- Row 2: Action Buttons (Move, Merge, Split) --}}
+                {{-- Row 2: Action Buttons --}}
                 <div class="flex gap-2 w-full">
-                    {{-- MOVE BUTTON: ប្រើ Primary theme --}}
                     <button @click="openMoveModal()" x-show="!isSplitMode" 
                             class="flex-1 py-2 bg-primary/10 text-primary rounded-lg text-xs font-bold hover:bg-primary/20 active:scale-95 transition-all border border-primary/10 flex items-center justify-center gap-1">
                         <i class="ri-share-forward-line"></i> {{ __('messages.move') }}
                     </button>
 
-                    {{-- MERGE BUTTON: ប្រើ Secondary theme --}}
                     <button @click="openMergeModal()" x-show="!isSplitMode" 
                             class="flex-1 py-2 bg-secondary/10 text-secondary rounded-lg text-xs font-bold hover:bg-secondary/20 active:scale-95 transition-all border border-secondary/10 flex items-center justify-center gap-1">
                         <i class="ri-git-merge-line"></i> {{ __('messages.merge') }}
                     </button>
                     
-                    {{-- SPLIT BUTTON --}}
                     <button @click="toggleSplitMode()" 
                             class="flex-1 py-2 rounded-lg text-xs font-bold transition-all border flex items-center justify-center gap-1 active:scale-95"
                             :class="isSplitMode ? 'bg-red-50 text-red-600 border-red-100' : 'bg-input-bg text-gray-600 border-bor-color hover:bg-gray-200 dark:hover:bg-gray-700'">
@@ -61,11 +56,9 @@
             </div>
             
             {{-- ITEMS LIST Container --}}
-            {{-- ប្រើ bg-page-bg សម្រាប់ background ខាងក្រោយ item ដើម្បីអោយ card លេចធ្លោ --}}
             <div class="flex-1 overflow-y-auto p-2 md:p-4 custom-scrollbar bg-page-bg relative">
                 <div class="space-y-3">
                     <template x-for="item in orderDetails.items" :key="'item-' + item.id">
-                        {{-- Item Card: bg-card-bg --}}
                         <div class="bg-card-bg p-3 rounded-xl border border-bor-color shadow-sm flex flex-col gap-2 transition-all"
                              :class="isSplitMode && isItemSplitted(item.id) ? 'ring-2 ring-primary border-primary bg-primary/5' : ''">
                             
@@ -83,7 +76,6 @@
                                             <template x-if="item.addons && item.addons.length > 0">
                                                 <div class="mt-2 space-y-1 border-t border-dashed border-bor-color pt-1">
                                                     <template x-for="(ad, index) in item.addons" :key="index">
-                                                        {{-- Addon Item: bg-input-bg --}}
                                                         <div class="flex items-center justify-between text-sm bg-input-bg p-1.5 rounded-lg group">
                                                             <div class="flex items-center gap-1">
                                                                 <i class="ri-add-circle-fill text-primary text-xs"></i>
@@ -117,7 +109,6 @@
 
                                 <div class="flex items-center justify-between" :class="isSplitMode ? 'opacity-50 pointer-events-none' : ''">
                                     <button @click="updateItemQty(item.id, 'remove')" class="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-lg"><i class="ri-delete-bin-line text-lg"></i></button>
-                                    {{-- Qty Control: bg-input-bg --}}
                                     <div class="flex items-center bg-input-bg rounded-lg p-0.5 border border-bor-color">
                                         <button @click="updateItemQty(item.id, 'decrease')" class="w-8 h-8 flex items-center justify-center rounded-md bg-card-bg shadow-sm hover:text-red-500 font-bold border border-bor-color">-</button>
                                         <span class="w-8 text-center font-bold text-gray-800 dark:text-white text-sm" x-text="item.quantity"></span>
@@ -132,36 +123,27 @@
         </div>
 
         {{-- RIGHT SIDE: PAYMENT --}}
-        {{-- bg-card-bg --}}
         <div class="flex flex-col h-[45%] md:h-full md:flex-1 bg-card-bg z-20 shadow-[-5px_0_15px_rgba(0,0,0,0.05)]">
              <div class="flex-1 overflow-y-auto p-5 md:p-8 custom-scrollbar">
                 
-                {{-- Total Payable Box: bg-input-bg --}}
+                {{-- Total Payable Box --}}
                 <div class="flex justify-between items-center mb-6 mt-1 p-4 bg-input-bg rounded-2xl border border-bor-color">
-    
-                    {{-- Left Side --}}
                     <div class="flex flex-col">
                         <span class="text-[10px] md:text-xs font-bold uppercase tracking-widest text-gray-400">{{ __('messages.total_payble') }}</span>
                     </div>
-
-                    {{-- Right Side --}}
                     <div class="flex items-center gap-2 md:gap-3">
                         <h1 class="text-2xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tight" 
                             x-text="'$' + currentTotalUSD.toFixed(2)"></h1>
-
                         <span class="text-gray-300 text-2xl font-light hidden md:block">/</span>
-
-                        {{-- Riel Badge: bg-primary/10 --}}
                         <div class="px-3 py-1 rounded-lg bg-primary/10 text-primary border border-primary/20 font-bold text-sm md:text-base whitespace-nowrap flex items-center">
                             <span x-text="totalRiel"></span> <span class="ml-1 text-xs">៛</span>
                         </div>
                     </div>
                 </div>
 
-                {{-- Payment Methods: Segmented Control --}}
+                {{-- Payment Methods --}}
                 <div class="mb-6">
                     <label class="text-xs font-bold text-gray-400 uppercase ml-1 mb-2 block">{{ __('messages.payment_method') }}</label>
-                    {{-- Container: bg-input-bg --}}
                     <div class="bg-input-bg p-1 rounded-xl flex border border-bor-color">
                         <button @click="paymentMethod = 'cash'" 
                                 class="flex-1 py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200"
@@ -206,15 +188,13 @@
         x-transition:leave-start="opacity-100 scale-100" 
         x-transition:leave-end="opacity-0 scale-95">
 
-        {{-- Main Container: bg-card-bg --}}
         <div class="bg-card-bg w-full max-w-md rounded-[24px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
             @click.away="isMoveModalOpen = false">
             
-            {{-- HEADER: bg-primary/5 --}}
+            {{-- HEADER --}}
             <div class="bg-primary/5 p-6 text-center border-b border-primary/10">
                 <h3 class="text-lg font-black text-gray-800 dark:text-white mb-4">{{ __('messages.move_table') }}</h3>
                 
-                {{-- Move Status Box: bg-card-bg --}}
                 <div class="flex items-center justify-between gap-2 bg-card-bg p-3 rounded-xl shadow-sm border border-primary/10">
                     {{-- Current Table --}}
                     <div class="flex flex-col items-center w-1/3">
@@ -224,7 +204,7 @@
                         </div>
                     </div>
 
-                    {{-- Arrow Icon --}}
+                    {{-- Arrow --}}
                     <div class="text-primary">
                         <i class="ri-arrow-right-line text-xl bg-primary/10 p-1.5 rounded-full"></i>
                     </div>
@@ -244,7 +224,7 @@
                 </p>
             </div>
 
-            {{-- BODY: TABLE GRID SELECTION --}}
+            {{-- BODY --}}
             <div class="p-4 overflow-y-auto custom-scrollbar flex-1 bg-card-bg">
                 <div class="grid grid-cols-3 gap-3">
                     <template x-for="table in availableTables" :key="table.id">
@@ -254,7 +234,6 @@
                                         ? 'border-primary bg-primary/5 ring-2 ring-primary/30' 
                                         : 'border-bor-color hover:border-primary/50 hover:bg-primary/5'">
                             
-                            {{-- Checkmark --}}
                             <div x-show="selectedTargetTable && selectedTargetTable.id === table.id" 
                                  class="absolute top-2 right-2 text-primary bg-card-bg rounded-full shadow-sm">
                                 <i class="ri-checkbox-circle-fill text-lg"></i>
@@ -271,7 +250,6 @@
                     </template>
                 </div>
 
-                {{-- Empty State --}}
                 <template x-if="availableTables.length === 0">
                     <div class="flex flex-col items-center justify-center py-10 text-center text-gray-400">
                         <i class="ri-store-3-line text-4xl mb-2 opacity-50"></i>
@@ -280,14 +258,13 @@
                 </template>
             </div>
 
-            {{-- FOOTER: ACTION BUTTONS --}}
+            {{-- FOOTER --}}
             <div class="p-4 border-t border-bor-color bg-input-bg flex gap-3">
                 <button @click="isMoveModalOpen = false" 
                         class="flex-1 py-3 rounded-xl border border-bor-color text-gray-600 dark:text-gray-300 font-bold text-sm hover:bg-card-bg transition">
                     {{ __('messages.cancel') }}
                 </button>
                 
-                {{-- Confirm Button --}}
                 <button @click="submitMoveTable()" 
                         :disabled="!selectedTargetTable || isProcessing"
                         class="flex-[2] py-3 rounded-xl text-white font-bold text-sm shadow-lg flex justify-center items-center gap-2 transition-all"

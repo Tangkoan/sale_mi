@@ -1,9 +1,6 @@
 @extends('admin.dashboard')
 
-
-
 @section('title', __('messages.kitchen_management'))
-
 
 @section('content')
 
@@ -112,7 +109,8 @@
                 this.sequenceQueue = this.destinations.filter(item => selectedIdsString.includes(String(item.id)));
                 
                 if (this.sequenceQueue.length === 0) {
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "Please select items first" } })); 
+                    // Translate JS String
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "{{ __('messages.select_items_first') }}" } })); 
                     return;
                 }
 
@@ -128,7 +126,8 @@
                     this.loadDestinationToForm(this.sequenceQueue[this.currentSeqIndex]);
                 } else {
                     this.closeModal(true); 
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: "All items updated!" } }));
+                    // Translate JS String
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: "{{ __('messages.all_items_updated') }}" } }));
                 }
             },
 
@@ -151,7 +150,8 @@
             },
 
             closeModal(force = false) {
-                if (!force && this.isSequenceMode && !confirm("Stop bulk editing?")) return;
+                // Translate JS String
+                if (!force && this.isSequenceMode && !confirm("{{ __('messages.stop_bulk_editing') }}")) return;
                 
                 this.isModalOpen = false;
                 this.isSequenceMode = false;
@@ -181,7 +181,8 @@
 
                     if (!response.ok) {
                         if (response.status === 422) this.errors = data.errors;
-                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: data.message || 'Error' } }));
+                        // Translate JS String
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: data.message || "{{ __('messages.error') }}" } }));
                     } else {
                         window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: data.message } }));
                         
@@ -197,19 +198,22 @@
             },
             
             async confirmDelete(id) {
-                if(!confirm("Are you sure?")) return;
+                // Translate JS String
+                if(!confirm("{{ __('messages.are_you_sure') }}")) return;
                 try {
                     await fetch(`/admin/destinations/${id}/delete`, {
                         method: 'POST',
                         headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }
                     });
                     this.fetchDestinations();
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Deleted Successfully' } }));
+                    // Translate JS String
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: "{{ __('messages.deleted_successfully') }}" } }));
                 } catch(e) { console.error(e); }
             },
 
             async confirmBulkDelete() {
-                if (this.selectedIds.length === 0 || !confirm("Delete selected items?")) return;
+                // Translate JS String
+                if (this.selectedIds.length === 0 || !confirm("{{ __('messages.delete_selected_items') }}")) return;
                 try {
                     await fetch("{{ route('admin.destinations.bulk_delete') }}", {
                         method: 'POST',
@@ -217,7 +221,8 @@
                         body: JSON.stringify({ ids: this.selectedIds })
                     });
                     this.closeModal();
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Bulk Deleted Successfully' } }));
+                    // Translate JS String
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: "{{ __('messages.bulk_deleted_success') }}" } }));
                 } catch(e) { console.error(e); }
             }
         }

@@ -480,7 +480,42 @@ return [
     'confirm_print' => 'យល់ព្រមនិងបោះពុម្ព',
 
 
+    // Labels & Placeholders
+    'edit_destination' => 'កែប្រែគោលដៅ',
+    'add_destination'  => 'បង្កើតគោលដៅ',
+    'destination_name' => 'ឈ្មោះគោលដៅ',
+    'name_placeholder' => 'ឧ. ឆា, ស៊ុប, ទឹក',
+    'printnode_id'     => 'លេខសម្គាល់ PrintNode',
+    'id_placeholder'   => 'ឧ. 123456',
+    'editing'          => 'កំពុងកែ',
+    'of'               => 'នៃ',
+    'items'            => 'ធាតុ',
+    'no_id'            => 'គ្មាន ID',
+    'active'           => 'សកម្ម',
+    'no_destinations'  => 'មិនមានទិន្នន័យទេ',
+    'kitchen_management' => 'ការគ្រប់គ្រងផ្ទះបាយ',
 
+    // Buttons
+    'skip'       => 'រំលង',
+    'cancel'     => 'បោះបង់',
+    'finish'     => 'បញ្ចប់',
+    'save_next'  => 'រក្សាទុក & បន្ត',
+    'update'     => 'កែប្រែ',
+    'save'       => 'រក្សាទុក',
+    'select_all' => 'ជ្រើសរើសទាំងអស់',
+
+    // JS Alerts & Notifications
+    'select_items_first'      => 'សូមជ្រើសរើសទិន្នន័យជាមុនសិន',
+    'all_items_updated'       => 'ទិន្នន័យទាំងអស់ត្រូវបានកែប្រែ!',
+    'stop_bulk_editing'       => 'ឈប់កែប្រែច្រើនដង?',
+    'error'                   => 'កំហុស',
+    'are_you_sure'            => 'តើអ្នកប្រាកដទេ?',
+    'deleted_successfully'    => 'លុបបានជោគជ័យ',
+    'delete_selected_items'   => 'លុបធាតុដែលបានជ្រើសរើស?',
+    'bulk_deleted_success'    => 'លុបជាក្រុមបានជោគជ័យ',
+    'destination_created'     => 'បង្កើតគោលដៅបានជោគជ័យ',
+    'destination_updated'     => 'កែប្រែគោលដៅបានជោគជ័យ',
+    'selected_items_deleted'  => 'ធាតុដែលបានជ្រើសរើសត្រូវបានលុប',
 
 
 
