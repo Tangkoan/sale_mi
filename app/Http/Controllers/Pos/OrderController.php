@@ -484,10 +484,10 @@ class OrderController extends Controller
     /**
      * 🔥 FUNCTION: ទាញទិន្នន័យ Order និង ព័ត៌មានហាង ទៅបង្ហាញលើវិក្កយបត្រ
      */
+    // នៅក្នុង file OrderController.php
     public function getOrderDetails($tableId)
     {
         try {
-            // 1. ទាញយក Order
             $order = Order::with(['items.product', 'items.addons.addon', 'table']) 
                 ->where('table_id', $tableId)
                 ->where('status', 'pending')
@@ -498,40 +498,46 @@ class OrderController extends Controller
                 return response()->json(['status' => 'error', 'message' => 'No active order found'], 404);
             }
 
-            // 2. ទាញយក Shop Info (យកហាងដំបូងគេ)
+            // 🔥 FIX: គណនាលេខអោយត្រូវជាមួយ Quantity ក្នុង Database
+            $order->items->transform(function($item) {
+                $addonTotal = 0;
+                
+                // ឆែកមើល Addons
+                if ($item->addons) {
+                    foreach ($item->addons as $addon) {
+                        // 1. យក Quantity ពី Database (Table: order_item_addons)
+                        $qty = intval($addon->quantity ?? 1); 
+                        
+                        // 2. យក តម្លៃ
+                        $price = floatval($addon->price ?? 0);
+
+                        // 3. គុណបញ្ចូលគ្នា (Price x Qty)
+                        $addonTotal += ($price * $qty);
+                    }
+                }
+
+                // 4. បូកតម្លៃដើម + តម្លៃ Addons សរុប
+                $item->unit_price_calculated = $item->price + $addonTotal;
+                
+                // 5. តម្លៃសរុបនៃបន្ទាត់នោះ (តម្លៃ១កែវ x ចំនួនកែវ)
+                $item->total_line_price_calculated = $item->unit_price_calculated * $item->quantity;
+
+                return $item;
+            });
+
+            // ... (កូដ Shop Info និង Timezone នៅដដែល) ...
             $shop = \App\Models\ShopInfo::first();
-
-            // 3. 🔥 រៀបចំម៉ោងអោយត្រូវតាម Timezone ខ្មែរ (Asia/Phnom_Penh)
             $timezone = 'Asia/Phnom_Penh';
-
-            // កាលបរិច្ឆេទ (ថ្ងៃ/ខែ/ឆ្នាំ ម៉ោង:នាទី AM/PM)
             $dateFormatted = $order->created_at->setTimezone($timezone)->format('d/m/Y h:i A');
-
-            // ម៉ោងចូល (យក check_in ឬ created_at)
-            $checkInRaw = $order->check_in_time ? \Carbon\Carbon::parse($order->check_in_time) : $order->created_at;
-            $checkInFormatted = $checkInRaw->setTimezone($timezone)->format('h:i A');
-
-            // ម៉ោងចេញ (យក check_out ឬ ម៉ោងបច្ចុប្បន្ន)
-            $checkOutRaw = $order->check_out_time ? \Carbon\Carbon::parse($order->check_out_time) : now();
-            $checkOutFormatted = $checkOutRaw->setTimezone($timezone)->format('h:i A');
-
+            // ...
 
             return response()->json([
                 'status' => 'success',
                 'order'  => $order,
-                'items'  => $order->items,
-                
-                // 🔥 បោះម៉ោងដែល Format រួចទៅអោយ Frontend
-                'formatted_date'      => $dateFormatted,
-                'formatted_check_in'  => $checkInFormatted,
-                'formatted_check_out' => $checkOutFormatted,
-
-                // ព័ត៌មានហាង
-                'shop' => $shop ? $shop : [
-                    'shop_en'      => 'POS System', 
-                    'address_en'   => 'Siem Reap',
-                    'phone_number' => '012 345 678',
-                ]
+                'items'  => $order->items, 
+                'formatted_date' => $dateFormatted,
+                // ... (parameters ផ្សេងៗទៀត)
+                'shop' => $shop
             ]);
 
         } catch (\Exception $e) {

@@ -2,6 +2,7 @@
     // ==========================================
     // 1. RECEIPT LOGIC (សម្រាប់តែការ Print)
     // ==========================================
+    
     function receiptPrinter() {
         return {
             orderDetails: null,
@@ -14,22 +15,29 @@
                     this.orderDetails.change_amount = (this.orderDetails.received_amount || 0) - (this.orderDetails.total_amount || 0);
                 }
                 this.exchangeRate = data.exchangeRate || 4100;
+                
+                // Parse Addons មុននឹង Group
+                if(this.orderDetails.items && this.orderDetails.items.length > 0) {
+                    this.orderDetails.items = this.orderDetails.items.map(item => {
+                        return {
+                            ...item,
+                            addons: this.parseAddons(item.addons)
+                        };
+                    });
+                }
+
                 this.groupItems(); 
                 setTimeout(() => { window.print(); }, 500);
             },
 
-            // 🔥 Function ថ្មី៖ គណនាតម្លៃ ១ កែវ (តម្លៃដើម + Addons)
-            calculateSingleUnitPrice(item) {
-                let basePrice = parseFloat(item.price || 0);
-                let addonTotal = 0;
-                
-                if(item.addons && item.addons.length > 0) {
-                    item.addons.forEach(ad => {
-                        // គិតតម្លៃ Addon គុណនឹងចំនួន Addon នោះ
-                        addonTotal += parseFloat(ad.price || 0) * (parseInt(ad.quantity) || 1);
-                    });
+            parseAddons(addons) {
+                if (!addons) return [];
+                if (Array.isArray(addons)) return addons;
+                try {
+                    return JSON.parse(addons);
+                } catch (e) {
+                    return [];
                 }
-                return basePrice + addonTotal;
             },
 
             groupItems() {
@@ -38,28 +46,40 @@
                     return;
                 }
                 const groups = {};
+                
                 this.orderDetails.items.forEach(item => {
-                    const addonKey = item.addons ? JSON.stringify(item.addons) : ''; 
+                    // Create Key based on Product ID + Addons Content
+                    // (បើ Addon ដូចគ្នា ទើបបូកចូលគ្នា)
+                    const addonKey = JSON.stringify(item.addons); 
                     const uniqueKey = item.product_id + '-' + addonKey;
+                    
+                    let itemQty = parseInt(item.quantity) || 1;
 
                     if (!groups[uniqueKey]) {
+                        // បង្កើត Group ថ្មី
                         groups[uniqueKey] = { 
                             ...item, 
+                            // Clone addons array ដើម្បីកុំអោយប៉ះពាល់ Original ពេលបូកលេខ
+                            addons: item.addons.map(a => ({...a, quantity: parseInt(a.quantity) || 1})),
                             uniqueKey: uniqueKey,
-                            quantity: parseInt(item.quantity),
-                            total_line_price: this.calculateLineTotal(item, parseInt(item.quantity))
+                            quantity: itemQty,
                         };
                     } else {
-                        groups[uniqueKey].quantity += parseInt(item.quantity);
-                        groups[uniqueKey].total_line_price += this.calculateLineTotal(item, parseInt(item.quantity));
+                        // បូកបញ្ចូលគ្នា (Merge)
+                        groups[uniqueKey].quantity += itemQty;
+                        
+                        // 🔥 Logic ថ្មី៖ បូកចំនួន Addons ចូលគ្នាផងដែរ
+                        if (groups[uniqueKey].addons && groups[uniqueKey].addons.length > 0) {
+                            groups[uniqueKey].addons.forEach((gAddon, index) => {
+                                let incomingAddon = item.addons[index];
+                                if(incomingAddon) {
+                                    gAddon.quantity += (parseInt(incomingAddon.quantity) || 1);
+                                }
+                            });
+                        }
                     }
                 });
                 this.groupedItems = Object.values(groups);
-            },
-
-            calculateLineTotal(item, qty) {
-                // ប្រើ Logic តែមួយជាមួយ calculateSingleUnitPrice គុណនឹងចំនួនកែវ
-                return this.calculateSingleUnitPrice(item) * qty;
             },
 
             formatPrice(price) { return parseFloat(price).toFixed(2); },
@@ -68,8 +88,8 @@
                 const riel = Math.ceil((parseFloat(amountUSD) * this.exchangeRate) / 100) * 100;
                 return new Intl.NumberFormat('en-US').format(riel);
             },
-            // ... (formatDate, formatTimeOnly និងផ្នែកផ្សេងៗ រក្សាទុកដដែល) ...
-            formatDate(dateString) {
+            // ... (formatDate, formatTimeOnly រក្សាទុកដដែល) ...
+             formatDate(dateString) {
                 if(!dateString) return new Date().toLocaleDateString('en-GB');
                 const date = new Date(dateString);
                 return date.toLocaleDateString('en-GB') + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -127,6 +147,13 @@
                 }, 5000);
             },
 
+            // 🔥 HELPER: Parse Addons ក្នុង POS Logic ផងដែរ
+            parseAddons(addons) {
+                if (!addons) return [];
+                if (Array.isArray(addons)) return addons;
+                try { return JSON.parse(addons); } catch (e) { return []; }
+            },
+
             async fetchTables(silent = false) {
                 if (!silent) this.isLoading = true;
                 try {
@@ -142,10 +169,17 @@
                     return this.selectedSplitItems.reduce((total, splitItem) => {
                         let originalItem = this.orderDetails.items.find(i => i.id === splitItem.id);
                         if (!originalItem) return total;
+                        
                         let itemTotal = parseFloat(originalItem.price) * splitItem.qty;
                         let addonTotal = 0;
-                        if (originalItem.addons) {
-                            originalItem.addons.forEach(ad => { addonTotal += parseFloat(ad.price) * (ad.quantity || 1); });
+                        
+                        // 🔥 FIX Logic: គិតលុយ Addon ពេល Split
+                        let addons = this.parseAddons(originalItem.addons);
+                        if (addons.length > 0) {
+                            addons.forEach(ad => { 
+                                // តម្លៃ addon * ចំនួន addon * ចំនួនកែវដែលបាន split
+                                addonTotal += (parseFloat(ad.price) * (parseFloat(ad.quantity) || 1)) * splitItem.qty; 
+                            });
                         }
                         return total + itemTotal + addonTotal;
                     }, 0);
@@ -215,23 +249,27 @@
                     if (!response.ok) throw new Error("Order not found");
                     const data = await response.json();
                     
-                    // 🔥 Map ទិន្នន័យពី Server ចូលក្នុង orderDetails 
+                    // Pre-process items to fix addons type if needed
+                    let processedItems = (data.items || []).map(item => {
+                         item.addons = this.parseAddons(item.addons);
+                         return item;
+                    });
+
                     this.orderDetails = { 
                         ...data.order, 
-                        items: data.items, 
+                        items: processedItems, 
                         shop: data.shop || null, 
                         total: parseFloat(data.order.total_amount || 0),
-                        
-                        // ទទួលយក Strings ម៉ោងដែល Format ពី Server (ដើម្បីកុំអោយខុស Timezone)
                         formatted_date: data.formatted_date,
                         formatted_check_in: data.formatted_check_in,
                         formatted_check_out: data.formatted_check_out,
-
-                        // ទុក Backup
                         check_in_time: data.check_in_time,
                         check_out_time: data.check_out_time
                     };
                     
+                    // Recalculate to be safe
+                    this.recalculateTotalLocal();
+
                     this.selectedTable = table;
                     this.receivedAmount = this.orderDetails.total; 
                     this.paymentMethod = 'cash';
@@ -240,13 +278,24 @@
                 finally { this.isLoading = false; }
             },
 
+            // 🔥 FIX: គណនាឡើងវិញអោយត្រូវ 100%
             recalculateTotalLocal() {
                 let total = 0;
                 this.orderDetails.items.forEach(item => {
-                    let itemTotal = parseFloat(item.price) * parseInt(item.quantity);
-                    let addonTotal = 0;
-                    if (item.addons) { item.addons.forEach(ad => { addonTotal += parseFloat(ad.price) * parseInt(ad.quantity || 1); }); }
-                    total += itemTotal + addonTotal;
+                    let basePrice = parseFloat(item.price || 0);
+                    let qty = parseInt(item.quantity || 1);
+                    
+                    let addonTotalPerUnit = 0;
+                    let addons = this.parseAddons(item.addons);
+                    
+                    if (addons.length > 0) { 
+                        addons.forEach(ad => { 
+                            addonTotalPerUnit += parseFloat(ad.price || 0) * (parseFloat(ad.quantity) || 1); 
+                        }); 
+                    }
+                    
+                    // (តម្លៃម្ហូប + តម្លៃ Addons សរុបក្នុង១កែវ) * ចំនួនកែវ
+                    total += (basePrice + addonTotalPerUnit) * qty;
                 });
                 this.orderDetails.total = total;
                 if (!this.isSplitMode) this.receivedAmount = total;
@@ -264,19 +313,16 @@
             },
 
             updateAddonQty(itemId, addonId, action) {
-                // 1. ហាមកែពេលកំពុង Split Bill
                 if (this.isSplitMode) return; 
-
-                // 2. រក Item ជាក់លាក់នោះសិន (កុំអោយច្រឡំជាមួយ Item ផ្សេងដែលមាន Addon ដូចគ្នា)
                 let item = this.orderDetails.items.find(i => i.id === itemId);
-                if (!item || !item.addons) return;
+                if (!item) return;
 
-                // 3. រក Addon ក្នុង Item នោះ
+                // Ensure it's an array
+                item.addons = this.parseAddons(item.addons);
+
                 let addonIndex = item.addons.findIndex(a => a.id === addonId);
                 if (addonIndex !== -1) {
                     let addon = item.addons[addonIndex];
-                    
-                    // Ensure quantity is integer
                     let currentQty = parseInt(addon.quantity || 1);
 
                     if (action === 'increase') {
@@ -286,15 +332,12 @@
                         if (currentQty > 1) {
                             addon.quantity = currentQty - 1;
                         } else {
-                            // បើនៅសល់ 1 ចុចដក គឺលុបចោលតែម្តង
                             item.addons.splice(addonIndex, 1);
                         }
                     } 
                     else if (action === 'remove') {
                         item.addons.splice(addonIndex, 1);
                     }
-
-                    // 4. គណនាលុយសរុបឡើងវិញភ្លាមៗ
                     this.recalculateTotalLocal();
                 }
             },
@@ -337,7 +380,11 @@
                     const response = await fetch(`/pos/order/items-for-merge/${targetTableId}`);
                     const data = await response.json();
                     if (data.items && data.items.length > 0) {
-                        data.items.forEach(item => { this.orderDetails.items.push(item); });
+                        data.items.forEach(item => { 
+                            // Parse addons before pushing
+                            item.addons = this.parseAddons(item.addons);
+                            this.orderDetails.items.push(item); 
+                        });
                         this.recalculateTotalLocal();
                         this.showToast('បញ្ចូលតុ (Visual) ជោគជ័យ!', 'info');
                         this.isMergeModalOpen = false;
@@ -414,9 +461,6 @@
                 this.showToast(`✅ ជោគជ័យ!`, 'success');
                 this.fetchTables();
 
-                // សម្រាប់ការ Print ចុងក្រោយ៖ ប្រើម៉ោងដែល Format រួចបើមាន
-                // តែនៅទីនេះយើងប្រហែលជាត្រូវប្រើម៉ោង client-side សិនសម្រាប់ការបញ្ចប់ភ្លាមៗ
-                // ឬអាច Update formatted_check_out ថ្មីបាន
                 const finalCheckOutTime = new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
 
                 const printData = {
@@ -426,7 +470,6 @@
                         received_amount: data.received_amount || this.receivedAmount,
                         change_amount: data.change,
                         invoice_number: data.invoice_number || this.orderDetails.invoice_number,
-                        // Update ម៉ោងចេញចុងក្រោយ
                         formatted_check_out: finalCheckOutTime
                     },
                     exchangeRate: this.exchangeRate

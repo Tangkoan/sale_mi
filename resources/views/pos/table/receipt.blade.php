@@ -68,57 +68,60 @@
         </div>
 
         {{-- ITEMS TABLE --}}
-    <table class="w-full mb-2">
-        <thead>
-            <tr class="border-b border-black">
-                <th class="text-left py-1 w-[45%]">មុខម្លូប</th>
-                <th class="text-center py-1 w-[15%]">ចំនួន</th>
-                <th class="text-right py-1 w-[20%]">តម្លៃ</th> {{-- Unit Price (Base + Addon) --}}
-                <th class="text-right py-1 w-[20%]">សរុប</th>
-            </tr>
-        </thead>
-        <tbody class="align-top">
-            <template x-if="groupedItems && groupedItems.length > 0">
-                <template x-for="item in groupedItems" :key="item.uniqueKey">
+    <table class="w-full mb-2 border-collapse">
+            <thead>
+                <tr class="border-b border-black text-sm">
+                    <th class="text-left py-1 w-[45%]">មុខម្លូប</th>
+                    <th class="text-center py-1 w-[15%]">ចំនួន</th>
+                    <th class="text-right py-1 w-[20%]">តម្លៃ</th>
+                    <th class="text-right py-1 w-[20%]">សរុប</th>
+                </tr>
+            </thead>
+
+            <template x-for="item in groupedItems" :key="item.uniqueKey">
+                <tbody class="align-top text-sm border-none">
+                    
                     <tr>
-                        <td class="py-1 pr-1">
-                            <div class="font-bold">
-                                <span x-text="item.product?.name || 'Unknown'"></span>
-                            </div>
-                            {{-- Addons Display --}}
-                            <template x-if="item.addons && item.addons.length > 0">
-                                <div class="text-[11px] italic mt-0.5 ml-2 text-gray-600">
-                                    <template x-for="ad in item.addons">
-                                        <div class="flex justify-between pr-2">
-                                            <span>
-                                                + <span x-text="ad.addon?.name || 'Addon'"></span>
-                                                {{-- 🔥 បង្ហាញតម្លៃ Addon ក្នុងវិក្កយបត្រ --}}
-                                                <span x-show="parseFloat(ad.price) > 0" x-text="'($' + formatPrice(ad.price) + ')'"></span>
-                                            </span>
-                                            <span x-text="'x' + (ad.quantity || 1)"></span>
-                                        </div>
-                                    </template>
-                                </div>
-                            </template>
+                        <td class="py-1 pr-1 text-left font-bold">
+                            <span x-text="item.product?.name || 'Unknown'"></span>
                         </td>
-                        
-                        {{-- Quantity --}}
-                        <td class="text-center py-1" x-text="item.quantity"></td>
-                        
-                        {{-- 🔥 តម្លៃក្នុង ១ ឯកតា (Item Base + Addons) --}}
+                        <td class="text-center py-1">
+                            <span x-text="item.quantity"></span>
+                        </td>
                         <td class="text-right py-1">
-                            <span x-text="formatPrice(calculateSingleUnitPrice(item))"></span>
+                            <span x-text="formatPrice(item.price)"></span>
                         </td>
-                        
-                        {{-- តម្លៃសរុប (Unit Price * Quantity) --}}
                         <td class="text-right py-1 font-bold">
-                            <span x-text="formatPrice(item.total_line_price)"></span>
+                            <span x-text="formatPrice(item.price * item.quantity)"></span>
                         </td>
                     </tr>
-                </template>
+
+                    <template x-if="item.addons && item.addons.length > 0">
+                        <template x-for="ad in item.addons">
+                            <tr class="text-gray-600 text-[12px]">
+                                <td class="py-0.5 pl-4 text-left italic relative">
+                                    <span class="absolute left-1 top-0.5">+</span>
+                                    <span x-text="ad.addon?.name || 'Addon'"></span>
+                                </td>
+                                
+                                <td class="text-center py-0.5">
+                                    <span x-text="ad.quantity"></span>
+                                </td>
+                                
+                                <td class="text-right py-0.5">
+                                    <span x-text="formatPrice(ad.price)"></span>
+                                </td>
+                                
+                                <td class="text-right py-0.5">
+                                    <span x-text="formatPrice(ad.price * ad.quantity)"></span>
+                                </td>
+                            </tr>
+                        </template>
+                    </template>
+
+                </tbody>
             </template>
-        </tbody>
-    </table>
+        </table>
 
         {{-- TOTALS --}}
         <div class="border-t border-dashed border-black pt-2">
