@@ -441,6 +441,48 @@ return [
     'menu_management' => 'បញ្ជីមុខម្លូប',
 
 
+    'move_table' => 'ប្ដូរតុ',
+    'now' => 'បច្ចុបន្ប ',
+    'select_new_table' => 'ជ្រើសរើសតុថ្មី',
+
+    'move' => 'ប្ដូរតុ',
+    'merge' => 'គិតលុយតុរួមគ្នា',
+    'total_payble' => 'សរុប',
+    'cash' => 'លុយផ្ទាល់',
+    'khqr' => 'ស្កេន',
+    'payment_method' => 'បង់ប្រាប់តាមរយៈ',
+    'unknown' => 'មិនស្គាល់',
+    'addon' => 'បន្ថែម',
+    'exchange_rate_updated' => 'អត្រាប្រាក់ត្រូវបានធ្វើបច្ចុប្បន្នភាព!',
+    'failed_save_rate' => 'បរាជ័យក្នុងការរក្សាទុកអត្រាប្រាក់។',
+    'api_error' => 'API Error: ',
+    'rate_not_found' => 'រកមិនឃើញអត្រាប្រាក់',
+    'table_free_order_first' => 'តុនេះទំនេរ សូមធ្វើការកម្មង់ជាមុនសិន',
+    'order_not_found' => 'រកមិនឃើញការកម្មង់',
+    'error_fetching_order' => 'មានបញ្ហាក្នុងការទាញទិន្នន័យ Order',
+    'insufficient_amount' => 'ទឹកប្រាក់ទទួលបានមិនគ្រប់គ្រាន់!',
+    'confirm_cancel_empty_order' => 'ការបញ្ជាទិញគ្មានទិន្នន័យ (បានលុបអស់)។ តើអ្នកចង់ Cancel Order នេះទេ?',
+    'payment_failed' => 'ការទូទាត់បរាជ័យ',
+    'system_error' => 'System Error',
+    'no_busy_tables' => 'មិនមានតុផ្សេងកំពុងដំណើរការទេ',
+    'merge_success' => 'បញ្ចូលតុ (Visual) ជោគជ័យ!',
+    'table_has_no_items' => 'តុនោះគ្មានមុខម្ហូបទេ',
+    'merge_error' => 'បញ្ចូលតុបរាជ័យ',
+    'confirm_move_table' => 'តើអ្នកពិតជាចង់ប្ដូរតុនេះមែនទេ?',
+    'move_failed' => 'ប្ដូរតុបរាជ័យ',
+    'select_items_first' => 'សូមជ្រើសរើសមុខម្ហូប',
+    'insufficient_funds' => 'ទឹកប្រាក់មិនគ្រប់គ្រាន់',
+    'split_bill_success' => '✅ បំបែកវិក្កយបត្រជោគជ័យ!',
+    'success' => '✅ ជោគជ័យ!',
+    'select_new_table_first' => 'សូមជ្រើសរើសតុថ្មីជាមុនសិន!',
+    'move_success' => 'បានប្ដូរតុជោគជ័យ!',
+    'confirm' => 'យល់ព្រម',
+    'confirm_print' => 'យល់ព្រមនិងបោះពុម្ព',
+
+
+
+
+
 
 
 ];

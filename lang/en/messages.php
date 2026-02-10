@@ -435,7 +435,47 @@ return [
     'pos_management' => 'POS Management',
     'menu_management' => 'Menu Management',
 
+    'move_table' => 'Move Table',
+    'now' => 'Now',
+    'select_new_table' => 'Select New Table',
+
+    'move' => 'Move',
+    'merge' => 'Merge',
+    'total_payble' => 'Merge',
+    'cash' => 'Cash',
+    'khqr' => 'KHQR',
+    'payment_method' => 'Payment Method',
+
+    'unknown' => 'Unknown',
+    'addon' => 'Addon',
+    'exchange_rate_updated' => 'Exchange rate updated!',
+    'failed_save_rate' => 'Failed to save rate.',
+    'api_error' => 'API Error: ',
+    'rate_not_found' => 'Rate not found',
+    'table_free_order_first' => 'This table is available. Please place an order first.',
+    'order_not_found' => 'Order not found',
+    'error_fetching_order' => 'Error fetching order data',
+    'insufficient_amount' => 'Received amount is insufficient!',
+    'confirm_cancel_empty_order' => 'Order has no items. Do you want to cancel this order?',
+    'payment_failed' => 'Payment Failed',
+    'system_error' => 'System Error',
+    'no_busy_tables' => 'No other busy tables found.',
+    'merge_success' => 'Table merged successfully!',
+    'table_has_no_items' => 'That table has no items.',
+    'merge_error' => 'Merge Error',
+    'confirm_move_table' => 'Are you sure you want to move this table?',
+    'move_failed' => 'Move failed',
+    'select_items_first' => 'Please select items.',
+    'insufficient_funds' => 'Insufficient funds',
+    'split_bill_success' => 'Bill split successfully!',
+    'success' => 'Success!',
+    'select_new_table_first' => 'Please select a new table first!',
+    'move_success' => 'Table moved successfully!',
+    'confirm' => 'Confirm',
+    'confirm_print' => 'Confirm & Print',
+
     
+
     
     
 

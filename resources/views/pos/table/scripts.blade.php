@@ -48,27 +48,20 @@
                 const groups = {};
                 
                 this.orderDetails.items.forEach(item => {
-                    // Create Key based on Product ID + Addons Content
-                    // (បើ Addon ដូចគ្នា ទើបបូកចូលគ្នា)
                     const addonKey = JSON.stringify(item.addons); 
                     const uniqueKey = item.product_id + '-' + addonKey;
                     
                     let itemQty = parseInt(item.quantity) || 1;
 
                     if (!groups[uniqueKey]) {
-                        // បង្កើត Group ថ្មី
                         groups[uniqueKey] = { 
                             ...item, 
-                            // Clone addons array ដើម្បីកុំអោយប៉ះពាល់ Original ពេលបូកលេខ
                             addons: item.addons.map(a => ({...a, quantity: parseInt(a.quantity) || 1})),
                             uniqueKey: uniqueKey,
                             quantity: itemQty,
                         };
                     } else {
-                        // បូកបញ្ចូលគ្នា (Merge)
                         groups[uniqueKey].quantity += itemQty;
-                        
-                        // 🔥 Logic ថ្មី៖ បូកចំនួន Addons ចូលគ្នាផងដែរ
                         if (groups[uniqueKey].addons && groups[uniqueKey].addons.length > 0) {
                             groups[uniqueKey].addons.forEach((gAddon, index) => {
                                 let incomingAddon = item.addons[index];
@@ -88,8 +81,7 @@
                 const riel = Math.ceil((parseFloat(amountUSD) * this.exchangeRate) / 100) * 100;
                 return new Intl.NumberFormat('en-US').format(riel);
             },
-            // ... (formatDate, formatTimeOnly រក្សាទុកដដែល) ...
-             formatDate(dateString) {
+            formatDate(dateString) {
                 if(!dateString) return new Date().toLocaleDateString('en-GB');
                 const date = new Date(dateString);
                 return date.toLocaleDateString('en-GB') + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -110,6 +102,7 @@
             tables: [],
             isLoading: false,
             interval: null,
+            selectedTargetTable: null,
             
             // Checkout States
             isCheckoutModalOpen: false,
@@ -147,7 +140,7 @@
                 }, 5000);
             },
 
-            // 🔥 HELPER: Parse Addons ក្នុង POS Logic ផងដែរ
+            // 🔥 HELPER: Parse Addons
             parseAddons(addons) {
                 if (!addons) return [];
                 if (Array.isArray(addons)) return addons;
@@ -173,11 +166,9 @@
                         let itemTotal = parseFloat(originalItem.price) * splitItem.qty;
                         let addonTotal = 0;
                         
-                        // 🔥 FIX Logic: គិតលុយ Addon ពេល Split
                         let addons = this.parseAddons(originalItem.addons);
                         if (addons.length > 0) {
                             addons.forEach(ad => { 
-                                // តម្លៃ addon * ចំនួន addon * ចំនួនកែវដែលបាន split
                                 addonTotal += (parseFloat(ad.price) * (parseFloat(ad.quantity) || 1)) * splitItem.qty; 
                             });
                         }
@@ -214,9 +205,9 @@
                             this.exchangeRate = this.tempExchangeRate;
                             localStorage.setItem('pos_exchange_rate', this.exchangeRate);
                             this.isExchangeModalOpen = false;
-                            this.showToast('Exchange rate updated!', 'success');
+                            this.showToast("{{ __('messages.exchange_rate_updated') }}", 'success');
                         }
-                    } catch (e) { this.showToast('Failed to save rate.', 'error'); }
+                    } catch (e) { this.showToast("{{ __('messages.failed_save_rate') }}", 'error'); }
                 }
             },
             async fetchRateFromApi() {
@@ -233,23 +224,22 @@
                         if (usdItem) khrRate = parseFloat(usdItem.average || usdItem.ask || usdItem.bid);
                     }
                     if (khrRate > 0) { this.tempExchangeRate = khrRate; await this.saveExchangeRate(); } 
-                    else throw new Error("Rate not found");
-                } catch (error) { this.showToast('API Error: ' + error.message, 'error'); } 
+                    else throw new Error("{{ __('messages.rate_not_found') }}");
+                } catch (error) { this.showToast("{{ __('messages.api_error') }}" + error.message, 'error'); } 
                 finally { this.isFetchingRate = false; }
             },
 
             async openQuickCheckout(table) {
-                if (table.status === 'available') { return this.showToast('តុនេះទំនេរ សូមធ្វើការកម្មង់ជាមុនសិន', 'warning'); }
+                if (table.status === 'available') { return this.showToast("{{ __('messages.table_free_order_first') }}", 'warning'); }
                 this.isLoading = true;
                 this.isSplitMode = false;
                 this.selectedSplitItems = [];
                 this.confirmEmpty = false;
                 try {
                     const response = await fetch(`/pos/order-details/${table.id}`);
-                    if (!response.ok) throw new Error("Order not found");
+                    if (!response.ok) throw new Error("{{ __('messages.order_not_found') }}");
                     const data = await response.json();
                     
-                    // Pre-process items to fix addons type if needed
                     let processedItems = (data.items || []).map(item => {
                          item.addons = this.parseAddons(item.addons);
                          return item;
@@ -267,18 +257,16 @@
                         check_out_time: data.check_out_time
                     };
                     
-                    // Recalculate to be safe
                     this.recalculateTotalLocal();
 
                     this.selectedTable = table;
                     this.receivedAmount = this.orderDetails.total; 
                     this.paymentMethod = 'cash';
                     this.isCheckoutModalOpen = true;
-                } catch (error) { this.showToast("មានបញ្ហាក្នុងការទាញទិន្នន័យ Order", 'error'); } 
+                } catch (error) { this.showToast("{{ __('messages.error_fetching_order') }}", 'error'); } 
                 finally { this.isLoading = false; }
             },
 
-            // 🔥 FIX: គណនាឡើងវិញអោយត្រូវ 100%
             recalculateTotalLocal() {
                 let total = 0;
                 this.orderDetails.items.forEach(item => {
@@ -293,8 +281,6 @@
                             addonTotalPerUnit += parseFloat(ad.price || 0) * (parseFloat(ad.quantity) || 1); 
                         }); 
                     }
-                    
-                    // (តម្លៃម្ហូប + តម្លៃ Addons សរុបក្នុង១កែវ) * ចំនួនកែវ
                     total += (basePrice + addonTotalPerUnit) * qty;
                 });
                 this.orderDetails.total = total;
@@ -317,7 +303,6 @@
                 let item = this.orderDetails.items.find(i => i.id === itemId);
                 if (!item) return;
 
-                // Ensure it's an array
                 item.addons = this.parseAddons(item.addons);
 
                 let addonIndex = item.addons.findIndex(a => a.id === addonId);
@@ -344,9 +329,9 @@
 
             async confirmPayment() {
                 if (this.isSplitMode) { await this.processSplitPayment(); return; }
-                if (this.paymentMethod === 'cash' && (parseFloat(this.receivedAmount || 0) < this.currentTotalUSD)) { return this.showToast('ទឹកប្រាក់ទទួលបានមិនគ្រប់គ្រាន់!', 'error'); }
+                if (this.paymentMethod === 'cash' && (parseFloat(this.receivedAmount || 0) < this.currentTotalUSD)) { return this.showToast("{{ __('messages.insufficient_amount') }}", 'error'); }
                 if (this.orderDetails.items.length === 0) {
-                     if(!confirm('ការបញ្ជាទិញគ្មានទិន្នន័យ (បានលុបអស់)។ តើអ្នកចង់ Cancel Order នេះទេ?')) return;
+                     if(!confirm("{{ __('messages.confirm_cancel_empty_order') }}")) return;
                      this.confirmEmpty = true;
                 }
                 this.isProcessing = true;
@@ -361,8 +346,8 @@
                     });
                     const data = await response.json();
                     if (response.ok && data.status === 'success') this.finishTransaction(data);
-                    else this.showToast(data.message || 'Payment Failed', 'error');
-                } catch (error) { this.showToast('System Error', 'error'); } 
+                    else this.showToast(data.message || "{{ __('messages.payment_failed') }}", 'error');
+                } catch (error) { this.showToast("{{ __('messages.system_error') }}", 'error'); } 
                 finally { this.isProcessing = false; }
             },
 
@@ -371,7 +356,7 @@
                 try {
                     const res = await fetch(`/pos/tables/busy-list?current=${this.selectedTable.id}`);
                     this.busyTables = await res.json();
-                    if (this.busyTables.length === 0) this.showToast('មិនមានតុផ្សេងកំពុងដំណើរការទេ', 'warning');
+                    if (this.busyTables.length === 0) this.showToast("{{ __('messages.no_busy_tables') }}", 'warning');
                     else this.isMergeModalOpen = true;
                 } catch (e) { console.error(e); }
             },
@@ -381,31 +366,57 @@
                     const data = await response.json();
                     if (data.items && data.items.length > 0) {
                         data.items.forEach(item => { 
-                            // Parse addons before pushing
                             item.addons = this.parseAddons(item.addons);
                             this.orderDetails.items.push(item); 
                         });
                         this.recalculateTotalLocal();
-                        this.showToast('បញ្ចូលតុ (Visual) ជោគជ័យ!', 'info');
+                        this.showToast("{{ __('messages.merge_success') }}", 'info');
                         this.isMergeModalOpen = false;
-                    } else this.showToast('តុនោះគ្មានមុខម្ហូបទេ', 'warning');
-                } catch (e) { this.showToast('Merge Error', 'error'); }
+                    } else this.showToast("{{ __('messages.table_has_no_items') }}", 'warning');
+                } catch (e) { this.showToast("{{ __('messages.merge_error') }}", 'error'); }
             },
-            openMoveModal() { this.availableTables = this.tables.filter(t => t.status === 'available'); this.isMoveModalOpen = true; },
-            async confirmMove(targetTableId) {
-                if (!confirm('តើអ្នកពិតជាចង់ប្ដូរតុនេះមែនទេ?')) return;
+            
+            openMoveModal() { 
+                this.availableTables = this.tables.filter(t => t.status === 'available'); 
+                this.selectedTargetTable = null; 
+                this.isMoveModalOpen = true; 
+            }, 
+            
+            async submitMoveTable() {
+                if (!this.selectedTargetTable) {
+                    return this.showToast("{{ __('messages.select_new_table_first') }}", 'warning');
+                }
+
+                this.isProcessing = true; 
+
                 try {
                     const response = await fetch("{{ route('pos.table.move') }}", {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
-                        body: JSON.stringify({ current_table_id: this.selectedTable.id, target_table_id: targetTableId })
+                        headers: { 
+                            'Content-Type': 'application/json', 
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') 
+                        },
+                        body: JSON.stringify({ 
+                            current_table_id: this.selectedTable.id, 
+                            target_table_id: this.selectedTargetTable.id 
+                        })
                     });
+                    
                     const data = await response.json();
+                    
                     if (response.ok && data.status === 'success') {
-                        this.showToast(data.message, 'success');
-                        this.isMoveModalOpen = false; this.isCheckoutModalOpen = false; this.fetchTables();
-                    } else this.showToast(data.message || 'Move failed', 'error');
-                } catch (e) { this.showToast('System Error', 'error'); }
+                        this.showToast(data.message || "{{ __('messages.move_success') }}", 'success');
+                        this.isMoveModalOpen = false; 
+                        this.isCheckoutModalOpen = false; 
+                        this.fetchTables(); 
+                    } else {
+                        this.showToast(data.message || "{{ __('messages.move_failed') }}", 'error');
+                    }
+                } catch (e) { 
+                    this.showToast("{{ __('messages.system_error') }}", 'error'); 
+                } finally {
+                    this.isProcessing = false;
+                }
             },
 
             toggleSplitMode() { this.isSplitMode = !this.isSplitMode; this.selectedSplitItems = []; this.receivedAmount = this.isSplitMode ? 0 : this.orderDetails.total; },
@@ -417,8 +428,8 @@
             },
             isItemSplitted(itemId) { return this.selectedSplitItems.some(i => i.id === itemId); },
             async processSplitPayment() {
-                if (this.selectedSplitItems.length === 0) return this.showToast('សូមជ្រើសរើសមុខម្ហូប', 'warning');
-                if (this.paymentMethod === 'cash' && (parseFloat(this.receivedAmount || 0) < this.currentTotalUSD)) return this.showToast('ទឹកប្រាក់មិនគ្រប់គ្រាន់', 'error');
+                if (this.selectedSplitItems.length === 0) return this.showToast("{{ __('messages.select_items_first') }}", 'warning');
+                if (this.paymentMethod === 'cash' && (parseFloat(this.receivedAmount || 0) < this.currentTotalUSD)) return this.showToast("{{ __('messages.insufficient_funds') }}", 'error');
                 this.isProcessing = true;
                 try {
                     const response = await fetch("{{ route('pos.order.split') }}", {
@@ -431,9 +442,8 @@
                     });
                     const data = await response.json();
                     if (response.ok) {
-                        this.showToast('✅ បំបែកវិក្កយបត្រជោគជ័យ!', 'success');
+                        this.showToast("{{ __('messages.split_bill_success') }}", 'success');
                         
-                        // Dispatch Print Event សម្រាប់ Split Bill
                         const splitItems = this.orderDetails.items.filter(item => this.selectedSplitItems.some(split => split.id === item.id));
                         const printData = {
                             order: {
@@ -458,7 +468,7 @@
 
             finishTransaction(data) {
                 this.isCheckoutModalOpen = false;
-                this.showToast(`✅ ជោគជ័យ!`, 'success');
+                this.showToast("{{ __('messages.success') }}", 'success');
                 this.fetchTables();
 
                 const finalCheckOutTime = new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
