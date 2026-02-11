@@ -20,7 +20,7 @@
                 @can('dashboard')
                     <a href="{{ route('admin.dashboard') }}" 
                        class="group relative flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-primary hover:text-white transition-all duration-300 shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
-                       title="Back to Admin Dashboard">
+                       title="{{ __('messages.back_to_dashboard') }}">
                         <i class="ri-home-4-line text-lg group-hover:scale-0 transition-transform duration-300 absolute"></i>
                         <i class="ri-arrow-left-line text-lg scale-0 group-hover:scale-100 transition-transform duration-300 absolute"></i>
                     </a>
@@ -50,19 +50,19 @@
                       <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                       <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
                     </span>
-                    <span class="text-[9px] font-bold text-gray-700 dark:text-gray-200 uppercase">Avarible</span>
+                    <span class="text-[9px] font-bold text-gray-700 dark:text-gray-200 uppercase">{{ __('messages.available') }}</span>
                 </div>
                 {{-- Busy --}}
                 <div class="flex items-center gap-1 px-2 py-1 opacity-60">
                     <span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
-                    <span class="text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase">Busy</span>
+                    <span class="text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase">{{ __('messages.busy') }}</span>
                 </div>
             </div>
 
         </div>
 
         {{-- ========================================================= --}}
-        {{-- ផ្នែកទី ២: ខាងស្តាំ (Tools & Desktop Status)               --}}
+        {{-- ផ្នែកទី ២: ខាងស្តាំ (Tools & Desktop Status)              --}}
         {{-- ========================================================= --}}
         {{-- Mobile: w-full & justify-end --}}
         {{-- Desktop: w-auto & flex-row --}}
@@ -191,7 +191,7 @@
     </div>
 </div>
 
-{{-- MODAL: Exchange Rate (រក្សាទុកនៅដដែល មិនកែប្រែ) --}}
+{{-- MODAL: Exchange Rate --}}
 <div x-show="isExchangeModalOpen" 
      class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" 
      x-cloak 
@@ -205,7 +205,7 @@
         
         <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
             <h3 class="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                <i class="ri-coins-line text-emerald-500"></i> Exchange Rate
+                <i class="ri-coins-line text-emerald-500"></i> {{ __('messages.exchange_rate_title') }}
             </h3>
             <button @click="isExchangeModalOpen = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                 <i class="ri-close-line text-lg"></i>
@@ -214,7 +214,7 @@
 
         <div class="p-6 space-y-5">
             <div class="text-center p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800">
-                <p class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase mb-1">Current System Rate</p>
+                <p class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase mb-1">{{ __('messages.current_system_rate') }}</p>
                 <div class="text-3xl font-black text-gray-800 dark:text-white">
                     <span class="text-base text-gray-400 font-medium align-middle mr-1">$1 =</span>
                     <span x-text="formatNumber(exchangeRate)"></span> 
@@ -223,7 +223,7 @@
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-2 ml-1">Set New Rate</label>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-2 ml-1">{{ __('messages.set_new_rate') }}</label>
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <span class="text-gray-400 font-bold">៛</span>
@@ -234,13 +234,13 @@
 
             <button @click="fetchRateFromApi()" class="w-full py-2.5 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 hover:text-primary hover:border-primary transition flex items-center justify-center gap-2 text-sm font-semibold" :disabled="isFetchingRate">
                 <i class="ri-download-cloud-2-line text-lg" :class="isFetchingRate ? 'animate-spin' : ''"></i> 
-                <span x-text="isFetchingRate ? 'Fetching...' : 'Auto Fetch from NBC API'"></span>
+                <span x-text="isFetchingRate ? '{{ __('messages.fetching') }}' : '{{ __('messages.auto_fetch_nbc') }}'"></span>
             </button>
         </div>
 
         <div class="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 flex gap-3">
-            <button @click="isExchangeModalOpen = false" class="flex-1 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-100 transition text-sm">Cancel</button>
-            <button @click="saveExchangeRate()" class="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-500 shadow-lg active:scale-95 transition text-sm">Save Change</button>
+            <button @click="isExchangeModalOpen = false" class="flex-1 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-100 transition text-sm">{{ __('messages.cancel') }}</button>
+            <button @click="saveExchangeRate()" class="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-500 shadow-lg active:scale-95 transition text-sm">{{ __('messages.save_change') }}</button>
         </div>
     </div>
 </div>

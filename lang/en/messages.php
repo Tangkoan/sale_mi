@@ -511,7 +511,91 @@ return [
     'destination_updated'     => 'Destination updated successfully', // ពី Controller
     'selected_items_deleted'  => 'Selected items deleted', // ពី Controller
 
-    
+
+    'exchange_rate_updated' => 'Exchange rate updated!',
+    'update_failed' => 'Update failed',
+    'failed_save_rate' => 'Failed to save rate.',
+    'api_error' => 'API Error: ',
+    'rate_not_found' => 'Rate not found in API data',
+    'system_error_extra' => "System Error: Please create a product named 'Extra' (Price: 0) in Admin first!",
+    'system_config_error_extra' => "System Config Error: Please create a product named 'Extra' (Price: 0) in Admin first!",
+    'added_prefix' => 'Added: ',
+    'label_addon' => 'Add-on',
+    'label_item' => 'Item',
+    'label_special' => 'Special',
+    'added_to_cart' => 'Added to cart',
+    'confirm_remove' => 'Remove this item?',
+    'order_sent' => 'Order sent!',
+    'validation_error' => 'Validation Error',
+    'system_error_prefix' => 'System Error: ',
+
+
+    'unknown' => 'Unknown',
+    'new_order' => 'New',
+    'addon' => 'Addon',
+    'search_addons' => 'Search add-ons...',
+    'search_menu' => 'Search menu...',
+    'search_general' => 'Search...',
+    'language_khmer' => 'Khmer',
+    'language_english' => 'English',
+    'dashboard' => 'Dashboard',
+    'logout' => 'Logout',
+    'all' => 'All',
+    'addon_mode_active' => 'ADD-ON MODE ACTIVE',
+    'exchange_rate_title' => 'Exchange Rate',
+    'current_system_rate' => 'Current System Rate',
+    'set_new_rate' => 'Set New Rate',
+    'fetching' => 'Fetching...',
+    'auto_fetch_nbc' => 'Auto Fetch from NBC API',
+    'cancel' => 'Cancel',
+    'save_change' => 'Save Change',
+
+    'out_of_stock' => 'Out of Stock',
+    'no_image' => 'No Image',
+    'no_products_found' => 'No products found.',
+
+
+
+    // Header & UI
+    'select_table' => 'Select Table',
+    'please_select_table_to_order' => 'Please select a table to start ordering.',
+    'available' => 'Available',
+    'busy' => 'Busy',
+    'menu' => 'Menu',
+    'dashboard' => 'Dashboard',
+    'logout' => 'Logout',
+    'exchange_rate_title' => 'Exchange Rate',
+    'current_system_rate' => 'Current System Rate',
+    'set_new_rate' => 'Set New Rate',
+    'auto_fetch_nbc' => 'Auto Fetch from NBC API',
+    'fetching' => 'Fetching...',
+    'cancel' => 'Cancel',
+    'save_change' => 'Save Change',
+    'back_to_dashboard' => 'Back to Admin Dashboard',
+
+    // JavaScript / Toasts / Errors
+    'exchange_rate_updated' => 'Exchange rate updated successfully!',
+    'failed_save_rate' => 'Failed to save exchange rate.',
+    'rate_not_found' => 'Rate not found in API data',
+    'api_error' => 'API Error: ',
+    'table_free_order_first' => 'Table is free/available. Please make an order first!',
+    'order_not_found' => 'Order not found.',
+    'error_fetching_order' => 'Error fetching order details.',
+    'insufficient_amount' => 'Received amount is less than total amount!',
+    'confirm_cancel_empty_order' => 'Order has no items. Do you want to cancel/clear this table?',
+    'payment_failed' => 'Payment failed.',
+    'system_error' => 'System Error.',
+    'no_busy_tables' => 'No busy tables found to merge.',
+    'merge_success' => 'Merged successfully!',
+    'table_has_no_items' => 'Target table has no items.',
+    'merge_error' => 'Merge failed.',
+    'select_new_table_first' => 'Please select a new table first.',
+    'move_success' => 'Table moved successfully!',
+    'move_failed' => 'Failed to move table.',
+    'select_items_first' => 'Please select items to split first.',
+    'insufficient_funds' => 'Insufficient funds for the split amount.',
+    'split_bill_success' => 'Bill split successfully!',
+    'success' => 'Success!',
 
     
     

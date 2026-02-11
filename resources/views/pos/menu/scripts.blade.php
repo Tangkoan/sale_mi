@@ -7,7 +7,6 @@
     function headerController() {
         return {
             // --- State ---
-            // isSearchOpen: false, // លែងប្រើព្រោះយើងបង្ហាញ Search ជានិច្ច
             search: '',
             activeCategory: 'all',
             isAddonMode: false,
@@ -30,8 +29,6 @@
             },
 
             // --- Navigation Functions ---
-            // toggleSearch() { ... } // លែងត្រូវការ Function នេះហើយ
-
             setCategory(id) {
                 this.activeCategory = id;
                 window.dispatchEvent(new CustomEvent('pos-category-changed', { detail: id }));
@@ -43,7 +40,6 @@
                 
                 // Reset UI
                 this.search = '';
-                // this.isSearchOpen = false; // លែងប្រើ
                 if (!this.isAddonMode) {
                     this.activeCategory = 'all';
                     window.dispatchEvent(new CustomEvent('pos-category-changed', { detail: 'all' }));
@@ -54,7 +50,7 @@
                 window.dispatchEvent(new CustomEvent('pos-open-quick-addon'));
             },
 
-            // --- Exchange Rate Functions (រក្សាទុកនៅដដែល) ---
+            // --- Exchange Rate Functions ---
             async loadSystemRate() {
                 try {
                     const response = await fetch("{{ route('system.exchange-rate.get') }}");
@@ -88,12 +84,12 @@
                             this.exchangeRate = this.tempExchangeRate;
                             localStorage.setItem('pos_exchange_rate', this.exchangeRate);
                             this.isExchangeModalOpen = false;
-                            window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Exchange rate updated!' } }));
+                            window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: "{{ __('messages.exchange_rate_updated') }}" } }));
                         } else {
-                            throw new Error('Update failed');
+                            throw new Error("{{ __('messages.update_failed') }}");
                         }
                     } catch (e) {
-                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Failed to save rate.' } }));
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "{{ __('messages.failed_save_rate') }}" } }));
                     }
                 }
             },
@@ -118,10 +114,11 @@
                         this.tempExchangeRate = khrRate; 
                         await this.saveExchangeRate(); 
                     } else {
-                        throw new Error("Rate not found in API data");
+                        throw new Error("{{ __('messages.rate_not_found') }}");
                     }
                 } catch (error) {
-                    this.showToast('API Error: ' + error.message, 'error');
+                    // Note: showToast is not defined in this snippet but assuming it exists globally or meant dispatchEvent
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "{{ __('messages.api_error') }}" + error.message } }));
                 } finally {
                     this.isFetchingRate = false;
                 }
@@ -135,7 +132,7 @@
 
     /**
      * =========================================================
-     * 2. POS MENU CONTROLLER (រក្សាទុកនៅដដែល មិនបានកែទេ)
+     * 2. POS MENU CONTROLLER
      * =========================================================
      */
     function posMenu() {
@@ -209,7 +206,7 @@
                 let wrapperProduct = this.products.find(p => p.name.toLowerCase().includes('extra'));
                 if (!wrapperProduct) {
                     window.dispatchEvent(new CustomEvent('notify', { 
-                        detail: { type: 'error', message: "System Error: Please create a product named 'Extra' (Price: 0) in Admin first!" } 
+                        detail: { type: 'error', message: "{{ __('messages.system_error_extra') }}" } 
                     }));
                     return;
                 }
@@ -231,7 +228,7 @@
                     total_price_calculated: parseFloat(addonItem.price) 
                 };
                 this.cart.push(cartItem);
-                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Added: ' + addonItem.name } }));
+                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: "{{ __('messages.added_prefix') }}" + addonItem.name } }));
             },
 
             openProductModal(product) {
@@ -241,7 +238,7 @@
                     base_price: parseFloat(product.price), qty: 1, note: '', 
                     selectedAddons: [], category_id: product.category_id,
                     type: product.type || 'product',
-                    category_name: (product.type === 'addon_item') ? 'Add-on' : (product.category ? product.category.name : 'Item')
+                    category_name: (product.type === 'addon_item') ? "{{ __('messages.label_addon') }}" : (product.category ? product.category.name : "{{ __('messages.label_item') }}")
                 };
                 this.isProductModalOpen = true;
             },
@@ -250,13 +247,13 @@
                 let extraProduct = this.products.find(p => p.name.toLowerCase().includes('extra'));
                 if (!extraProduct) {
                     window.dispatchEvent(new CustomEvent('notify', { 
-                        detail: { type: 'error', message: "System Config Error: Please create a product named 'Extra' (Price: 0) in Admin first!" } 
+                        detail: { type: 'error', message: "{{ __('messages.system_config_error_extra') }}" } 
                     }));
                     return;
                 }
                 this.tempItem = {
                     id: extraProduct.id, name: "Extra / Addon Only", image: null, base_price: parseFloat(extraProduct.price), 
-                    qty: 1, note: 'Addon Only', selectedAddons: [], category_id: extraProduct.category_id, category_name: 'Special'
+                    qty: 1, note: 'Addon Only', selectedAddons: [], category_id: extraProduct.category_id, category_name: "{{ __('messages.label_special') }}"
                 };
                 this.isProductModalOpen = true;
             },
@@ -319,7 +316,7 @@
                     }
 
                     this.closeProductModal();
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Added to cart' } }));
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: "{{ __('messages.added_to_cart') }}" } }));
                 } catch (e) { console.error(e); }
             },
 
@@ -327,7 +324,7 @@
                 let item = this.cart[index];
                 item.qty += change;
                 if (item.qty <= 0) {
-                    if(confirm('Remove this item?')) {
+                    if(confirm("{{ __('messages.confirm_remove') }}")) {
                         this.removeFromCart(index);
                         return;
                     } else {
@@ -406,12 +403,12 @@
                     const data = await response.json();
 
                     if (response.ok) {
-                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Order sent!' } }));
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: "{{ __('messages.order_sent') }}" } }));
                         this.cart = []; 
                         this.isCartOpen = false; 
                         window.location.href = "{{ route('pos.tables') }}";
                     } else {
-                        let msg = data.message || "Validation Error";
+                        let msg = data.message || "{{ __('messages.validation_error') }}";
                         if(data.errors) {
                             msg = Object.values(data.errors)[0][0];
                         }
@@ -419,7 +416,7 @@
                     }
                 } catch (e) { 
                     console.error(e); 
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "System Error: " + e.message } })); 
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "{{ __('messages.system_error_prefix') }}" + e.message } })); 
                 } finally { 
                     this.isSubmitting = false; 
                 }
