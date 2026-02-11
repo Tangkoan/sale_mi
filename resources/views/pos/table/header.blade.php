@@ -96,12 +96,12 @@
                 <div class="flex items-center gap-2 sm:gap-3">
                     
                     {{-- 1. Exchange Rate --}}
-                    <button @click="openExchangeModal()" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white dark:bg-gray-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-gray-200 dark:border-gray-600 flex items-center justify-center shadow-sm relative group">
-                        <i class="ri-exchange-dollar-line text-lg"></i>
-                        {{-- Tooltip: បង្ហាញតែលើ Desktop --}}
-                        <div class="absolute top-full mt-2 right-0 md:right-auto bg-gray-900 text-white text-[10px] px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition pointer-events-none z-50 whitespace-nowrap hidden md:block">
-                            1$ = <span x-text="formatNumber(exchangeRate)"></span>៛
-                        </div>
+                    <button @click="openExchangeModal()" class="flex items-center justify-center w-10 h-9 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800 relative">
+                            <i class="ri-exchange-dollar-line text-lg"></i>
+                            <span class="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                            </span>
                     </button>
 
                     {{-- 2. Language Switcher --}}

@@ -28,8 +28,7 @@
             {{-- 2. RIGHT: System Actions --}}
             <div class="flex items-center gap-2">
                 
-                {{-- DESKTOP ONLY BUTTONS (Show here only on large screens) --}}
-                {{-- កន្លែងនេះកែដាក់កូដផ្ទាល់ មិនប្រើ @include ទៀតទេ --}}
+                {{-- DESKTOP ONLY BUTTONS --}}
                 <div class="hidden md:flex items-center gap-2">
                     {{-- Exchange --}}
                     <button @click="openExchangeModal()" class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800 flex items-center justify-center transition relative group">
@@ -52,10 +51,18 @@
                         <i class="ri-fire-line text-lg"></i>
                     </a>
 
-                    {{-- Search --}}
-                    <button @click="toggleSearch()" class="w-9 h-9 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700" :class="isSearchOpen ? 'bg-primary text-white border-primary' : ''">
-                        <i class="ri-search-line text-lg"></i>
-                    </button>
+                    {{-- SEARCH INPUT (REPLACED BUTTON) --}}
+                    <div class="relative w-48 lg:w-64 transition-all">
+                        <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" x-model="search" 
+                            :placeholder="isAddonMode ? 'Search add-ons...' : 'Search menu...'" 
+                            class="w-full pl-9 pr-8 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary focus:bg-white dark:focus:bg-gray-900 outline-none text-sm transition-all">
+                        
+                        {{-- Clear Button --}}
+                        <button x-show="search.length > 0" @click="search = ''" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500" x-cloak>
+                            <i class="ri-close-fill"></i>
+                        </button>
+                    </div>
 
                     {{-- Divider --}}
                     <div class="h-6 w-px bg-gray-300 dark:bg-gray-600 mx-1"></div>
@@ -123,21 +130,12 @@
         </div>
 
         {{-- =============================================== --}}
-        {{-- ROW 2: OPERATIONAL BUTTONS (MOBILE ONLY) --}}
+        {{-- ROW 2: OPERATIONAL BUTTONS & SEARCH (MOBILE ONLY) --}}
         {{-- =============================================== --}}
         <div class="md:hidden px-3 pb-2 flex items-center justify-between gap-2">
             
             {{-- Group Left --}}
-            <div class="flex items-center gap-2">
-                {{-- Exchange Rate --}}
-                <button @click="openExchangeModal()" class="flex items-center justify-center w-10 h-9 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800 relative">
-                    <i class="ri-exchange-dollar-line text-lg"></i>
-                    <span class="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                    </span>
-                </button>
-
+            <div class="flex items-center gap-2 shrink-0">
                 {{-- Addon Toggle --}}
                 <button @click="toggleAddonMode()" 
                         class="h-9 px-3 rounded-lg font-bold transition flex items-center justify-center gap-1.5 text-xs border"
@@ -153,27 +151,16 @@
                  </a>
             </div>
 
-            {{-- Group Right (Search) --}}
-            <button @click="toggleSearch()" class="flex-1 max-w-[120px] h-9 rounded-lg border flex items-center justify-center gap-2 transition-all" 
-                    :class="isSearchOpen ? 'bg-primary text-white border-primary shadow-md' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700'">
-                <i class="ri-search-line text-lg"></i>
-                <span class="text-xs font-bold">Search</span>
-            </button>
-        </div>
-
-        {{-- =============================================== --}}
-        {{-- SEARCH BAR (Shown when toggled) --}}
-        {{-- =============================================== --}}
-        <div x-show="isSearchOpen" x-transition class="px-3 sm:px-4 pb-2 sm:pb-3">
-            <div class="relative">
-                <i class="ri-search-line absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            {{-- Group Right (Search Input for Mobile) --}}
+            <div class="flex-1 relative">
+                <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                 <input type="text" x-model="search" 
-                       :placeholder="isAddonMode ? 'Search add-ons...' : 'Search menu...'" 
-                       class="w-full pl-9 pr-4 py-2 rounded-lg border-0 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary outline-none text-sm shadow-inner transition-all">
+                        :placeholder="isAddonMode ? 'Search...' : 'Search...'" 
+                        class="w-full pl-9 pr-3 py-2 h-9 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 focus:ring-1 focus:ring-primary outline-none text-xs transition-all">
             </div>
         </div>
 
-        {{-- CATEGORY TABS --}}
+        {{-- ROW 3: CATEGORY TABS --}}
         @if(isset($categories))
         <div class="px-3 sm:px-4 pb-2 sm:pb-3 overflow-x-auto no-scrollbar flex gap-2 sm:gap-3 snap-x">
             <button @click="setCategory('all')" 

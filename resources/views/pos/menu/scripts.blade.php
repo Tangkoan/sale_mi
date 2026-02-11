@@ -7,7 +7,7 @@
     function headerController() {
         return {
             // --- State ---
-            isSearchOpen: false,
+            // isSearchOpen: false, // លែងប្រើព្រោះយើងបង្ហាញ Search ជានិច្ច
             search: '',
             activeCategory: 'all',
             isAddonMode: false,
@@ -30,10 +30,7 @@
             },
 
             // --- Navigation Functions ---
-            toggleSearch() {
-                this.isSearchOpen = !this.isSearchOpen;
-                if (!this.isSearchOpen) this.search = '';
-            },
+            // toggleSearch() { ... } // លែងត្រូវការ Function នេះហើយ
 
             setCategory(id) {
                 this.activeCategory = id;
@@ -46,7 +43,7 @@
                 
                 // Reset UI
                 this.search = '';
-                this.isSearchOpen = false;
+                // this.isSearchOpen = false; // លែងប្រើ
                 if (!this.isAddonMode) {
                     this.activeCategory = 'all';
                     window.dispatchEvent(new CustomEvent('pos-category-changed', { detail: 'all' }));
@@ -57,7 +54,7 @@
                 window.dispatchEvent(new CustomEvent('pos-open-quick-addon'));
             },
 
-            // --- Exchange Rate Functions ---
+            // --- Exchange Rate Functions (រក្សាទុកនៅដដែល) ---
             async loadSystemRate() {
                 try {
                     const response = await fetch("{{ route('system.exchange-rate.get') }}");
@@ -138,7 +135,7 @@
 
     /**
      * =========================================================
-     * 2. POS MENU CONTROLLER
+     * 2. POS MENU CONTROLLER (រក្សាទុកនៅដដែល មិនបានកែទេ)
      * =========================================================
      */
     function posMenu() {
@@ -283,7 +280,7 @@
                 return main + ads;
             },
 
-            // --- MAIN CART LOGIC (UPDATED) ---
+            // --- MAIN CART LOGIC ---
             addToCart() {
                 try {
                     const finalAddons = this.tempItem.selectedAddons.map(ad => ({
@@ -326,7 +323,6 @@
                 } catch (e) { console.error(e); }
             },
 
-            // 1. Update Main Item Qty
             updateCartQty(index, change) {
                 let item = this.cart[index];
                 item.qty += change;
@@ -341,14 +337,12 @@
                 this.recalculateCartItemTotal(index);
             },
 
-            // 2. Update Addon Qty inside Cart
             updateCartAddonQty(cartIndex, addonIndex, change) {
                 let item = this.cart[cartIndex];
                 let addon = item.addons[addonIndex];
                 
                 addon.qty += change;
 
-                // If addon qty becomes 0, remove it
                 if (addon.qty <= 0) {
                     this.removeAddonFromCart(cartIndex, addonIndex);
                     return; 
@@ -357,13 +351,11 @@
                 this.recalculateCartItemTotal(cartIndex);
             },
 
-            // 3. Remove Addon
             removeAddonFromCart(cartIndex, addonIndex) {
                 this.cart[cartIndex].addons.splice(addonIndex, 1);
                 this.recalculateCartItemTotal(cartIndex);
             },
 
-            // 4. Recalculate Logic
             recalculateCartItemTotal(index) {
                 let item = this.cart[index];
                 let baseTotal = parseFloat(item.base_price) * parseInt(item.qty);
