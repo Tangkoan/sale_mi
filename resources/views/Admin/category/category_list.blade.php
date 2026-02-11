@@ -1,8 +1,6 @@
 @extends('admin.dashboard') {{-- ឬ Layout របស់អ្នក --}}
 
 
-
-
 @section('title', __('messages.category_management'))
 
 @section('content')
