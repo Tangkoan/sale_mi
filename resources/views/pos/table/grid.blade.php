@@ -28,12 +28,15 @@
 
                 {{-- Quick Checkout Button --}}
                 <template x-if="table.status === 'busy'">
+                @can('pos-checkout') 
                     <button @click.prevent="openQuickCheckout(table)"
                             class="absolute top-2 right-2 sm:top-2 sm:right-2 w-10 h-10 sm:w-12 sm:h-12 bg-card-bg text-rose-500 rounded-full shadow-lg hover:bg-rose-500 hover:text-white hover:scale-110 active:scale-90 transition-all flex items-center justify-center border border-rose-100 dark:border-rose-900 z-20"
                             title="Quick Checkout">
                         <i class="ri-money-dollar-circle-line text-xl sm:text-2xl"></i>
                     </button>
-                </template>
+                @endcan
+
+            </template>
 
             </div>
         </template>

@@ -15,6 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+
+            // 🔥 [ចំណុចកែប្រែសំខាន់]៖ ប្រាប់ Laravel ឱ្យប្រើ File របស់អ្នកជំនួស guest ដើម
+            'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
         ]);
 
         // បន្ថែម Middleware របស់អ្នកនៅត្រង់នេះ ដើម្បីកំណត់ភាសា

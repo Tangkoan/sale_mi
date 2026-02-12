@@ -25,6 +25,11 @@ use App\Http\Controllers\Pos\PosController;
 use App\Http\Controllers\Pos\OrderController; // <--- កុំភ្លេច Import
 use App\Http\Controllers\Pos\KitchenController; // <--- Import នៅខាងលើ
 
+use App\Providers\RouteServiceProvider;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
+
 use Illuminate\Support\Facades\Session;
 
 
@@ -51,16 +56,18 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// អនុញ្ញាតអោយចូលបានតែ ៥ ដងប៉ុណ្ណោះក្នុង ១ នាទី (60s)
-Route::middleware(['guest', 'throttle:5,1'])->group(function () {
-    // បង្ហាញ Login Form
-    // សំខាន់៖ ត្រូវតែដាក់ name('login') ដើម្បីអោយ Middleware 'auth' ស្គាល់កន្លែងដែលត្រូវរុញមកពេលគេមិនទាន់ Login
+// ១. ដក throttle ចចេញពី Group ធំ
+Route::middleware(['guest'])->group(function () {
+    
+    // បង្ហាញ Login Form (មិនបាច់ដាក់ Limit ទេ ឬដាក់អោយច្រើន)
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 
-    // Post ទិន្នន័យ Login
-    Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
+    // ២. ដាក់ throttle តែចំពោះការ Post ទិន្នន័យប៉ុណ្ណោះ
+    // ដាក់ 'throttle:5,1' នៅទីនេះបានន័យថា គេអាចទាយ Password ខុសបានតែ ៥ ដងទេ
+    Route::post('/login', [AuthController::class, 'login'])
+        ->middleware('throttle:5,1') 
+        ->name('login.submit');
 });
-
 // ==========================
 // AUTH MIDDLEWARE
 // ==========================

@@ -37,21 +37,28 @@
 
                 {{-- Row 2: Action Buttons --}}
                 <div class="flex gap-2 w-full">
-                    <button @click="openMoveModal()" x-show="!isSplitMode" 
-                            class="flex-1 py-2 bg-primary/10 text-primary rounded-lg text-xs font-bold hover:bg-primary/20 active:scale-95 transition-all border border-primary/10 flex items-center justify-center gap-1">
-                        <i class="ri-share-forward-line"></i> {{ __('messages.move') }}
-                    </button>
 
-                    <button @click="openMergeModal()" x-show="!isSplitMode" 
-                            class="flex-1 py-2 bg-secondary/10 text-secondary rounded-lg text-xs font-bold hover:bg-secondary/20 active:scale-95 transition-all border border-secondary/10 flex items-center justify-center gap-1">
-                        <i class="ri-git-merge-line"></i> {{ __('messages.merge') }}
-                    </button>
+                    @can('pos-move-table')
+                        <button @click="openMoveModal()" x-show="!isSplitMode" 
+                                class="flex-1 py-2 bg-primary/10 text-primary rounded-lg text-xs font-bold hover:bg-primary/20 active:scale-95 transition-all border border-primary/10 flex items-center justify-center gap-1">
+                            <i class="ri-share-forward-line"></i> {{ __('messages.move') }}
+                        </button>
+                    @endcan
+
+                    @can('pos-merge-table')
+                        <button @click="openMergeModal()" x-show="!isSplitMode" 
+                                class="flex-1 py-2 bg-secondary/10 text-secondary rounded-lg text-xs font-bold hover:bg-secondary/20 active:scale-95 transition-all border border-secondary/10 flex items-center justify-center gap-1">
+                            <i class="ri-git-merge-line"></i> {{ __('messages.merge') }}
+                        </button>
+                    @endcan
                     
-                    <button @click="toggleSplitMode()" 
-                            class="flex-1 py-2 rounded-lg text-xs font-bold transition-all border flex items-center justify-center gap-1 active:scale-95"
-                            :class="isSplitMode ? 'bg-red-50 text-red-600 border-red-100' : 'bg-input-bg text-gray-600 border-bor-color hover:bg-gray-200 dark:hover:bg-gray-700'">
-                        <i class="ri-scissors-cut-line"></i> <span x-text="isSplitMode ? 'Cancel' : 'Split'"></span>
-                    </button>
+                    @can('pos-split-bill')
+                        <button @click="toggleSplitMode()" 
+                                class="flex-1 py-2 rounded-lg text-xs font-bold transition-all border flex items-center justify-center gap-1 active:scale-95"
+                                :class="isSplitMode ? 'bg-red-50 text-red-600 border-red-100' : 'bg-input-bg text-gray-600 border-bor-color hover:bg-gray-200 dark:hover:bg-gray-700'">
+                            <i class="ri-scissors-cut-line"></i> <span x-text="isSplitMode ? 'Cancel' : 'Split'"></span>
+                        </button>
+                    @endcan
                 </div>
             </div>
             

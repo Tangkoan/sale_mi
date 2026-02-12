@@ -78,7 +78,11 @@ class AuthController extends Controller
         // ២. សម្រាប់ចុងភៅ និង អ្នកធ្វើភេជ្ជៈ (Chef, Bartender)
         elseif ($user->hasRole(['Chef', 'Bartender'])) {
             $redirectUrl = url('/pos/kitchen');
-        }
+        } 
+
+        elseif ($user->hasRole('Service')) {
+            $redirectUrl = url('/pos/tables');
+        } 
         
         // ត្រឡប់ Link ដែលបានកំណត់ខាងលើទៅឱ្យ Javascript
         return response()->json([
