@@ -33,7 +33,7 @@
                                 <template x-if="item.category && item.category.destination">
                                     <span class="px-2 py-0.5 rounded text-[10px] font-bold border"
                                         :class="{
-                                            'bg-orange-50 test-primary border-orange-200': item.category.destination.name.toLowerCase().includes('wok'),
+                                            'bg-orange-50 text-orange-600 border-orange-200': item.category.destination.name.toLowerCase().includes('wok'),
                                             'bg-red-50 text-red-600 border-red-200': item.category.destination.name.toLowerCase().includes('soup'),
                                             'bg-blue-50 text-blue-600 border-blue-200': item.category.destination.name.toLowerCase().includes('bar')
                                         }">

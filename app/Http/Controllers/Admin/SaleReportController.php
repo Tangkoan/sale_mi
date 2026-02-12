@@ -19,13 +19,14 @@ class SaleReportController extends Controller
         try {
             $filterType = $request->filter_type ?? 'day';
             
-            // 🔥 កែចំណុចទី ១: ថែម .product នៅពីក្រោយ items ដើម្បីយកឈ្មោះទំនិញ
-            $query = Order::query()->with('items.product'); 
+            // 🔥 Load ទាំង Product និង Addons (ជាមួយឈ្មោះ Addon)
+            // 'items.addons.addon' គឺហៅតាម function ដែលយើងបង្កើតក្នុង Model OrderItemAddon
+            $query = Order::query()->with(['items.product', 'items.addons.addon']); 
 
             $query->where('status', 'completed')
                   ->orderBy('created_at', 'desc');
 
-            // --- Filter Logic (នៅដដែល) ---
+            // --- Filter Logic (រក្សាទុកដដែល) ---
             if ($filterType == 'day') {
                 $start = $request->start_date ?? Carbon::now()->format('Y-m-d');
                 $end = $request->end_date ?? Carbon::now()->format('Y-m-d');
@@ -45,7 +46,7 @@ class SaleReportController extends Controller
             $orders = $query->get();
             $exchangeRate = 4100;
 
-            // --- Summary Logic (នៅដដែល) ---
+            // --- Summary Logic (រក្សាទុកដដែល) ---
             $totalSalesUsd = $orders->sum('total_amount');
             $cashUsd = $orders->where('payment_method', 'cash')->sum('total_amount');
             $qrUsd = $orders->where('payment_method', 'qr')->sum('total_amount');
@@ -60,7 +61,7 @@ class SaleReportController extends Controller
                 'qr_khr' => $qrUsd * $exchangeRate,
             ];
 
-            // 🔥 កែចំណុចទី ២: Mapping Items អោយត្រូវនឹង Database
+            // 🔥 Mapping Data សម្រាប់ Table និង Modal
             $tableData = $orders->map(function ($order) use ($exchangeRate) {
                 return [
                     'invoice' => $order->invoice_number,
@@ -70,21 +71,53 @@ class SaleReportController extends Controller
                     'total_usd' => number_format($order->total_amount, 2),
                     'total_khr' => number_format($order->total_amount * $exchangeRate),
                     
-                    // 🔥 Logic ទាញយក Items
+                    // 🔥 Logic សម្រាប់ Items + Addons
                     'items' => $order->items->map(function($item) use ($exchangeRate) {
                         
-                        // ពិនិត្យមើលថាតើមាន Product ឬអត់ (ការពារ Error បើ Product ត្រូវលុប)
-                        $productName = $item->product ? $item->product->name : 'Unknown Product'; // បងអាចប្តូរ 'name' ទៅតាម column ក្នុង table products (ឧ. product_name)
+                        // ១. ឈ្មោះ Product
+                        $productName = $item->product ? $item->product->name : 'Unknown Product';
                         
-                        // គណនាតម្លៃសរុប (Price * Quantity)
-                        $itemTotal = $item->price * $item->quantity;
+                        // ២. គណនា Addons
+                        $addonsDisplay = [];
+                        $addonsTotalCost = 0;
+
+                        if ($item->addons) {
+                            foreach ($item->addons as $addonItem) {
+                                // រកឈ្មោះ Addon (ពី Table Master)
+                                $addonName = $addonItem->addon ? $addonItem->addon->name : 'Addon'; 
+                                
+                                // 🔥 បង្ហាញឈ្មោះ និង ចំនួន (បើលើសពី ១)
+                                // ឧទាហរណ៍៖ "Pearl (x2)"
+                                if ($addonItem->quantity > 1) {
+                                    $addonName .= ' (x' . $addonItem->quantity . ')';
+                                }
+                                
+                                $addonsDisplay[] = $addonName;
+
+                                // បូកតម្លៃ Addons (Price * Qty)
+                                $addonsTotalCost += ($addonItem->price * $addonItem->quantity);
+                            }
+                        }
+
+                        // ៣. បូកបញ្ចូលឈ្មោះ Addon ទៅក្នុងឈ្មោះ Product
+                        // លទ្ធផល៖ "Coffee Latte + Pearl (x2), Jelly"
+                        if (!empty($addonsDisplay)) {
+                            $productName .= ' + ' . implode(', ', $addonsDisplay);
+                        }
+
+                        // ៤. គណនាតម្លៃសរុបចុងក្រោយ (Product + Addons)
+                        // តម្លៃដើម Product * ចំនួន Product
+                        $productTotalCost = $item->price * $item->quantity;
+                        
+                        // តម្លៃសរុប = តម្លៃ Product + តម្លៃ Addons
+                        $finalLineTotal = $productTotalCost + $addonsTotalCost;
 
                         return [
                             'name' => $productName, 
-                            'qty' => $item->quantity, // ឈ្មោះ column ក្នុង DB បងគឺ quantity
-                            'price' => number_format($item->price, 2),
-                            'total_usd' => number_format($itemTotal, 2),
-                            'total_khr' => number_format($itemTotal * $exchangeRate),
+                            'qty' => $item->quantity, // ចំនួន Product
+                            'price' => number_format($item->price, 2), // តម្លៃ Unit របស់ Product
+                            'total_usd' => number_format($finalLineTotal, 2), // តម្លៃសរុបរួមបញ្ចូល Addons
+                            'total_khr' => number_format($finalLineTotal * $exchangeRate),
                         ];
                     }),
                 ];
