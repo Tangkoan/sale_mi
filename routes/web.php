@@ -30,6 +30,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
+use App\Http\Controllers\Admin\SaleReportController;
+
 use Illuminate\Support\Facades\Session;
 
 
@@ -42,6 +44,7 @@ use Illuminate\Support\Facades\Session;
             return redirect()->back(); // ត្រឡប់ទៅទំព័រដើមវិញ
         })->name('switch.language');
 // End Route កំណត់ភាសា
+
 
 
 
@@ -94,6 +97,20 @@ Route::middleware('auth')->group(function () {
     // All Routes Under /admin
     // ======================
     Route::prefix('admin')->name('admin.')->group(function () {
+
+        // report
+        Route::prefix('report')->name('report.')->group(function () {
+            // 1. បង្ហាញផ្ទាំង Report
+            Route::get('/sale-report', [SaleReportController::class, 'index'])
+                ->name('sale_report.index')
+                ->middleware('permission:report-sale'); // ដាក់ Permission បើចាំបាច់
+
+            // 2. Ajax Route សម្រាប់ទាញទិន្នន័យ (API Internal)
+            Route::get('/sale-report/fetch', [SaleReportController::class, 'fetchSaleData'])
+                ->name('sale_report.fetch');
+        });
+        // end report
+
 
         // Theme
         Route::view('/theme', 'admin.theme')->name('theme')->middleware('permission:theme-color');

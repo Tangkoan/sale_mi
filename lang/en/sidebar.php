@@ -25,5 +25,9 @@ return [
     'table_list' => 'Table List',
     'addon_list' => 'Addon List',
     'product_list' => 'Product List',
+
+    'reports' => "Reports",
+    'report' => "Report",
+    'sale_report' => "Sale Report",
     // end 
 ];

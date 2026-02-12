@@ -365,6 +365,62 @@
             </div>
         </div>
 
+
+        {{-- ============================================================== --}}
+        {{-- REPORT SECTION                                                 --}}
+        {{-- ============================================================== --}}
+
+        {{-- ដាក់ Permission: report-list ឬ role អោយត្រូវនឹង system របស់អ្នក --}}
+        @if(auth()->user()->can('report-list') || auth()->user()->hasRole('Super Admin'))
+
+            <div class="px-4 mt-6 mb-2 sidebar-text">
+                <span class="text-[11px] font-bold opacity-50 uppercase tracking-wider">{{ __('sidebar.report') }}</span>
+            </div>
+
+            @php 
+                $isReportActive = request()->routeIs('admin.report.*'); 
+            @endphp
+
+            <div class="group relative">
+                <button onclick="toggleSubmenu(this)" 
+                        class="sidebar-item w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer select-none menu-item-content
+                            {{ $isReportActive ? 'bg-black/5 dark:bg-white/10' : '' }}">
+                    <div class="flex items-center">
+                        {{-- Icon: Chart Bar --}}
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
+                        </svg>
+
+                        <span class="sidebar-text font-medium px-2">{{ __('sidebar.reports') }}</span>
+                    </div>
+                    <i class="ri-arrow-down-s-line arrow-icon transition-transform duration-300 {{ $isReportActive ? 'rotate-180' : '' }}"></i>
+                </button>
+
+                <div class="submenu {{ $isReportActive ? '' : 'hidden' }} transition-all duration-300">
+                    <div class="tree-line absolute left-[26px] top-0 bottom-2 w-px bg-custom-border opacity-50"></div>
+                    <ul class="space-y-1 mt-1">
+                        
+                        {{-- Sale Report Link --}}
+                        <li>
+                            <a href="{{ route('admin.report.sale_report.index') }}" 
+                            class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
+                                    {{ request()->routeIs('admin.report.sale_report.*') ? 'text-primary font-bold' : 'opacity-80' }}">
+                                
+                                <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
+                                            {{ request()->routeIs('admin.report.sale_report.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
+                                
+                                <span>{{ __('sidebar.sale_report') }}</span>
+                            </a>
+                        </li>
+
+                    </ul>
+                </div>
+                <div class="tooltip hidden absolute left-[100%] top-2 ml-4 bg-gray-900 text-white text-xs px-3 py-2 rounded shadow-xl z-50 whitespace-nowrap">
+                    {{ __('sidebar.reports') }}
+                </div>
+            </div>
+        @endif
+
     </nav>
 
     

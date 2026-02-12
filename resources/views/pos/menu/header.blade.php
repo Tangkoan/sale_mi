@@ -41,7 +41,7 @@
 
                     {{-- Kitchen --}}
                     @can('pos-kitchen')
-                        <a href="{{ route('pos.kitchen.view') }}" target="_blank" class="w-9 h-9 rounded-full bg-orange-50 text-orange-600 hover:bg-orange-100 dark:bg-orange-900/20 dark:text-orange-400 border border-orange-100 dark:border-orange-800 flex items-center justify-center">
+                        <a href="{{ route('pos.kitchen.view') }}" target="_blank" class="w-9 h-9 rounded-full bg-orange-50 test-primary hover:bg-orange-100 dark:bg-orange-900/20 dark:text-orange-400 border border-orange-100 dark:border-orange-800 flex items-center justify-center">
                             <i class="ri-fire-line text-lg"></i>
                         </a>
                     @endcan
@@ -141,7 +141,7 @@
 
                  {{-- Kitchen View --}}
                  <a href="{{ route('pos.kitchen.view') }}" target="_blank" 
-                    class="flex items-center justify-center w-10 h-9 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 dark:bg-orange-900/20 dark:text-orange-400 border border-orange-100 dark:border-orange-800">
+                    class="flex items-center justify-center w-10 h-9 rounded-lg bg-orange-50 test-primary hover:bg-orange-100 dark:bg-orange-900/20 dark:text-orange-400 border border-orange-100 dark:border-orange-800">
                      <i class="ri-fire-line text-lg"></i>
                  </a>
             </div>
