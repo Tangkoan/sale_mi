@@ -1,8 +1,5 @@
 <script>
-    // ==========================================
-    // 1. RECEIPT LOGIC (សម្រាប់តែការ Print)
-    // ==========================================
-    
+    // ... (រក្សាទុកផ្នែក Receipt Printer Logic របស់អ្នកដដែល) ...
     function receiptPrinter() {
         return {
             orderDetails: null,
@@ -16,7 +13,7 @@
                 }
                 this.exchangeRate = data.exchangeRate || 4100;
                 
-                // Parse Addons មុននឹង Group
+                // Parse Addons
                 if(this.orderDetails.items && this.orderDetails.items.length > 0) {
                     this.orderDetails.items = this.orderDetails.items.map(item => {
                         return {
@@ -33,11 +30,7 @@
             parseAddons(addons) {
                 if (!addons) return [];
                 if (Array.isArray(addons)) return addons;
-                try {
-                    return JSON.parse(addons);
-                } catch (e) {
-                    return [];
-                }
+                try { return JSON.parse(addons); } catch (e) { return []; }
             },
 
             groupItems() {
@@ -114,6 +107,10 @@
             isMoveModalOpen: false,
             busyTables: [],
             availableTables: [],
+            
+            // 🔥 SELECTED MERGE TABLE (ត្រូវតែមាន Variable នេះ)
+            selectedMergeTables: [],
+
             isSplitMode: false,
             selectedSplitItems: [],
             
@@ -140,7 +137,6 @@
                 }, 5000);
             },
 
-            // 🔥 HELPER: Parse Addons
             parseAddons(addons) {
                 if (!addons) return [];
                 if (Array.isArray(addons)) return addons;
@@ -194,6 +190,7 @@
             formatNumber(num) { return new Intl.NumberFormat('en-US').format(num); },
             
             async saveExchangeRate() {
+                // (Logic នៅដដែល)
                 if (this.tempExchangeRate > 0) {
                     try {
                         const response = await fetch("{{ route('system.exchange-rate.update') }}", {
@@ -211,6 +208,7 @@
                 }
             },
             async fetchRateFromApi() {
+                // (Logic នៅដដែល)
                 this.isFetchingRate = true;
                 try {
                     const response = await fetch("{{ route('system.exchange-rate.fetch-nbc') }}");
@@ -254,11 +252,12 @@
                         formatted_check_in: data.formatted_check_in,
                         formatted_check_out: data.formatted_check_out,
                         check_in_time: data.check_in_time,
-                        check_out_time: data.check_out_time
+                        check_out_time: data.check_out_time,
+                        // បន្ថែម Invoice Number
+                        invoice_number: data.order.invoice_number
                     };
                     
                     this.recalculateTotalLocal();
-
                     this.selectedTable = table;
                     this.receivedAmount = this.orderDetails.total; 
                     this.paymentMethod = 'cash';
@@ -268,6 +267,7 @@
             },
 
             recalculateTotalLocal() {
+                // (Logic នៅដដែល)
                 let total = 0;
                 this.orderDetails.items.forEach(item => {
                     let basePrice = parseFloat(item.price || 0);
@@ -288,6 +288,7 @@
             },
 
             updateItemQty(itemId, action) {
+                // (Logic នៅដដែល)
                 if (this.isSplitMode) return;
                 let index = this.orderDetails.items.findIndex(i => i.id === itemId);
                 if (index === -1) return;
@@ -299,35 +300,26 @@
             },
 
             updateAddonQty(itemId, addonId, action) {
+                // (Logic នៅដដែល)
                 if (this.isSplitMode) return; 
                 let item = this.orderDetails.items.find(i => i.id === itemId);
                 if (!item) return;
-
                 item.addons = this.parseAddons(item.addons);
-
                 let addonIndex = item.addons.findIndex(a => a.id === addonId);
                 if (addonIndex !== -1) {
                     let addon = item.addons[addonIndex];
                     let currentQty = parseInt(addon.quantity || 1);
-
-                    if (action === 'increase') {
-                        addon.quantity = currentQty + 1;
-                    } 
+                    if (action === 'increase') { addon.quantity = currentQty + 1; } 
                     else if (action === 'decrease') {
-                        if (currentQty > 1) {
-                            addon.quantity = currentQty - 1;
-                        } else {
-                            item.addons.splice(addonIndex, 1);
-                        }
+                        if (currentQty > 1) { addon.quantity = currentQty - 1; } else { item.addons.splice(addonIndex, 1); }
                     } 
-                    else if (action === 'remove') {
-                        item.addons.splice(addonIndex, 1);
-                    }
+                    else if (action === 'remove') { item.addons.splice(addonIndex, 1); }
                     this.recalculateTotalLocal();
                 }
             },
 
             async confirmPayment() {
+                // (Logic នៅដដែល)
                 if (this.isSplitMode) { await this.processSplitPayment(); return; }
                 if (this.paymentMethod === 'cash' && (parseFloat(this.receivedAmount || 0) < this.currentTotalUSD)) { return this.showToast("{{ __('messages.insufficient_amount') }}", 'error'); }
                 if (this.orderDetails.items.length === 0) {
@@ -353,6 +345,7 @@
 
             async openMergeModal() {
                 if (!this.orderDetails.id) return;
+                this.selectedMergeTables = []; // Reset ឱ្យទៅទទេរាល់ពេលបើក
                 try {
                     const res = await fetch(`/pos/tables/busy-list?current=${this.selectedTable.id}`);
                     this.busyTables = await res.json();
@@ -360,20 +353,73 @@
                     else this.isMergeModalOpen = true;
                 } catch (e) { console.error(e); }
             },
-            async confirmMerge(targetTableId) {
+
+            // Function សម្រាប់ចុចរើសតុ (Toggle)
+            toggleMergeTable(table) {
+                if (this.isTableSelectedForMerge(table.id)) {
+                    // បើមានហើយ ដកចេញវិញ
+                    this.selectedMergeTables = this.selectedMergeTables.filter(t => t.id !== table.id);
+                } else {
+                    // បើមិនទាន់មាន ដាក់ចូល
+                    this.selectedMergeTables.push(table);
+                }
+            },
+
+            // Check ថាតុហ្នឹងបានរើសនៅ?
+            isTableSelectedForMerge(tableId) {
+                return this.selectedMergeTables.some(t => t.id === tableId);
+            },
+            
+            // Submit (Loop តាមចំនួនតុដែលបានរើស)
+            async submitMergeTable() {
+                if (this.selectedMergeTables.length === 0) {
+                    return this.showToast("{{ __('messages.select_table_first') }}", 'warning');
+                }
+
+                this.isProcessing = true;
+                let successCount = 0;
+
+                // Loop បញ្ចូលម្ដងមួយតុៗ
+                for (const table of this.selectedMergeTables) {
+                    // Pass 'false' ដើម្បីកុំអោយវាបិទ Modal ភ្លាមៗ រង់ចាំចប់គ្រប់តុសិន
+                    const result = await this.confirmMerge(table.id, false); 
+                    if(result) successCount++;
+                }
+
+                this.isProcessing = false;
+
+                if(successCount > 0) {
+                    this.showToast("{{ __('messages.merge_success') }}", 'success');
+                    this.isMergeModalOpen = false;
+                }
+            },
+
+            // កែសម្រួល confirmMerge ឱ្យទទួល Parameter 'autoClose'
+            async confirmMerge(targetTableId, autoClose = true) {
                 try {
                     const response = await fetch(`/pos/order/items-for-merge/${targetTableId}`);
                     const data = await response.json();
+                    
                     if (data.items && data.items.length > 0) {
                         data.items.forEach(item => { 
                             item.addons = this.parseAddons(item.addons);
                             this.orderDetails.items.push(item); 
                         });
                         this.recalculateTotalLocal();
-                        this.showToast("{{ __('messages.merge_success') }}", 'info');
-                        this.isMergeModalOpen = false;
-                    } else this.showToast("{{ __('messages.table_has_no_items') }}", 'warning');
-                } catch (e) { this.showToast("{{ __('messages.merge_error') }}", 'error'); }
+                        
+                        if(autoClose) {
+                            this.showToast("{{ __('messages.merge_success') }}", 'info');
+                            this.isMergeModalOpen = false;
+                        }
+                        return true; // Return true បើជោគជ័យ
+                    } else {
+                        if(autoClose) this.showToast("{{ __('messages.table_has_no_items') }}", 'warning');
+                        return false;
+                    }
+                } catch (e) { 
+                    if(autoClose) this.showToast("{{ __('messages.merge_error') }}", 'error'); 
+                    return false;
+                }
             },
             
             openMoveModal() { 
@@ -383,12 +429,9 @@
             }, 
             
             async submitMoveTable() {
-                if (!this.selectedTargetTable) {
-                    return this.showToast("{{ __('messages.select_new_table_first') }}", 'warning');
-                }
-
+                // (Logic នៅដដែល)
+                if (!this.selectedTargetTable) { return this.showToast("{{ __('messages.select_new_table_first') }}", 'warning'); }
                 this.isProcessing = true; 
-
                 try {
                     const response = await fetch("{{ route('pos.table.move') }}", {
                         method: 'POST',
@@ -401,22 +444,15 @@
                             target_table_id: this.selectedTargetTable.id 
                         })
                     });
-                    
                     const data = await response.json();
-                    
                     if (response.ok && data.status === 'success') {
                         this.showToast(data.message || "{{ __('messages.move_success') }}", 'success');
                         this.isMoveModalOpen = false; 
                         this.isCheckoutModalOpen = false; 
                         this.fetchTables(); 
-                    } else {
-                        this.showToast(data.message || "{{ __('messages.move_failed') }}", 'error');
-                    }
-                } catch (e) { 
-                    this.showToast("{{ __('messages.system_error') }}", 'error'); 
-                } finally {
-                    this.isProcessing = false;
-                }
+                    } else { this.showToast(data.message || "{{ __('messages.move_failed') }}", 'error'); }
+                } catch (e) { this.showToast("{{ __('messages.system_error') }}", 'error'); } 
+                finally { this.isProcessing = false; }
             },
 
             toggleSplitMode() { this.isSplitMode = !this.isSplitMode; this.selectedSplitItems = []; this.receivedAmount = this.isSplitMode ? 0 : this.orderDetails.total; },
@@ -427,7 +463,9 @@
                 this.receivedAmount = this.currentTotalUSD;
             },
             isItemSplitted(itemId) { return this.selectedSplitItems.some(i => i.id === itemId); },
+            
             async processSplitPayment() {
+                // (Logic នៅដដែល)
                 if (this.selectedSplitItems.length === 0) return this.showToast("{{ __('messages.select_items_first') }}", 'warning');
                 if (this.paymentMethod === 'cash' && (parseFloat(this.receivedAmount || 0) < this.currentTotalUSD)) return this.showToast("{{ __('messages.insufficient_funds') }}", 'error');
                 this.isProcessing = true;
@@ -443,7 +481,6 @@
                     const data = await response.json();
                     if (response.ok) {
                         this.showToast("{{ __('messages.split_bill_success') }}", 'success');
-                        
                         const splitItems = this.orderDetails.items.filter(item => this.selectedSplitItems.some(split => split.id === item.id));
                         const printData = {
                             order: {
@@ -458,7 +495,6 @@
                             exchangeRate: this.exchangeRate
                         };
                         window.dispatchEvent(new CustomEvent('print-receipt', { detail: printData }));
-                        
                         if(data.remaining_items_count > 0) this.openQuickCheckout(this.selectedTable);
                         else { this.isCheckoutModalOpen = false; this.fetchTables(); }
                     } else this.showToast(data.message, 'error');
@@ -467,12 +503,11 @@
             },
 
             finishTransaction(data) {
+                // (Logic នៅដដែល)
                 this.isCheckoutModalOpen = false;
                 this.showToast("{{ __('messages.success') }}", 'success');
                 this.fetchTables();
-
                 const finalCheckOutTime = new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
-
                 const printData = {
                     order: {
                         ...this.orderDetails,

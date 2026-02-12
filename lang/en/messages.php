@@ -598,6 +598,12 @@ return [
     'success' => 'Success!',
 
     
+    'new_table' => 'New Table',
+    'merge_from' => 'Merge From', // បញ្ចូលពី
+    'select_move_target' => 'Please select the target table below',
+    'select_merge_source' => 'Please select a table to merge from',
+    'select_table_first' => 'Please select a table first',
+    'no_busy_tables' => 'No other busy tables found',
     
 
 ];
