@@ -8,23 +8,23 @@
 <div class="w-full h-full px-2 py-2 sm:px-4 sm:py-4" x-data="productManagement()">
     
     {{-- 1. HEADER & ACTIONS --}}
-    @include('Admin.product.partials.header')
+    @include('admin.product.partials.header')
 
     {{-- 2. DESKTOP VIEW (TABLE) --}}
     <div class="hidden md:block">
-        @include('Admin.product.partials.table')
+        @include('admin.product.partials.table')
     </div>
 
     {{-- 3. MOBILE VIEW (CARDS) --}}
     <div class="md:hidden">
-        @include('Admin.product.partials.mobile_card')
+        @include('admin.product.partials.mobile_card')
     </div>
     
     {{-- 4. PAGINATION --}}
-    @include('Admin.product.partials.pagination')
+    @include('admin.product.partials.pagination')
 
     {{-- 5. MODAL (CREATE / EDIT) --}}
-    @include('Admin.product.partials.modal')
+    @include('admin.product.partials.modal')
 
 </div>
 

@@ -8,23 +8,23 @@
 <div class="w-full h-full px-2 py-2 sm:px-4 sm:py-4" x-data="permissionManagement()">
     
     {{-- 1. HEADER & ACTIONS --}}
-    @include('Admin.permission.partials.header')
+    @include('admin.permission.partials.header')
 
     {{-- 2. DESKTOP VIEW (TABLE) --}}
     <div class="hidden md:block">
-        @include('Admin.permission.partials.table')
+        @include('admin.permission.partials.table')
     </div>
 
     {{-- 3. MOBILE VIEW (CARDS) --}}
     <div class="md:hidden">
-        @include('Admin.permission.partials.mobile_card')
+        @include('admin.permission.partials.mobile_card')
     </div>
     
     {{-- 4. PAGINATION --}}
-    @include('Admin.permission.partials.pagination')
+    @include('admin.permission.partials.pagination')
 
     {{-- 5. MODAL (CREATE / EDIT) --}}
-    @include('Admin.permission.partials.modal')
+    @include('admin.permission.partials.modal')
 
 </div>
 

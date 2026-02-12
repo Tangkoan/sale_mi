@@ -237,8 +237,7 @@
         
     </div>
 
-    {{-- ហៅ Component មកប្រើនៅទីនេះ --}}
-    @include('partials.bottom_nav')
+    
 
     {{-- <div class="fixed bottom-6 right-6 flex flex-col gap-2 z-50">
         <a href="https://t.me/Vannchinh11" 

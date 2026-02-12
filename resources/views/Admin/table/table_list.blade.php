@@ -8,23 +8,23 @@
 <div class="w-full h-full px-2 py-2 sm:px-4 sm:py-4" x-data="tableManagement()">
     
     {{-- 1. HEADER & ACTIONS --}}
-    @include('Admin.table.partials.header')
+    @include('admin.table.partials.header')
 
     {{-- 2. DESKTOP VIEW (TABLE) --}}
     <div class="hidden md:block">
-        @include('Admin.table.partials.table')
+        @include('admin.table.partials.table')
     </div>
 
     {{-- 3. MOBILE VIEW (CARDS) --}}
     <div class="md:hidden">
-        @include('Admin.table.partials.mobile_card')
+        @include('admin.table.partials.mobile_card')
     </div>
     
     {{-- 4. PAGINATION --}}
-    @include('Admin.table.partials.pagination')
+    @include('admin.table.partials.pagination')
 
     {{-- 5. MODAL (CREATE / EDIT) --}}
-    @include('Admin.table.partials.modal')
+    @include('admin.table.partials.modal')
 
 </div>
 

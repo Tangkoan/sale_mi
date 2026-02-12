@@ -8,20 +8,20 @@
 <div class="w-full h-full px-2 py-2 sm:px-4 sm:py-4" x-data="activityLogs()">
     
     {{-- 1. HEADER & ACTIONS --}}
-    @include('Admin.activity_log.partials.header')
+    @include('admin.activity_log.partials.header')
 
     {{-- 2. DESKTOP VIEW (TABLE) --}}
     <div class="hidden md:block">
-        @include('Admin.activity_log.partials.table')
+        @include('admin.activity_log.partials.table')
     </div>
 
     {{-- 3. MOBILE VIEW (CARDS) --}}
     <div class="md:hidden">
-        @include('Admin.activity_log.partials.mobile_card')
+        @include('admin.activity_log.partials.mobile_card')
     </div>
     
     {{-- 4. PAGINATION --}}
-    @include('Admin.activity_log.partials.pagination')
+    @include('admin.activity_log.partials.pagination')
 
 </div>
 

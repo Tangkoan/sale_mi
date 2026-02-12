@@ -9,23 +9,23 @@
 <div class="w-full h-full px-2 py-2 sm:px-4 sm:py-4" x-data="categoryManagement()">
     
     {{-- 1. HEADER & ACTIONS --}}
-    @include('Admin.category.partials.header')
+    @include('admin.category.partials.header')
 
     {{-- 2. DESKTOP VIEW (TABLE) --}}
     <div class="hidden md:block">
-        @include('Admin.category.partials.table')
+        @include('admin.category.partials.table')
     </div>
 
     {{-- 3. MOBILE VIEW (CARDS) --}}
     <div class="md:hidden">
-        @include('Admin.category.partials.mobile_card')
+        @include('admin.category.partials.mobile_card')
     </div>
     
     {{-- 4. PAGINATION --}}
-    @include('Admin.category.partials.pagination')
+    @include('admin.category.partials.pagination')
 
     {{-- 5. MODAL (CREATE / EDIT) --}}
-    @include('Admin.category.partials.modal')
+    @include('admin.category.partials.modal')
 
 </div>
 

@@ -7,23 +7,23 @@
 <div class="w-full h-full px-2 py-2 sm:px-4 sm:py-4" x-data="destinationManagement()">
     
     {{-- 1. HEADER & ACTIONS --}}
-    @include('Admin.destination.partials.header')
+    @include('admin.destination.partials.header')
 
     {{-- 2. DESKTOP VIEW (TABLE) --}}
     <div class="hidden md:block">
-        @include('Admin.destination.partials.table')
+        @include('admin.destination.partials.table')
     </div>
 
     {{-- 3. MOBILE VIEW (CARDS) --}}
     <div class="md:hidden">
-        @include('Admin.destination.partials.mobile_card')
+        @include('admin.destination.partials.mobile_card')
     </div>
     
     {{-- 4. PAGINATION --}}
-    @include('Admin.destination.partials.pagination')
+    @include('admin.destination.partials.pagination')
 
     {{-- 5. MODAL (CREATE / EDIT) --}}
-    @include('Admin.destination.partials.modal')
+    @include('admin.destination.partials.modal')
 
 </div>
 

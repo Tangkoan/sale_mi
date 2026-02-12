@@ -17,23 +17,23 @@
     x-effect="activeTab = $store.theme.darkMode ? 'dark' : 'light'">
 
     {{-- 1. HEADER --}}
-    @include('Admin.theme.header')
+    @include('admin.theme.header')
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {{-- 2. BRAND IDENTITY --}}
-        @include('Admin.theme.brand_identity')
+        @include('admin.theme.brand_identity')
 
         {{-- 3. LAYOUT STRUCTURE --}}
-        @include('Admin.theme.layout_structure')
+        @include('admin.theme.layout_structure')
 
         {{-- 4. CONTENT & FORMS --}}
-        @include('Admin.theme.content_forms')
+        @include('admin.theme.content_forms')
 
     </div>
 
     {{-- 5. ACTION BAR (FLOATING FOOTER) --}}
-    @include('Admin.theme.action_bar')
+    @include('admin.theme.action_bar')
 
 </div>
 @endsection

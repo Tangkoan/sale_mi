@@ -8,23 +8,23 @@
 <div class="w-full h-full px-2 py-2 sm:px-4 sm:py-4" x-data="addonManagement()">
     
     {{-- 1. HEADER & ACTIONS --}}
-    @include('Admin.addon.partials.header')
+    @include('admin.addon.partials.header')
 
     {{-- 2. DESKTOP VIEW (TABLE) --}}
     <div class="hidden md:block">
-        @include('Admin.addon.partials.table')
+        @include('admin.addon.partials.table')
     </div>
 
     {{-- 3. MOBILE VIEW (CARDS) --}}
     <div class="md:hidden">
-        @include('Admin.addon.partials.mobile_card')
+        @include('admin.addon.partials.mobile_card')
     </div>
     
     {{-- 4. PAGINATION --}}
-    @include('Admin.addon.partials.pagination')
+    @include('admin.addon.partials.pagination')
 
     {{-- 5. MODAL (CREATE / EDIT) --}}
-    @include('Admin.addon.partials.modal')
+    @include('admin.addon.partials.modal')
 
 </div>
 

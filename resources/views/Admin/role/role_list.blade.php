@@ -8,24 +8,24 @@
 <div class="w-full h-full px-2 py-2 sm:px-4 sm:py-4" x-data="roleManagement()">
     
     {{-- 1. HEADER & ACTIONS --}}
-    @include('Admin.role.partials.header')
+    @include('admin.role.partials.header')
 
     {{-- 2. DESKTOP VIEW (TABLE) --}}
     <div class="hidden md:block">
-        @include('Admin.role.partials.table')
+        @include('admin.role.partials.table')
     </div>
 
     {{-- 3. MOBILE VIEW (CARDS) --}}
     <div class="md:hidden">
-        @include('Admin.role.partials.mobile_card')
+        @include('admin.role.partials.mobile_card')
     </div>
     
     {{-- 4. PAGINATION --}}
-    @include('Admin.role.partials.pagination')
+    @include('admin.role.partials.pagination')
 
     {{-- 5. MODALS --}}
-    @include('Admin.role.partials.modal')
-    @include('Admin.role.partials.permission_modal')
+    @include('admin.role.partials.modal')
+    @include('admin.role.partials.permission_modal')
 
 </div>
 
