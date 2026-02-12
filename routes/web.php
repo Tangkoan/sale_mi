@@ -71,7 +71,7 @@ Route::middleware('auth')->group(function () {
     // ======================
     Route::get('/dashboard', function () {
         return view('admin.dashboard');
-    })->name('admin.dashboard')->middleware('permission:dashboard');
+    })->name('admin.dashboard')->middleware('permission:view_dashboard');
 
     // Logout
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
