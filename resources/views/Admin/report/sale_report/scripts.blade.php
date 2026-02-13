@@ -41,17 +41,13 @@
             const group = document.getElementById(`group-${t}`);
             
             if (t === type) {
-                // Active State (Theme Aware)
                 btn.classList.remove('text-sidebar-text', 'hover:text-primary', 'hover:bg-input-bg');
                 btn.classList.add('bg-card-bg', 'text-primary', 'shadow-custom'); 
-                
                 group.classList.remove('hidden');
                 group.classList.add('flex');
             } else {
-                // Inactive State (Theme Aware)
                 btn.classList.add('text-sidebar-text', 'hover:text-primary', 'hover:bg-input-bg');
                 btn.classList.remove('bg-card-bg', 'text-primary', 'shadow-custom');
-                
                 group.classList.add('hidden');
                 group.classList.remove('flex');
             }
@@ -175,26 +171,34 @@
         const isKhmer = currentLocale === 'km';
 
         displayData.forEach(order => {
-            let isCompleted = order.status.toLowerCase() === 'completed';
+            // 🔥 FIXED: Defensively handle null/undefined values
+            let statusSafe = (order.status || '').toString();
+            let paymentSafe = (order.payment || '').toString();
+            let dateSafe = (order.date || '').toString(); // ✅ បន្ថែម dateSafe ដើម្បីការពារ error .split
+
+            let isCompleted = statusSafe.toLowerCase() === 'completed';
             let statusColor = isCompleted ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
             let statusIcon = isCompleted ? '<i class="ri-checkbox-circle-fill"></i>' : '<i class="ri-close-circle-fill"></i>';
             let displayAmount = isKhmer ? `${order.total_khr} ៛` : `$${order.total_usd}`;
-            let paymentIcon = order.payment.toLowerCase().includes('qr') ? 'ri-qr-code-line' : 'ri-money-dollar-circle-line';
-
-            // Desktop Row (Updated Theme Classes)
+            let paymentIcon = paymentSafe.toLowerCase().includes('qr') ? 'ri-qr-code-line' : 'ri-money-dollar-circle-line';
+            
+            // Desktop Row
             if(tbody) {
                 tbody.innerHTML += `
                     <tr onclick="openModal('${order.invoice}')" class="hover:bg-page-bg transition-colors border-b border-bor-color last:border-0 group cursor-pointer">
                         <td class="px-6 py-4 font-bold text-sidebar-text group-hover:text-primary">#${order.invoice}</td>
-                        <td class="px-6 py-4 text-gray-500 text-xs">${order.date}</td>
-                        <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md text-xs font-semibold bg-page-bg text-gray-600 border border-bor-color capitalize">${order.payment}</span></td>
-                        <td class="px-6 py-4 text-center"><span class="px-3 py-1 rounded-full text-xs font-bold ${statusColor} inline-flex items-center gap-1">${statusIcon} ${order.status}</span></td>
+                        <td class="px-6 py-4 text-gray-500 text-xs">${dateSafe}</td>
+                        <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-md text-xs font-semibold bg-page-bg text-gray-600 border border-bor-color capitalize">${paymentSafe}</span></td>
+                        <td class="px-6 py-4 text-center"><span class="px-3 py-1 rounded-full text-xs font-bold ${statusColor} inline-flex items-center gap-1">${statusIcon} ${statusSafe}</span></td>
                         <td class="px-6 py-4 text-right font-black text-sidebar-text">${displayAmount}</td>
                     </tr>`;
             }
 
-            // Mobile Card (Updated Theme Classes)
+            // Mobile Card
             if(mobileContainer) {
+                // ✅ ប្រើ dateSafe.split ជំនួស order.date.split
+                let shortDate = dateSafe.includes(' ') ? dateSafe.split(' ')[0] : dateSafe;
+
                 mobileContainer.innerHTML += `
                     <div onclick="openModal('${order.invoice}')" class="bg-card-bg p-4 rounded-2xl shadow-custom border border-bor-color relative overflow-hidden active:scale-[0.98] transition-transform duration-100 cursor-pointer">
                         <div class="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
@@ -208,9 +212,9 @@
                             </div>
                             <div class="flex flex-col items-end">
                                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${statusColor} border border-transparent bg-opacity-20 mb-1">
-                                    ${order.status}
+                                    ${statusSafe}
                                 </span>
-                                <span class="text-[10px] text-gray-400 font-medium">${order.date.split(' ')[0]}</span>
+                                <span class="text-[10px] text-gray-400 font-medium">${shortDate}</span>
                             </div>
                         </div>
 
@@ -221,7 +225,7 @@
                                 <div class="w-6 h-6 rounded-full bg-page-bg flex items-center justify-center border border-bor-color">
                                     <i class="${paymentIcon} text-xs"></i>
                                 </div>
-                                <span class="text-xs font-semibold capitalize">${order.payment}</span>
+                                <span class="text-xs font-semibold capitalize">${paymentSafe}</span>
                             </div>
                             <span class="font-black text-lg text-primary tracking-tight">${displayAmount}</span>
                         </div>
@@ -236,17 +240,22 @@
         const order = allOrdersData.find(o => o.invoice === invoiceId);
         if (!order) return;
 
+        // 🔥 FIXED: Defensively handle null/undefined values
+        let statusSafe = (order.status || '').toString();
+        let paymentSafe = (order.payment || '').toString();
+        let dateSafe = (order.date || '').toString();
+
         const isKhmer = currentLocale === 'km';
         let displayAmount = isKhmer ? `${order.total_khr} ៛` : `$${order.total_usd}`;
-        let statusColor = order.status.toLowerCase() === 'completed' ? 'text-green-600' : 'text-red-600';
+        let statusColor = statusSafe.toLowerCase() === 'completed' ? 'text-green-600' : 'text-red-600';
 
         document.getElementById('modalInvoice').innerText = '#' + order.invoice;
-        document.getElementById('modalDate').innerText = order.date;
-        document.getElementById('modalPayment').innerText = order.payment;
+        document.getElementById('modalDate').innerText = dateSafe;
+        document.getElementById('modalPayment').innerText = paymentSafe;
         document.getElementById('modalCashier').innerText = "Admin"; 
         
         const statusEl = document.getElementById('modalStatus');
-        statusEl.innerText = order.status;
+        statusEl.innerText = statusSafe;
         statusEl.className = `font-bold ${statusColor}`;
 
         document.getElementById('modalTotal').innerText = displayAmount;
@@ -289,5 +298,31 @@
         setTimeout(() => {
             modal.classList.add('hidden');
         }, 300);
+    }
+
+    // --- 7. EXPORT FUNCTION ---
+    function exportReport(type) {
+        let url = "";
+        
+        if (type === 'excel') {
+            url = "{{ route('admin.report.sale_report.export_excel') }}";
+        } else {
+            url = "{{ route('admin.report.sale_report.export_pdf') }}";
+        }
+
+        url += `?filter_type=${activeFilterType}`;
+
+        if (activeFilterType === 'day') {
+            url += `&start_date=${document.getElementById('day-start').value}`;
+            url += `&end_date=${document.getElementById('day-end').value}`;
+        } else if (activeFilterType === 'month') {
+            url += `&start_month=${document.getElementById('month-start').value}`;
+            url += `&end_month=${document.getElementById('month-end').value}`;
+        } else if (activeFilterType === 'year') {
+            url += `&start_year=${document.getElementById('year-start').value}`;
+            url += `&end_year=${document.getElementById('year-end').value}`;
+        }
+
+        window.open(url, '_blank');
     }
 </script>

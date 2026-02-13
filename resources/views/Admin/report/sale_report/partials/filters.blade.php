@@ -12,8 +12,22 @@
     {{-- Filter Toolbar --}}
     <div class="w-full md:w-auto bg-card-bg p-2 rounded-xl shadow-custom border border-bor-color flex flex-col md:flex-row gap-3 md:gap-2">
         
+        {{-- Title & Export Buttons --}}
+        <div class="flex  p-1  w-full md:w-auto relative  ">
+            
+            {{-- Export Buttons --}}
+            <div class="flex gap-2">
+                <button onclick="exportReport('excel')" class="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-colors">
+                    <i class="ri-file-excel-line"></i> Excel
+                </button>
+                <button onclick="exportReport('pdf')" class="flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-colors">
+                    <i class="ri-file-pdf-line"></i> PDF
+                </button>
+            </div>
+        </div>
+
         {{-- SECTION 1: Buttons (Day/Month/Year) --}}
-        <div class="flex bg-input-bg p-1 rounded-lg w-full md:w-auto relative border border-input-border">
+        <div class="flex bg-input-bg p-1 rounded-lg w-full md:w-auto relative ">
             <button onclick="setFilterType('day')" id="btn-day" 
                 class="filter-tab flex-1 md:flex-none w-full md:w-20 py-2 md:py-1.5 text-xs font-bold rounded-md transition-all duration-200 shadow-custom bg-card-bg text-primary uppercase tracking-wider">
                 {{ __('messages.day') }}

@@ -108,6 +108,10 @@ Route::middleware('auth')->group(function () {
             // 2. Ajax Route សម្រាប់ទាញទិន្នន័យ (API Internal)
             Route::get('/sale-report/fetch', [SaleReportController::class, 'fetchSaleData'])
                 ->name('sale_report.fetch');
+
+
+            Route::get('sale-report/export-excel', [SaleReportController::class, 'exportExcel'])->name('sale_report.export_excel');
+            Route::get('sale-report/export-pdf', [SaleReportController::class, 'exportPDF'])->name('sale_report.export_pdf');
         });
         // end report
 
