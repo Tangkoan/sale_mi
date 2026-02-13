@@ -36,10 +36,21 @@
                         
                         <td class="px-6 py-4 text-right">
                             <div class="flex justify-end gap-2 relative z-10">
-                                @role('Super Admin')
-                                <button type="button" @click="openModal('edit', perm)" class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100 cursor-pointer"><i class="ri-pencil-line"></i></button>
-                                <button type="button" @click="confirmDelete(perm.id)" class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer"><i class="ri-delete-bin-line"></i></button>
-                                @endrole
+                                
+                                {{-- ប៊ូតុងកែប្រែ (Edit) --}}
+                                @can('permission-edit') 
+                                    <button type="button" @click="openModal('edit', perm)" class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100 cursor-pointer">
+                                        <i class="ri-pencil-line"></i>
+                                    </button>
+                                @endcan
+
+                                {{-- ប៊ូតុងលុប (Delete) --}}
+                                @can('permission-delete')
+                                    <button type="button" @click="confirmDelete(perm.id)" class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer">
+                                        <i class="ri-delete-bin-line"></i>
+                                    </button>
+                                @endcan
+
                             </div>
                         </td>
                     </tr>

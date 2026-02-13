@@ -103,7 +103,7 @@ Route::middleware('auth')->group(function () {
             // 1. បង្ហាញផ្ទាំង Report
             Route::get('/sale-report', [SaleReportController::class, 'index'])
                 ->name('sale_report.index')
-                ->middleware('permission:report-sale'); // ដាក់ Permission បើចាំបាច់
+                ->middleware('permission:report-list');
 
             // 2. Ajax Route សម្រាប់ទាញទិន្នន័យ (API Internal)
             Route::get('/sale-report/fetch', [SaleReportController::class, 'fetchSaleData'])
