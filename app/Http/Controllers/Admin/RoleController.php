@@ -146,8 +146,6 @@ class RoleController extends Controller
         $role = Role::findOrFail($request->role_id);
         $role->syncPermissions($request->permissions);
 
-        // Optional logging here
-
         return response()->json(['message' => __('messages.success_permission_assign')]);
     }
 }
