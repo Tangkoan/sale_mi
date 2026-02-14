@@ -79,11 +79,7 @@
             </div>
         </div>
 
-        {{-- Notification --}}
-        <button class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 relative">
-            <i class="ri-notification-3-line text-xl"></i>
-            <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white dark:border-gray-900"></span>
-        </button>
+        
 
         {{-- User Dropdown --}}
         <div class="relative">

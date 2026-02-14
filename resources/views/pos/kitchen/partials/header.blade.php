@@ -109,13 +109,26 @@
     {{-- Order-3: នៅខាងក្រោមគេ (Row 2) លើទូរស័ព្ទ       --}}
     {{-- Order-2: នៅកណ្តាលលើ PC                          --}}
     {{-- =============================================== --}}
+    {{-- ... (កូដខាងលើនៅដដែល) ... --}}
+
+    {{-- =============================================== --}}
+    {{-- 3. CENTER / TABS (Kitchen / Bar)                --}}
+    {{-- =============================================== --}}
     <div class="order-3 sm:order-2 w-full sm:w-auto mt-1 sm:mt-0">
         <div class="flex bg-gray-100 dark:bg-gray-900 p-1 rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto custom-scrollbar w-full sm:max-w-md">
             <div class="flex gap-1 w-full sm:w-auto">
                 @foreach($destinations as $dest)
+                
+                    {{-- ✅ បន្ថែមកូដនេះ៖ រំលង (Skip) បើឈ្មោះជា checkout --}}
+                    @if(strtolower($dest->name) == 'checkout')
+                        @continue
+                    @endif
+                    {{-- ✅ បញ្ចប់កូដដែលបានបន្ថែម --}}
+
                     <button @click="changeMode({{ $dest->id }})" 
                             class="flex-1 sm:flex-none px-3 sm:px-6 py-2 rounded-md text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 whitespace-nowrap"
                             :class="currentDestinationId == {{ $dest->id }} ? 'bg-primary text-white shadow-md' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800'">
+                        
                         @if(stripos($dest->name, 'bar') !== false || stripos($dest->name, 'drink') !== false)
                             <i class="ri-goblet-line"></i>
                         @else

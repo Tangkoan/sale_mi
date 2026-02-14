@@ -17,7 +17,7 @@
             <div class="flex items-center gap-3 sm:gap-4">
                 
                 {{-- Back Button (Logic: បង្ហាញតែអ្នកមាន Permission) --}}
-                @can('dashboard')
+                @can('view_dashboard')
                     <a href="{{ route('admin.dashboard') }}" 
                        class="group relative flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-primary hover:text-white transition-all duration-300 shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
                        title="{{ __('messages.back_to_dashboard') }}">

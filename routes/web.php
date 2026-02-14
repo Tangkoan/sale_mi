@@ -31,6 +31,7 @@ use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 use App\Http\Controllers\Admin\SaleReportController;
+use App\Http\Controllers\Admin\DashboardController;
 
 use Illuminate\Support\Facades\Session;
 
@@ -79,9 +80,11 @@ Route::middleware('auth')->group(function () {
     // ======================
     // Admin Dashboard
     // ======================
-    Route::get('/dashboard', function () {
-        return view('admin.dashboard');
-    })->name('admin.dashboard')->middleware('permission:view_dashboard');
+    // Route::get('/dashboard', function () {
+    //     return view('admin.dashboard');
+    // })->name('admin.dashboard')->middleware('permission:view_dashboard');
+
+    Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('admin.dashboard')->middleware('permission:view_dashboard');
 
     // Logout
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');

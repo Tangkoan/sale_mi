@@ -641,4 +641,17 @@ return [
     'discount' => 'Discount',
     'grand_total' => 'Grand Total',
 
+    'overview_for' => 'Overview for',
+    'day' => 'Day',
+    'month' => 'Month',
+    'year' => 'Year',
+    'loading_data' => 'Loading data...',
+    'total_revenue' => 'Total Revenue',
+    'total_orders' => 'Total Orders',
+    'cash_sales' => 'Cash Sales',
+    'qr_payments' => 'QR Payments',
+    'sales_analytics' => 'Sales Analytics',
+    'revenue' => 'Revenue', // សម្រាប់ Chart
+    'top_products' => 'Top Products',
+
 ];

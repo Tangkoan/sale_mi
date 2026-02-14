@@ -641,4 +641,17 @@ return [
     'subtotal' => 'Subtotal',
     'discount' => 'Discount',
     'grand_total' => 'Grand Total',
+
+    'overview_for' => 'ទិដ្ឋភាពរួមសម្រាប់',
+    'day' => 'ថ្ងៃ',
+    'month' => 'ខែ',
+    'year' => 'ឆ្នាំ',
+    'loading_data' => 'កំពុងទាញយកទិន្នន័យ...',
+    'total_revenue' => 'ចំណូលសរុប',
+    'total_orders' => 'ការបញ្ជាទិញសរុប',
+    'cash_sales' => 'ការលក់សាច់ប្រាក់',
+    'qr_payments' => 'ការលក់តាម QR',
+    'sales_analytics' => 'វិភាគការលក់',
+    'revenue' => 'ប្រាក់ចំណូល', // សម្រាប់ Chart
+    'top_products' => 'ផលិតផលលក់ដាច់',
 ];
