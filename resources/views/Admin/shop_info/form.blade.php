@@ -24,20 +24,20 @@
             @csrf
 
             {{-- 1. HEADER & ACTIONS --}}
-            @include('Admin.shop_info.partials.header')
+            @include('admin.shop_info.partials.header')
 
             <div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
                 
                 {{-- LEFT COLUMN (English & Khmer Details) --}}
                 <div class="xl:col-span-8 space-y-8">
-                    @include('Admin.shop_info.partials.english_details')
-                    @include('Admin.shop_info.partials.khmer_details')
+                    @include('admin.shop_info.partials.english_details')
+                    @include('admin.shop_info.partials.khmer_details')
                 </div>
 
                 {{-- RIGHT COLUMN (Settings & Branding) --}}
                 <div class="xl:col-span-4 space-y-8">
-                    @include('Admin.shop_info.partials.general_settings')
-                    @include('Admin.shop_info.partials.branding')
+                    @include('admin.shop_info.partials.general_settings')
+                    @include('admin.shop_info.partials.branding')
                 </div>
 
             </div>
