@@ -32,6 +32,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 use App\Http\Controllers\Admin\SaleReportController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\BlockedIpController;
 
 use Illuminate\Support\Facades\Session;
 
@@ -99,7 +100,12 @@ Route::middleware('auth')->group(function () {
     // ======================
     // All Routes Under /admin
     // ======================
-    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::prefix('admin')->name('admin.')->group(function () {
+
+            
+        Route::get('/blocked-ips', [BlockedIpController::class, 'index'])->name('blocked_ips.index');
+        Route::get('/blocked-ips/fetch', [BlockedIpController::class, 'fetch'])->name('blocked_ips.fetch');
+        Route::delete('/blocked-ips/unblock/{ip}', [BlockedIpController::class, 'unblock'])->name('blocked_ips.unblock');
 
         // report
         Route::prefix('report')->name('report.')->group(function () {
