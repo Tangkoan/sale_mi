@@ -21,8 +21,38 @@ class AuthController extends Controller
 
     // ២. Logic សម្រាប់ Login
     public function login(Request $request)
-    {
-        // ក. ពិនិត្យ Captcha
+{
+    // ==========================================
+    // ក. ករណី Login ដោយប្រើ PIN សុទ្ធ (បញ្ចូលតែ PIN)
+    // ==========================================
+    if ($request->login_method === 'pin') {
+        
+        $authenticatedUser = null;
+        // ទាញយកតែ User ណាដែលមានកំណត់ PIN ប៉ុណ្ណោះ
+        $users = User::whereNotNull('pin')->get(); 
+
+        foreach ($users as $u) {
+            if (Hash::check($request->pin, $u->pin)) {
+                $authenticatedUser = $u;
+                break;
+            }
+        }
+
+        if (!$authenticatedUser) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => ['pin' => ['លេខកូដ PIN មិនត្រឹមត្រូវទេ']]
+            ], 422);
+        }
+
+        Auth::login($authenticatedUser);
+        $user = $authenticatedUser;
+    } 
+    // ==========================================
+    // ខ. ករណី Login ដោយប្រើ Username/Email និង Password ធម្មតា
+    // ==========================================
+    else {
+        // ពិនិត្យ Captcha តែពេលប្រើ Password ធម្មតាប៉ុណ្ណោះ
         if ($request->captcha !== session('captcha_code')) {
             return response()->json([
                 'status' => 'error',
@@ -30,66 +60,34 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // ខ. ស្វែងរក User
         $fieldType = filter_var($request->username, FILTER_VALIDATE_EMAIL) ? 'email' : 'name';
         $user = User::where($fieldType, $request->username)->first();
 
-        // គ. ករណីរក User មិនឃើញ
-        if (!$user) {
+        if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
                 'status' => 'error',
-                'errors' => ['username' => ['រកមិនឃើញឈ្មោះគណនីនេះទេ (Wrong Username)']]
+                'errors' => ['username' => ['ឈ្មោះគណនី ឬ លេខសម្ងាត់មិនត្រឹមត្រូវ']]
             ], 422);
         }
 
-        // ឃ. ករណី Password ខុស
-        if (!Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'status' => 'error',
-                'errors' => ['password' => ['លេខសម្ងាត់មិនត្រឹមត្រូវ (Wrong Password)']]
-            ], 422);
-        }
-
-        // ង. បើត្រូវទាំងអស់ -> Login ចូល
         Auth::login($user);
-        session()->forget('captcha_code');
-
-        // កត់ត្រាសកម្មភាពចូលប្រព័ន្ធ
-        if(function_exists('activity')) {
-            activity()
-                ->causedBy($user)
-                ->withProperties([
-                    'ip' => $request->ip(),
-                    'browser' => $request->userAgent()
-                ])
-                ->log('logged in');
-        }
-
-        // ============================================================
-        // 🔥 [ចំណុចកែប្រែ]៖ កំណត់ Route តាម Role របស់អ្នកប្រើប្រាស់
-        // ============================================================
-        
-        $redirectUrl = route('admin.dashboard'); // Default សម្រាប់ Admin, Super Admin និង Role ផ្សេងៗ
-
-        // ១. សម្រាប់អ្នកគិតលុយ (Cashier)
-        if ($user->hasRole('Cashier')) {
-            $redirectUrl = url('/pos/tables'); 
-        } 
-        // ២. សម្រាប់ចុងភៅ និង អ្នកធ្វើភេជ្ជៈ (Chef, Bartender)
-        elseif ($user->hasRole(['Chef', 'Bartender'])) {
-            $redirectUrl = url('/pos/kitchen');
-        } 
-
-        elseif ($user->hasRole('Service')) {
-            $redirectUrl = url('/pos/tables');
-        } 
-        
-        // ត្រឡប់ Link ដែលបានកំណត់ខាងលើទៅឱ្យ Javascript
-        return response()->json([
-            'status' => 'success',
-            'redirect_url' => $redirectUrl
-        ]);
     }
+
+    session()->forget('captcha_code');
+
+    // ... កូដ Redirect URL ខាងក្រោមរក្សាទុកដដែល ...
+    $redirectUrl = route('admin.dashboard'); 
+    if ($user->hasRole('Cashier') || $user->hasRole('Service')) {
+        $redirectUrl = url('/pos/tables'); 
+    } elseif ($user->hasRole(['Chef', 'Bartender'])) {
+        $redirectUrl = url('/pos/kitchen');
+    } 
+    
+    return response()->json([
+        'status' => 'success',
+        'redirect_url' => $redirectUrl
+    ]);
+}
 
     // ៣. Logic សម្រាប់ Logout
     public function logout(Request $request)

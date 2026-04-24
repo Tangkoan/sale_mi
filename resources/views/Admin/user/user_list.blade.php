@@ -58,7 +58,7 @@
             sequenceQueue: [],
             currentSeqIndex: 0,
 
-            form: { id: null, name: '', email: '', role: '', password: '' },
+            form: { id: null, name: '', email: '', role: '', password: '', pin: '' },
             errors: {},
 
             init() { 
@@ -143,7 +143,8 @@
                     name: user.name, 
                     email: user.email, 
                     role: user.roles.length > 0 ? user.roles[0].name : '',
-                    password: '' // Reset password field
+                    password: '', // Reset password field
+                    pin: ''
                 };
             },
 
@@ -157,7 +158,7 @@
                     this.loadUserToForm(item);
                 } else {
                     this.editMode = false;
-                    this.form = { id: null, name: '', email: '', role: '', password: '' };
+                    this.form = { id: null, name: '', email: '', role: '', password: '',pin: '' };
                 }
             },
 

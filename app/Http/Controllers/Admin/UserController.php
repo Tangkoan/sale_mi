@@ -107,6 +107,11 @@ class UserController extends Controller
                 'password' => Hash::make($request->password),
             ]);
 
+            // បើមានបញ្ចូល PIN គឺត្រូវ Hash វា
+            if ($request->filled('pin')) {
+                $data['pin'] = Hash::make($request->pin);
+            }
+
             $user->assignRole($request->role);
 
             activity()
@@ -245,6 +250,11 @@ class UserController extends Controller
 
             if ($request->password) {
                 $data['password'] = Hash::make($request->password);
+            }
+
+            // បើមានបញ្ចូល PIN គឺត្រូវ Hash វាដើម្បី Update
+            if ($request->filled('pin')) {
+                $data['pin'] = Hash::make($request->pin);
             }
 
             $user->update($data);
