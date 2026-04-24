@@ -25,17 +25,29 @@ class BlockedIpController extends Controller
     }
 
     // មុខងារដោះ Block
-    public function unblock($ip_address)
+    // ប្ដូរ Parameter ទៅជា $id វិញ
+    public function unblock($id)
     {
-        // ១. លុបចេញពី Database
-        BlockedIp::where('ip_address', $ip_address)->delete();
+        // ១. ស្វែងរកទិន្នន័យក្នុង DB តាម ID
+        $blocked = BlockedIp::find($id);
 
-        // ២. លុបចេញពី Cache (RateLimiter)
-        RateLimiter::clear('pin_login_' . $ip_address);
+        if ($blocked) {
+            // ២. បំបែកយក Session ID (ព្រោះយើង Save ទុកជា "IP|SessionID")
+            $parts = explode('|', $blocked->ip_address);
+            $sessionId = isset($parts[1]) ? $parts[1] : '';
+
+            // ៣. លុបចេញពី Cache របស់ Laravel ដើម្បីអោយអាច Login វិញបានភ្លាមៗ!
+            if ($sessionId) {
+                RateLimiter::clear('pin_login_' . $sessionId);
+            }
+
+            // ៤. លុបចេញពី Database
+            $blocked->delete();
+        }
 
         return response()->json([
             'status' => 'success',
-            'message' => 'ដោះ Block សម្រាប់ IP: ' . $ip_address . ' បានជោគជ័យ!'
+            'message' => 'បានដោះ Block ដោយជោគជ័យ អ្នកអាច Login បានវិញហើយ!'
         ]);
     }
 }

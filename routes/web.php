@@ -105,7 +105,7 @@ Route::middleware('auth')->group(function () {
             
         Route::get('/blocked-ips', [BlockedIpController::class, 'index'])->name('blocked_ips.index');
         Route::get('/blocked-ips/fetch', [BlockedIpController::class, 'fetch'])->name('blocked_ips.fetch');
-        Route::delete('/blocked-ips/unblock/{ip}', [BlockedIpController::class, 'unblock'])->name('blocked_ips.unblock');
+        Route::delete('/blocked-ips/unblock/{id}', [BlockedIpController::class, 'unblock'])->name('blocked_ips.unblock');
 
         // report
         Route::prefix('report')->name('report.')->group(function () {

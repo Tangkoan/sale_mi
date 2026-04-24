@@ -87,6 +87,22 @@
     <div class="w-full max-w-sm bg-card-bg/90 backdrop-blur-xl rounded-[2rem] shadow-2xl border border-input-border/50 p-8 relative z-10 animate-fade-up my-auto">
         
         <div class="text-center mb-6">
+            <div class="flex justify-center mb-4">
+                @if(isset($shop) && $shop->logo)
+                    <div class="p-1.5 rounded-2xl bg-card-bg shadow-lg shadow-primary/10">
+                        <img src="{{ asset('storage/' . $shop->logo) }}" 
+                             class="w-16 h-16 rounded-xl object-cover" 
+                             alt="Shop Logo">
+                    </div>
+                @else
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white shadow-lg shadow-primary/30">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                        </svg>
+                    </div>
+                @endif
+            </div>
+            
             <h2 class="text-xl font-bold text-gray-900 tracking-tight">Welcome Back!</h2>
         </div>
 

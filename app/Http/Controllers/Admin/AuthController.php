@@ -64,8 +64,8 @@ class AuthController extends Controller
 
                 // បើវាយខុសគ្រប់ ៥ ដង -> Save ចូល DB សម្រាប់ឲ្យ Admin មើលក្នុង Management UI
                 if ($retriesLeft === 0) {
-                    // បង្ហាញ IP និងកន្ទុយ Session ខ្លីៗដើម្បីឲ្យ Admin ងាយចំណាំ
-                    $identifier = $request->ip() . ' (Device: ' . substr($deviceSessionId, 0, 5) . ')';
+                    // ភ្ជាប់ IP និង Session ID ចូលគ្នា (ឧទាហរណ៍: 127.0.0.1|a1b2c3d4...)
+                    $identifier = $request->ip() . '|' . $deviceSessionId;
                     
                     BlockedIp::updateOrCreate(
                         ['ip_address' => $identifier],
@@ -80,8 +80,9 @@ class AuthController extends Controller
             }
 
             // ៤. ករណីវាយត្រូវ -> Clear ការរាប់ការវាយខុសទាំងក្នុង Cache និង DB
+
             RateLimiter::clear($throttleKey);
-            $identifier = $request->ip() . ' (Device: ' . substr($deviceSessionId, 0, 5) . ')';
+            $identifier = $request->ip() . '|' . $deviceSessionId;
             BlockedIp::where('ip_address', $identifier)->delete();
 
             Auth::login($authenticatedUser);
