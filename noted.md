@@ -1,3 +1,19 @@
+*** How To See Your Reponsive
+
+២. ឆែកមើលប្រភពតភ្ជាប់ (Remote URL)
+git remote -v
+
+៣. ឆែកមើលប្រវត្តិការងារ (Commit History)
+git log
+
+៤. ឆែកមើល Branch ដែលកំពុងឈរ
+git branch
+
+៥. ឆែកមើលការកំណត់ផ្សេងៗ (Config)
+git config --list
+
+
+
 Route : admin/blocked-ips (សម្រាប់ដោះស្រាយ Block IP)
 
 
@@ -78,3 +94,16 @@ Route : admin/blocked-ips (សម្រាប់ដោះស្រាយ Block I
     <body>
         </body>
     </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
