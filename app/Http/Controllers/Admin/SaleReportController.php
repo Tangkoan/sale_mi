@@ -11,6 +11,7 @@ use Maatwebsite\Excel\Facades\Excel; // ត្រូវការដំឡើង 
 use Barryvdh\DomPDF\Facade\Pdf;      // ត្រូវការដំឡើង package barryvdh/laravel-dompdf
 use App\Exports\SaleReportExport;    // ត្រូវការបង្កើត Class Export នេះ (បើប្រើ Excel)
 
+
 class SaleReportController extends Controller
 {
     public function index()
@@ -157,20 +158,31 @@ class SaleReportController extends Controller
         return Excel::download(new SaleReportExport($data['orders'], $data['summary']), 'sale_report.xlsx');
     }
 
-    /**
-     * 4. Export PDF
-     */
-    public function exportPDF(Request $request)
-    {
-        $data = $this->getFilteredData($request);
-        
-        // ត្រូវប្រាកដថាអ្នកមាន view: admin.report.sale_report.export_pdf
-        $pdf = Pdf::loadView('admin.report.sale_report.export_pdf', [
-            'orders' => $data['orders'],
-            'summary' => $data['summary']
-        ]);
-        
-        $pdf->setPaper('a4', 'landscape');
-        return $pdf->download('sale_report.pdf');
+ 
+public function exportPDF(Request $request)
+{
+    // ១. ទាញយកទិន្នន័យ
+    $data = $this->getFilteredData($request);
+
+    // ប្រសិនបើចង់ឆែកថាមិនមានទិន្នន័យ
+    if ($data['orders']->isEmpty()) {
+        return back()->with('error', 'មិនមានទិន្នន័យសម្រាប់ Export ទេ'); 
     }
+
+    // ២. បង្កើត PDF ជា Landscape (ផ្តេក)
+    try {
+        // ប្រើប្រាស់វិធីសាស្រ្តរបស់ Spatie ផ្ទាល់តែម្ដង មិនបាច់ប្រើ Stream ទេ
+        return \Spatie\LaravelPdf\Facades\Pdf::view('admin.report.sale_report.export_pdf', [
+                'orders' => $data['orders'],
+                'summary' => $data['summary']
+            ])
+            ->format('a4')
+            ->landscape()
+            ->download("Sale_Report_" . now()->format('Y-m-d') . ".pdf");
+            
+    } catch (\Exception $e) {
+        // ឥឡូវនេះ បើមាន Error វានឹងលោតមកទីនេះ ហើយប្រាប់អ្នកថាខុសអ្វីពិតប្រាកដ
+        return back()->with('error', 'មានបញ្ហាបច្ចេកទេសក្នុងការបង្កើត PDF: ' . $e->getMessage());
+    }
+}
 }

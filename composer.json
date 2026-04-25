@@ -15,7 +15,9 @@
         "laravel/tinker": "^2.10.1",
         "maatwebsite/excel": "^3.1",
         "rawilk/laravel-printing": "^4.1",
+        "spatie/browsershot": "^5.2",
         "spatie/laravel-activitylog": "^4.10",
+        "spatie/laravel-pdf": "^2.7",
         "spatie/laravel-permission": "^6.23"
     },
     "require-dev": {

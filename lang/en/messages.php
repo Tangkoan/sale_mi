@@ -653,5 +653,14 @@ return [
     'sales_analytics' => 'Sales Analytics',
     'revenue' => 'Revenue', // សម្រាប់ Chart
     'top_products' => 'Top Products',
+    'sale_report'  => 'Sale Report',
+    'total_sales'  => 'Total Sales',
+    'total_orders' => 'Total Orders',
+    'invoice'      => 'Invoice',
+    'date'         => 'Date',
+    'payment'      => 'Payment',
+    'status'       => 'Status',
+    'amount'       => 'Amount',
+    'grand_total'  => 'Grand Total',
 
 ];
