@@ -1,5 +1,8 @@
 @extends('admin.dashboard')
 
+@section('title', __('messages.password'))
+
+
 @section('content')
 <div class="w-full h-full px-6 py-5">
     

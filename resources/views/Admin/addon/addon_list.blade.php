@@ -1,27 +1,30 @@
 @extends('admin.dashboard')
 
+
+@section('title', __('messages.addon_management'))
+
 @section('content')
 
 <div class="w-full h-full px-2 py-2 sm:px-4 sm:py-4" x-data="addonManagement()">
     
     {{-- 1. HEADER & ACTIONS --}}
-    @include('Admin.addon.partials.header')
+    @include('admin.addon.partials.header')
 
     {{-- 2. DESKTOP VIEW (TABLE) --}}
     <div class="hidden md:block">
-        @include('Admin.addon.partials.table')
+        @include('admin.addon.partials.table')
     </div>
 
     {{-- 3. MOBILE VIEW (CARDS) --}}
     <div class="md:hidden">
-        @include('Admin.addon.partials.mobile_card')
+        @include('admin.addon.partials.mobile_card')
     </div>
     
     {{-- 4. PAGINATION --}}
-    @include('Admin.addon.partials.pagination')
+    @include('admin.addon.partials.pagination')
 
     {{-- 5. MODAL (CREATE / EDIT) --}}
-    @include('Admin.addon.partials.modal')
+    @include('admin.addon.partials.modal')
 
 </div>
 
@@ -213,7 +216,7 @@
                 const selectedIdsString = this.selectedIds.map(id => String(id));
                 this.sequenceQueue = this.addons.filter(item => selectedIdsString.includes(String(item.id)));
                 if (this.sequenceQueue.length === 0) {
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "{{ __('messages.select_users_first') }}" } })); 
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "{{ __('messages.select_items_first') }}" } })); 
                     return;
                 }
                 this.isSequenceMode = true;
@@ -228,19 +231,19 @@
                     this.loadDataToForm(this.sequenceQueue[this.currentSeqIndex]);
                 } else {
                     this.closeModal(true); 
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: "{{ __('messages.all_users_updated') }}" } }));
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: "{{ __('messages.all_items_updated') }}" } }));
                 }
             },
             
             async confirmDelete(id) {
                 if(typeof askConfirm !== 'undefined') { askConfirm(async () => { await this.performDelete([id]); }); }
-                else if(confirm("Are you sure?")) { await this.performDelete([id]); }
+                else if(confirm("{{ __('messages.confirm_delete') }}")) { await this.performDelete([id]); }
             },
 
             async confirmBulkDelete() {
                 if (this.selectedIds.length === 0) return;
                 if(typeof askConfirm !== 'undefined') { askConfirm(async () => { await this.performDelete(this.selectedIds, true); }); }
-                else if(confirm("Delete selected?")) { await this.performDelete(this.selectedIds, true); }
+                else if(confirm("{{ __('messages.confirm_bulk_delete') }}")) { await this.performDelete(this.selectedIds, true); }
             },
 
             async performDelete(ids, isBulk = false) {

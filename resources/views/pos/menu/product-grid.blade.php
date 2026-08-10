@@ -14,7 +14,7 @@
                     {{-- OVERLAY: "អស់ពីស្តុក" --}}
                     <div x-show="!product.is_active" class="absolute inset-0 z-20 flex items-center justify-center bg-white/60 dark:bg-gray-900/60 backdrop-blur-[1px]">
                          <div class="bg-red-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded shadow-md transform -rotate-12 border border-white">
-                             Out of Stock
+                             {{ __('messages.out_of_stock') }}
                         </div>
                     </div>
 
@@ -30,7 +30,7 @@
                         <div class="w-full h-full flex flex-col items-center justify-center text-gray-300 dark:text-gray-600"
                              :class="!product.is_active ? 'opacity-50' : ''">
                             <i class="ri-image-2-line text-2xl sm:text-3xl mb-1"></i>
-                            <span class="text-[8px] sm:text-[10px] uppercase font-bold tracking-widest">No Image</span>
+                            <span class="text-[8px] sm:text-[10px] uppercase font-bold tracking-widest">{{ __('messages.no_image') }}</span>
                         </div>
                     </template>
                     
@@ -60,7 +60,7 @@
         {{-- Empty State --}}
         <div x-show="filteredProducts.length === 0" class="col-span-full flex flex-col items-center justify-center py-10 sm:py-20 text-gray-400">
             <i class="ri-search-2-line text-3xl sm:text-4xl mb-2"></i>
-            <p class="font-medium text-sm sm:text-base">No products found.</p>
+            <p class="font-medium text-sm sm:text-base">{{ __('messages.no_products_found') }}</p>
         </div>
     </div>
 </div>

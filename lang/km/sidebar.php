@@ -24,5 +24,8 @@ return [
     'table_list' => 'បញ្ជីតុ',
     'addon_list' => 'បញ្ជីបន្ថែម (Addons)',
     'product_list' => 'បញ្ជីមុខម្ហូប',
+    'reports' => "របាយការណ៏",
+    'report' => "របាយការណ៏",
+    'sale_report' => "របាយការណ៏លក់",
     // end
 ];

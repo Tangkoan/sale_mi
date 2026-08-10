@@ -35,7 +35,7 @@
                     <i class="ri-layout-column-line text-lg"></i> 
                     <span class="hidden lg:inline">{{ __('messages.columns') }}</span>
                 </button>
-                <div x-show="openCol" class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-border-color rounded-xl shadow-xl z-50 p-2" style="display: none;" x-transition>
+                <div x-show="openCol" class="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-border-color rounded-xl shadow-xl z-50 p-2" style="display: none;" x-transition>
                     <div class="space-y-1">
                         <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer select-none">
                             <input type="checkbox" x-model="showCols.name" class="rounded text-primary focus:ring-primary border-input-border">

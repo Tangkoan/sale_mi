@@ -1,6 +1,8 @@
 @extends('admin.dashboard')
 @section('content')
 
+@section('title', __('messages.profile'))
+
 <div class="w-full h-full px-6 py-5">
     
     <div class="w-full bg-card-bg rounded-xl shadow-custom border border-border-color overflow-hidden">

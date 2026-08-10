@@ -16,10 +16,9 @@ class KitchenDestinationController extends Controller
 
     public function store(Request $request)
     {
-        // កែ Validation ពី IP ទៅជា Integer ឬ String ធម្មតា
         $validator = Validator::make($request->all(), [
             'name'         => 'required|string|max:255',
-            'printnode_id' => 'nullable|numeric', // PrintNode ID ជាលេខ
+            'printnode_id' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -28,10 +27,14 @@ class KitchenDestinationController extends Controller
 
         KitchenDestination::create([
             'name' => $request->name,
-            'printnode_id' => $request->printnode_id, // ប្ដូរ field
+            'printnode_id' => $request->printnode_id,
         ]);
 
-        return response()->json(['status' => 'success', 'message' => 'Destination created successfully']);
+        // កែប្រើ Translation Key
+        return response()->json([
+            'status' => 'success', 
+            'message' => __('messages.destination_created')
+        ]);
     }
 
     public function update(Request $request, $id)
@@ -40,7 +43,7 @@ class KitchenDestinationController extends Controller
         
         $validator = Validator::make($request->all(), [
             'name'         => 'required|string|max:255',
-            'printnode_id' => 'nullable|numeric',
+            'printnode_id' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -49,22 +52,36 @@ class KitchenDestinationController extends Controller
 
         $destination->update([
             'name' => $request->name,
-            'printnode_id' => $request->printnode_id, // ប្ដូរ field
+            'printnode_id' => $request->printnode_id,
         ]);
 
-        return response()->json(['status' => 'success', 'message' => 'Destination updated successfully']);
+        // កែប្រើ Translation Key
+        return response()->json([
+            'status' => 'success', 
+            'message' => __('messages.destination_updated')
+        ]);
     }
 
     public function destroy($id)
     {
         KitchenDestination::findOrFail($id)->delete();
-        return response()->json(['status' => 'success', 'message' => 'Deleted successfully']);
+        
+        // កែប្រើ Translation Key
+        return response()->json([
+            'status' => 'success', 
+            'message' => __('messages.deleted_successfully')
+        ]);
     }
 
     public function bulkDelete(Request $request)
     {
         KitchenDestination::whereIn('id', $request->ids)->delete();
-        return response()->json(['status' => 'success', 'message' => 'Selected items deleted']);
+
+        // កែប្រើ Translation Key
+        return response()->json([
+            'status' => 'success', 
+            'message' => __('messages.selected_items_deleted')
+        ]);
     }
 
     public function fetchDestinations(Request $request)
@@ -73,7 +90,7 @@ class KitchenDestinationController extends Controller
 
         if ($request->keyword) {
             $query->where('name', 'like', '%' . $request->keyword . '%')
-                  ->orWhere('printnode_id', 'like', '%' . $request->keyword . '%'); // Search តាម ID ជំនួស IP
+                  ->orWhere('printnode_id', 'like', '%' . $request->keyword . '%');
         }
 
         $sortBy  = $request->input('sort_by', 'created_at');

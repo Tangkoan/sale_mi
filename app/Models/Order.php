@@ -21,7 +21,8 @@ class Order extends Model
     // ទំនាក់ទំនង៖ Order មានមុខម្ហូបច្រើន (Items)
     public function items()
     {
-        return $this->hasMany(OrderItem::class);
+        // ភ្ជាប់ទៅ Table order_details ឬ order_items
+        return $this->hasMany(OrderItem::class, 'order_id'); 
     }
 
     // ទំនាក់ទំនង៖ Order ជារបស់តុមួយ

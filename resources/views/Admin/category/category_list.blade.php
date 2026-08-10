@@ -1,27 +1,31 @@
-@extends('admin.dashboard')
+@extends('admin.dashboard') {{-- ឬ Layout របស់អ្នក --}}
+
+
+@section('title', __('messages.category_management'))
 
 @section('content')
 
+{{-- x-data ដាក់នៅទីនេះដើម្បីអោយ Component ខាងក្នុងអាចប្រើ variables រួមគ្នាបាន --}}
 <div class="w-full h-full px-2 py-2 sm:px-4 sm:py-4" x-data="categoryManagement()">
     
     {{-- 1. HEADER & ACTIONS --}}
-    @include('Admin.category.partials.header')
+    @include('admin.category.partials.header')
 
     {{-- 2. DESKTOP VIEW (TABLE) --}}
     <div class="hidden md:block">
-        @include('Admin.category.partials.table')
+        @include('admin.category.partials.table')
     </div>
 
     {{-- 3. MOBILE VIEW (CARDS) --}}
     <div class="md:hidden">
-        @include('Admin.category.partials.mobile_card')
+        @include('admin.category.partials.mobile_card')
     </div>
     
     {{-- 4. PAGINATION --}}
-    @include('Admin.category.partials.pagination')
+    @include('admin.category.partials.pagination')
 
     {{-- 5. MODAL (CREATE / EDIT) --}}
-    @include('Admin.category.partials.modal')
+    @include('admin.category.partials.modal')
 
 </div>
 
@@ -29,7 +33,6 @@
     function categoryManagement() {
         return {
             categories: [],
-            // ⚠️ សំខាន់៖ សូមប្រាកដថា Controller បាន return $destinations មកផង
             destinations: @json($destinations ?? []), 
             
             search: '',
@@ -66,7 +69,6 @@
                 this.fetchCategories(); 
             },
 
-            // Smart Pagination Logic
             get visiblePages() {
                 const total = this.pagination.last_page;
                 const current = this.currentPage;
@@ -135,7 +137,7 @@
                 this.sequenceQueue = this.categories.filter(item => selectedIdsString.includes(String(item.id)));
                 
                 if (this.sequenceQueue.length === 0) {
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "{{ __('messages.select_users_first') }}" } })); 
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "{{ __('messages.select_items_first') }}" } })); 
                     return;
                 }
 
@@ -151,7 +153,7 @@
                     this.loadCategoryToForm(this.sequenceQueue[this.currentSeqIndex]);
                 } else {
                     this.closeModal(true); 
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: "{{ __('messages.all_users_updated') }}" } }));
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: "{{ __('messages.all_items_updated') }}" } }));
                 }
             },
 
@@ -243,7 +245,7 @@
             async confirmDelete(id) {
                 if(typeof askConfirm !== 'undefined') {
                     askConfirm(async () => { await this.performDelete([id]); });
-                } else if(confirm("Are you sure?")) {
+                } else if(confirm("{{ __('messages.confirm_delete') }}")) {
                     await this.performDelete([id]);
                 }
             },
@@ -252,7 +254,7 @@
                 if (this.selectedIds.length === 0) return;
                 if(typeof askConfirm !== 'undefined') {
                     askConfirm(async () => { await this.performDelete(this.selectedIds, true); });
-                } else if(confirm("Delete selected items?")) {
+                } else if(confirm("{{ __('messages.confirm_bulk_delete') }}")) {
                     await this.performDelete(this.selectedIds, true);
                 }
             },

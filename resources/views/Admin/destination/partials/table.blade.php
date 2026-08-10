@@ -7,13 +7,13 @@
                         <input type="checkbox" @change="toggleSelectAll()" x-model="selectAll" class="rounded border-input-border text-primary focus:ring-primary h-4 w-4">
                     </th>
                     <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" @click="sort('name')">
-                        <div class="flex items-center gap-1">Name <i class="ri-arrow-up-down-fill text-[10px] opacity-50 group-hover:opacity-100"></i></div>
+                        <div class="flex items-center gap-1">{{ __('messages.name') }} <i class="ri-arrow-up-down-fill text-[10px] opacity-50 group-hover:opacity-100"></i></div>
                     </th>
                     <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" @click="sort('printnode_id')">
-                        <div class="flex items-center gap-1">PrintNode ID <i class="ri-arrow-up-down-fill text-[10px] opacity-50 group-hover:opacity-100"></i></div>
+                        <div class="flex items-center gap-1">{{ __('messages.printnode_id') }} <i class="ri-arrow-up-down-fill text-[10px] opacity-50 group-hover:opacity-100"></i></div>
                     </th>
-                    <th class="px-6 py-4 font-bold">Status</th>
-                    <th class="px-6 py-4 font-bold text-right">Actions</th>
+                    <th class="px-6 py-4 font-bold">{{ __('messages.status') }}</th>
+                    <th class="px-6 py-4 font-bold text-right">{{ __('messages.actions') }}</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-border-color">
@@ -24,15 +24,32 @@
                         </td>
                         <td class="px-6 py-4 font-bold text-text-color" x-text="item.name"></td>
                         <td class="px-6 py-4">
-                            <span class="font-mono text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-600 dark:text-gray-300" x-text="item.printnode_id || 'No ID'"></span>
+                            {{-- ប្រើ Blade ដើម្បីបកប្រែពាក្យ No ID ក្នុង AlpineJS --}}
+                            <span class="font-mono text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-600 dark:text-gray-300" 
+                                  x-text="item.printnode_id || '{{ __('messages.no_id') }}'"></span>
                         </td>
                         <td class="px-6 py-4">
-                            <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-600 border border-green-200">Active</span>
+                            <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-600 border border-green-200">
+                                {{ __('messages.active') }}
+                            </span>
                         </td>
                         <td class="px-6 py-4 text-right">
                             <div class="flex justify-end gap-2">
-                                <button @click="openModal('edit', item)" class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100"><i class="ri-pencil-line"></i></button>
-                                <button @click="confirmDelete(item.id)" class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-red-50 text-red-600 hover:bg-red-100"><i class="ri-delete-bin-line"></i></button>
+                                
+                                {{-- ✅ Check Permission: Edit --}}
+                                @can('destinations-edit')
+                                <button @click="openModal('edit', item)" class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100" title="{{ __('messages.edit') }}">
+                                    <i class="ri-pencil-line"></i>
+                                </button>
+                                @endcan
+
+                                {{-- ✅ Check Permission: Delete --}}
+                                @can('destinations-delete')
+                                <button @click="confirmDelete(item.id)" class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-red-50 text-red-600 hover:bg-red-100" title="{{ __('messages.delete') }}">
+                                    <i class="ri-delete-bin-line"></i>
+                                </button>
+                                @endcan
+
                             </div>
                         </td>
                     </tr>
@@ -40,7 +57,7 @@
                 <tr x-show="destinations.length === 0">
                     <td colspan="5" class="px-6 py-12 text-center text-secondary">
                         <i class="ri-printer-cloud-line text-4xl mb-2 inline-block"></i>
-                        <p>No destinations found.</p>
+                        <p>{{ __('messages.no_destinations_found') }}</p>
                     </td>
                 </tr>
             </tbody>

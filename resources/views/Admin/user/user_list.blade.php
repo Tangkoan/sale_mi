@@ -3,26 +3,29 @@
 
 @section('content')
 
+@section('title', __('messages.user_management'))
+
+
 <div class="w-full h-full px-2 py-2 sm:px-4 sm:py-4" x-data="userManagement()">
     
     {{-- 1. HEADER & ACTIONS --}}
-    @include('Admin.user.partials.header')
+    @include('admin.user.partials.header')
 
     {{-- 2. DESKTOP VIEW (TABLE) --}}
     <div class="hidden md:block">
-        @include('Admin.user.partials.table')
+        @include('admin.user.partials.table')
     </div>
 
     {{-- 3. MOBILE VIEW (CARDS) --}}
     <div class="md:hidden">
-        @include('Admin.user.partials.mobile_card')
+        @include('admin.user.partials.mobile_card')
     </div>
     
     {{-- 4. PAGINATION --}}
-    @include('Admin.user.partials.pagination')
+    @include('admin.user.partials.pagination')
 
     {{-- 5. MODAL (CREATE / EDIT) --}}
-    @include('Admin.user.partials.modal')
+    @include('admin.user.partials.modal')
 
 </div>
 
@@ -55,7 +58,7 @@
             sequenceQueue: [],
             currentSeqIndex: 0,
 
-            form: { id: null, name: '', email: '', role: '', password: '' },
+            form: { id: null, name: '', email: '', role: '', password: '', pin: '' },
             errors: {},
 
             init() { 
@@ -140,7 +143,8 @@
                     name: user.name, 
                     email: user.email, 
                     role: user.roles.length > 0 ? user.roles[0].name : '',
-                    password: '' // Reset password field
+                    password: '', // Reset password field
+                    pin: ''
                 };
             },
 
@@ -154,7 +158,7 @@
                     this.loadUserToForm(item);
                 } else {
                     this.editMode = false;
-                    this.form = { id: null, name: '', email: '', role: '', password: '' };
+                    this.form = { id: null, name: '', email: '', role: '', password: '',pin: '' };
                 }
             },
 

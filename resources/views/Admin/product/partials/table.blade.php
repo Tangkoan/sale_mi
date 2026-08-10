@@ -44,19 +44,30 @@
                         </td>
                         <td class="px-6 py-4 font-bold text-primary" x-text="'$' + parseFloat(item.price).toFixed(2)" x-show="showCols.price"></td>
                         <td class="px-6 py-4">
-                            <button @can('product-edit-status') @click="toggleStatus(item.id)" @endcan class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none" :class="item.is_active ? 'bg-green-500' : 'bg-gray-300'">
+                            @can('product-edit-status')
+                            <button @click="toggleStatus(item.id)" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none" :class="item.is_active ? 'bg-green-500' : 'bg-gray-300'">
                                 <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform" :class="item.is_active ? 'translate-x-6' : 'translate-x-1'"></span>
                             </button>
+                            @else
+                            <span class="px-2 py-1 text-xs rounded-full border" 
+                                  :class="item.is_active ? 'bg-green-100 text-green-600 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'"
+                                  x-text="item.is_active ? '{{ __('messages.active') }}' : '{{ __('messages.inactive') }}'">
+                            </span>
+                            @endcan
                         </td>
                         <td class="px-6 py-4 text-right">
                             <div class="flex justify-end gap-2">
-                                <button @can('product-edit') @click="openModal('edit', item)" @endcan class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100"><i class="ri-pencil-line"></i></button>
-                                <button @can('product-delete') @click="confirmDelete(item.id)" @endcan class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-red-50 text-red-600 hover:bg-red-100"><i class="ri-delete-bin-line"></i></button>
+                                @can('product-edit')
+                                <button @click="openModal('edit', item)" class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100" title="{{ __('messages.edit') }}"><i class="ri-pencil-line"></i></button>
+                                @endcan
+                                @can('product-delete')
+                                <button @click="confirmDelete(item.id)" class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-red-50 text-red-600 hover:bg-red-100" title="{{ __('messages.delete') }}"><i class="ri-delete-bin-line"></i></button>
+                                @endcan
                             </div>
                         </td>
                     </tr>
                 </template>
-                <tr x-show="products.length === 0"><td colspan="100%" class="px-6 py-12 text-center text-secondary"><i class="ri-shopping-bag-3-line text-4xl mb-2 inline-block"></i><p>{{ __('messages.no_users_found_matching_your_search') }}</p></td></tr>
+                <tr x-show="products.length === 0"><td colspan="100%" class="px-6 py-12 text-center text-secondary"><i class="ri-shopping-bag-3-line text-4xl mb-2 inline-block"></i><p>{{ __('messages.no_products_found') }}</p></td></tr>
             </tbody>
         </table>
     </div>

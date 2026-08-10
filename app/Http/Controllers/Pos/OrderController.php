@@ -11,17 +11,29 @@ use App\Models\OrderItem;
 use App\Models\OrderItemAddon;
 use App\Models\Table;
 use App\Models\Product;
+use App\Models\ShopInfo; // 🔥 [សំខាន់] ត្រូវមានបន្ទាត់នេះ
 
-use Rawilk\Printing\Facades\Printing;
+
 use App\Models\KitchenDestination;
-use Illuminate\Validation\Rule; // Import នៅខាងលើ
 
+
+use Illuminate\Validation\Rule; // Import នៅខាងលើ
 use Illuminate\Support\Facades\Log;       // ✅ បន្ថែម
 use Illuminate\Support\Facades\Validator; // ✅ បន្ថែម
 
+// Library សម្រាប់ Print (តាមកូដដើមរបស់អ្នក)
+use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
+use Mike42\Escpos\Printer;
+use Mike42\Escpos\EscposImage; // ត្រូវការ Class នេះ
+use Illuminate\Support\Facades\File;
+use Mike42\Escpos\CapabilityProfile; // 🔥 ថែមបន្ទាត់នេះ
+
+use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
+use Mike42\Escpos\ImagickEscposImage;
+
 class OrderController extends Controller
 {
-    // ... (store function នៅដដែល)
+    
 
     public function store(Request $request)
     {
@@ -35,18 +47,14 @@ class OrderController extends Controller
         // ជំហានទី ២: ធ្វើ Validation ដោយដៃ (Manual Validation)
         // ---------------------------------------------------------
         $validator = Validator::make($request->all(), [
-            'table_id' => 'required', // ដាក់ធម្មតាសិន ដើម្បីចង់ដឹងថាវាជាប់អត់
+            'table_id' => 'required',
             'items'    => 'required|array|min:1',
-            
-            // 🔥 កន្លែងរសើប: យើង Log មើលសិន កុំទាន់អាលតឹងរ៉ឹងពេក
-            'items.*.product_id' => 'required', 
+            'items.*.product_id' => 'required',
             'items.*.qty'        => 'required|integer|min:1',
+            'items.*.addons'     => 'nullable|array',
         ]);
 
-        // បើ Validation បរាជ័យ -> កត់ចូល Log ភ្លាម
         if ($validator->fails()) {
-            // Log::error('❌ [POS ORDER] Validation Failed:', $validator->errors()->toArray());
-            
             return response()->json([
                 'status'  => 'error',
                 'message' => 'Validation Error',
@@ -56,47 +64,28 @@ class OrderController extends Controller
 
         return DB::transaction(function () use ($request) {
             try {
-                // ---------------------------------------------------------
-                // ជំហានទី ៣: ចាប់ផ្តើមបង្កើត Order
-                // ---------------------------------------------------------
-                
-                // 1. Check Table
-                // យើងប្រើឈ្មោះ Model ផ្ទាល់ដើម្បីអោយវាស្គាល់ Prefix 'vc_' ដោយស្វ័យប្រវត្តិ
-                // បើបងប្រើ Table ឈ្មោះ 'vc_tables' ត្រូវប្រាកដថា Model Table មាន $table = 'tables' ឬអត់កំណត់
-                
+                // 1. Create/Find Order
                 $order = Order::firstOrCreate(
                     ['table_id' => $request->table_id, 'status' => 'pending'],
                     [
                         'invoice_number' => 'INV-' . time() . '-' . $request->table_id,
                         'user_id'        => Auth::id(),
                         'total_amount'   => 0,
+                        'check_in_time'  => now(), // 🔥 [បន្ថែមថ្មី] ចាប់ម៉ោងចូលភ្លាមៗ
                     ]
                 );
-                
-                // Log::info('✅ Order Created/Found ID: ' . $order->id);
 
                 // Update Table Status
-                $table = \App\Models\Table::find($request->table_id);
+                $table = Table::find($request->table_id);
                 if ($table) {
                     $table->update(['status' => 'busy']);
-                } else {
-                    Log::warning('⚠️ Table ID ' . $request->table_id . ' not found in DB');
                 }
 
-                $newOrderItems = new \Illuminate\Database\Eloquent\Collection();
-
-                foreach ($request->items as $index => $itemData) {
+                // 2. Add Items
+                foreach ($request->items as $itemData) {
+                    $product = Product::find($itemData['product_id']);
                     
-                    // Log មើល Item នីមួយៗ
-                    // Log::info("🔄 Processing Item #$index:", $itemData);
-
-                    // ពិនិត្យមើលថា Product ID មានពិតឬអត់ មុននឹង Save
-                    // ប្រើ App\Models\Product ដើម្បីអោយស្គាល់ vc_products
-                    $productExists = \App\Models\Product::find($itemData['product_id']);
-                    
-                    if (!$productExists) {
-                        // Log::error("❌ Product ID {$itemData['product_id']} not found in DB (vc_products). Skipping...");
-                        // បើរកមិនឃើញ យើងអាច Return Error ឬរំលង
+                    if (!$product) {
                         throw new \Exception("Product ID {$itemData['product_id']} not found.");
                     }
 
@@ -106,12 +95,10 @@ class OrderController extends Controller
                         'quantity'   => $itemData['qty'],
                         'price'      => $itemData['price'],
                         'note'       => $itemData['note'] ?? null,
-                        'is_printed' => false,
+                        'is_printed' => false, // ✅ សំខាន់៖ ដាក់ false សិន ដើម្បីចាំ Print
                         'status'     => 'pending',
                         'created_by' => Auth::id(),
                     ]);
-                    
-                    $newOrderItems->push($orderItem);
 
                     if (!empty($itemData['addons'])) {
                         foreach ($itemData['addons'] as $addon) {
@@ -125,12 +112,30 @@ class OrderController extends Controller
                     }
                 }
                 
+                // Recalculate Total
                 $this->recalculateOrderTotal($order->id);
-                // Log::info('💰 Total Recalculated');
 
-                // ... (ផ្នែក Auto Print រក្សាទុកដដែល ឬលុបចោលសិនក៏បានដើម្បីតេស្ត) ...
+               // 1. ចាប់ផ្តើម "ចាប់" ទិន្នន័យទាំងអស់កុំអោយធ្លាយទៅ Frontend
+                ob_start();
 
-                // Log::info('🎉 Order Transaction Completed Successfully!');
+                try {
+                    // ហៅទៅ Print (ទោះវាបោះ Error ឬ Warning អីក៏ដោយ វានឹងចូលក្នុង Buffer)
+                    $this->printOrderToKitchen($order->id);
+                } catch (\Exception $printError) {
+                    Log::error("🖨️ Printing Error: " . $printError->getMessage());
+                }
+
+                // 2. "លុបចោល" អ្វីៗទាំងអស់ដែលបាន Print ឬ Warning ចេញមក
+                // ដើម្បីកុំអោយវាទៅកូរ JSON Response
+                ob_end_clean();
+
+                // 3. មុននឹង Return, ឆែកម្តងទៀតអោយប្រាកដថាស្អាត ១០០%
+                if (ob_get_level() > 0) {
+                    ob_clean();
+                }
+
+          
+                
 
                 return response()->json([
                     'status' => 'success',
@@ -139,17 +144,165 @@ class OrderController extends Controller
                 ]);
 
             } catch (\Exception $e) {
-                // ចាប់ Error គ្រប់បែបយ៉ាងនៅទីនេះ
-                // Log::error('🔥 [POS ORDER] Exception Error: ' . $e->getMessage());
-                // Log::error($e->getTraceAsString()); // ចង់ដឹងថាខុសនៅបន្ទាត់ណា
-
-                // បោះ Error ទៅ Frontend វិញ
+                // សម្អាត Buffer ក្នុងករណី Server Error ដូចគ្នា
+                if (ob_get_level() > 0) {
+                    ob_clean();
+                }
+                
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Server Error: ' . $e->getMessage()
                 ], 500);
             }
         });
+    }
+
+
+    /**
+     * 🔥 FUNCTION: បោះទៅ Printer តាមផ្នែក (Wok, Soup, Bar...)
+     */
+    private function printOrderToKitchen($orderId)
+    {
+        // 1. ទាញយក Items ដែលមិនទាន់បាន Print
+        // ត្រូវប្រាកដថា Model Product មាន Relation 'category' និង Category មាន 'kitchenDestination'
+        $itemsToPrint = OrderItem::with([
+                'product.category.kitchenDestination', 
+                'addons.addon',
+                'order.table' 
+            ])
+            ->where('order_id', $orderId)
+            ->where('is_printed', false)
+            ->get();
+
+        if ($itemsToPrint->isEmpty()) {
+            return;
+        }
+
+        // 2. Group Items តាម Destination ID (ដើម្បី Print ម្ដងមួយផ្នែក)
+        $kitchenBatches = [];
+
+        foreach ($itemsToPrint as $item) {
+            $destination = $item->product?->category?->kitchenDestination;
+
+            // បើគ្មាន Destination ឬមិន Active គឺរំលង
+            if (!$destination || !$destination->is_active) {
+                Log::warning("Item ID {$item->id} ({$item->product->name}) គ្មាន Kitchen Destination។");
+                continue;
+            }
+
+            // Group ដោយប្រើ ID របស់ Destination
+            $batchKey = $destination->id;
+
+            if (!isset($kitchenBatches[$batchKey])) {
+                $kitchenBatches[$batchKey] = [
+                    'info'  => $destination, // ទុកព័ត៌មាន Printer (IP, Name)
+                    'items' => []
+                ];
+            }
+
+            $kitchenBatches[$batchKey]['items'][] = $item;
+        }
+
+        // 3. ចាប់ផ្តើមដំណើរការ Print តាមផ្នែកនីមួយៗ
+        foreach ($kitchenBatches as $batchKey => $batch) {
+            $printerInfo = $batch['info'];
+            $items       = $batch['items'];
+            $ipAddress   = $printerInfo->printnode_id; 
+
+            try {
+                // 🔥 ប្រើ Profile "default" សម្រាប់ Printer ទូទៅ
+                // $profile = \Mike42\Escpos\CapabilityProfile::load("default");
+
+                $profile = CapabilityProfile::load("simple");
+                $connector = new NetworkPrintConnector($ipAddress, 9100, 3);
+                $printer = new Printer($connector, $profile);
+
+            
+                // ... (HEADER, TABLE INFO នៅដដែល) ...
+                $printer->setJustification(Printer::JUSTIFY_CENTER);
+                $printer->selectPrintMode(Printer::MODE_DOUBLE_HEIGHT | Printer::MODE_DOUBLE_WIDTH);
+                if ($this->hasKhmerText($printerInfo->name)) {
+                    $this->printKhmerTextAsImage($printer, $printerInfo->name, 28);
+                } else {
+                    $printer->text($printerInfo->name . "\n");
+                }
+                $printer->selectPrintMode(); 
+                $printer->text("--------------------------------\n");
+                
+                // ... (TABLE INFO) ...
+                $firstItem = $items[0];
+                $tableName = $firstItem->order->table->name ?? ('Table: ' . $firstItem->order->table_id);
+                $printer->setJustification(Printer::JUSTIFY_LEFT);
+                $printer->text("Table : " . $tableName . "\n");
+                $printer->text("Date  : " . date('d/m/Y H:i') . "\n");
+                $printer->text("--------------------------------\n");
+
+                // --- ITEMS ---
+                foreach ($items as $item) {
+
+                    $productName = $item->product->name ?? 'Unknown';
+                    $qty = $item->quantity;
+                    $line = "{$qty} x {$productName}";
+
+                    // 🔥 Product Name
+                    if ($this->hasKhmerText($line)) {
+                        $this->printKhmerTextAsImage($printer, $line, 26);
+                    } else {
+                        $printer->selectPrintMode(
+                            Printer::MODE_DOUBLE_HEIGHT | Printer::MODE_DOUBLE_WIDTH
+                        );
+                        $printer->text($line . "\n");
+                        $printer->selectPrintMode();
+                    }
+
+                    // 🔸 Note
+                    if ($item->note) {
+                        $note = "   📝 {$item->note}";
+                        if ($this->hasKhmerText($note)) {
+                            $this->printKhmerTextAsImage($printer, $note, 18);
+                        } else {
+                            $printer->text($note . "\n");
+                        }
+                    }
+
+                    // 🔸 Addons
+                    foreach ($item->addons as $addonRow) {
+                        $addonName = $addonRow->addon->name ?? 'Extra';
+                        $addonLine = "   + {$addonName} (x{$addonRow->quantity})";
+
+                        if ($this->hasKhmerText($addonLine)) {
+                            $this->printKhmerTextAsImage($printer, $addonLine, 18);
+                        } else {
+                            $printer->text($addonLine . "\n");
+                        }
+                    }
+
+                    $printer->text("\n");
+                }
+
+
+                // ... (FOOTER & CUT នៅដដែល) ...
+                $printer->cut();
+                $printer->close();
+
+                // Update Status
+                foreach ($items as $item) {
+                    $item->update(['is_printed' => true]);
+                }
+
+            } catch (\Exception $e) {
+                Log::error("❌ Print Error: " . $e->getMessage());
+            }
+        }
+    }
+
+    /**
+     * 🔥 Function ថ្មី៖ ឆែកមើលថាមានអក្សរខ្មែរឬអត់
+     */
+    private function hasKhmerText($text)
+    {
+        // Unicode Range របស់អក្សរខ្មែរគឺ \x{1780}-\x{17FF}
+        return preg_match('/[\x{1780}-\x{17FF}]/u', $text);
     }
 
     // 🔥 FUNCTION ថ្មីសម្រាប់កែចំនួន ឬលុបមុខម្ហូប
@@ -313,6 +466,7 @@ class OrderController extends Controller
                 'received_amount' => $request->received_amount,
                 'change_amount'   => $change,
                 'paid_at'         => now(),
+                'check_out_time'  => now(), 
             ]);
 
             if ($mainOrder->table_id) {
@@ -327,22 +481,95 @@ class OrderController extends Controller
         });
     }
 
+    /**
+     * 🔥 FUNCTION: ទាញទិន្នន័យ Order និង ព័ត៌មានហាង ទៅបង្ហាញលើវិក្កយបត្រ
+     */
+    // នៅក្នុង file OrderController.php
+    public function getOrderDetails($tableId)
+    {
+        try {
+            $order = Order::with(['items.product', 'items.addons.addon', 'table']) 
+                ->where('table_id', $tableId)
+                ->where('status', 'pending')
+                ->latest()
+                ->first();
+
+            if (!$order) {
+                return response()->json(['status' => 'error', 'message' => 'No active order found'], 404);
+            }
+
+            // 🔥 FIX: គណនាលេខអោយត្រូវជាមួយ Quantity ក្នុង Database
+            $order->items->transform(function($item) {
+                $addonTotal = 0;
+                
+                // ឆែកមើល Addons
+                if ($item->addons) {
+                    foreach ($item->addons as $addon) {
+                        // 1. យក Quantity ពី Database (Table: order_item_addons)
+                        $qty = intval($addon->quantity ?? 1); 
+                        
+                        // 2. យក តម្លៃ
+                        $price = floatval($addon->price ?? 0);
+
+                        // 3. គុណបញ្ចូលគ្នា (Price x Qty)
+                        $addonTotal += ($price * $qty);
+                    }
+                }
+
+                // 4. បូកតម្លៃដើម + តម្លៃ Addons សរុប
+                $item->unit_price_calculated = $item->price + $addonTotal;
+                
+                // 5. តម្លៃសរុបនៃបន្ទាត់នោះ (តម្លៃ១កែវ x ចំនួនកែវ)
+                $item->total_line_price_calculated = $item->unit_price_calculated * $item->quantity;
+
+                return $item;
+            });
+
+            // ... (កូដ Shop Info និង Timezone នៅដដែល) ...
+            $shop = \App\Models\ShopInfo::first();
+            $timezone = 'Asia/Phnom_Penh';
+            $dateFormatted = $order->created_at->setTimezone($timezone)->format('d/m/Y h:i A');
+            // ...
+
+            return response()->json([
+                'status' => 'success',
+                'order'  => $order,
+                'items'  => $order->items, 
+                'formatted_date' => $dateFormatted,
+                // ... (parameters ផ្សេងៗទៀត)
+                'shop' => $shop
+            ]);
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Order Details Error: " . $e->getMessage());
+            return response()->json(['status' => 'error', 'message' => 'Server Error'], 500);
+        }
+    }
+
     // Helper Function
     private function recalculateOrderTotal($orderId)
     {
-        $order = Order::with(['items.addons'])->find($orderId);
+        // Load relationship 'addons' អោយហើយ
+        $order = Order::with(['items.addons'])->find($orderId); 
         $totalAmount = 0;
 
-        foreach ($order->items as $item) {
-            $itemTotal = $item->price * $item->quantity;
-            $addonTotal = 0;
-            foreach ($item->addons as $addon) {
-                $addonTotal += ($addon->price * ($addon->quantity ?? 1));
-            }
-            $totalAmount += ($itemTotal + $addonTotal);
-        }
+        if ($order && $order->items) {
+            foreach ($order->items as $item) {
+                $itemTotal = $item->price * $item->quantity;
+                $addonTotal = 0;
 
-        $order->update(['total_amount' => $totalAmount]);
+                // 🔥 កែត្រង់នេះ៖ ពី $item->items_addons មកជា $item->addons
+                // ថែម ( ?? [] ) ដើម្បីការពារកុំអោយ Error បើវាអត់មាន Addons
+                foreach ($item->addons ?? [] as $addon) { 
+                    $addonTotal += ($addon->price * ($addon->quantity ?? 1));
+                }
+                
+                $totalAmount += ($itemTotal + $addonTotal);
+            }
+
+            $order->update(['total_amount' => $totalAmount]);
+        }
+        
         return $totalAmount;
     }
 
@@ -553,4 +780,132 @@ class OrderController extends Controller
             ]);
         });
     }
+
+
+    // =========================================================
+    // 🔥 FIXED FUNCTION: MOVE TABLE (With Error Handling)
+    // =========================================================
+    public function moveTable(Request $request)
+    {
+        // 1. Validation (កុំទាន់ដាក់ exists:vc_tables ដើម្បីការពារបញ្ហា Table Name ខុស)
+        $validator = Validator::make($request->all(), [
+            'current_table_id' => 'required',
+            'target_table_id'  => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'message' => $validator->errors()->first()], 422);
+        }
+
+        try {
+            return DB::transaction(function () use ($request) {
+                
+                // A. រកតុថ្មី (Target Table)
+                $targetTable = Table::find($request->target_table_id);
+                if (!$targetTable) {
+                    throw new \Exception("រកមិនឃើញតុគោលដៅ (ID: {$request->target_table_id})");
+                }
+                
+                if ($targetTable->status !== 'available') {
+                    throw new \Exception("តុ {$targetTable->name} មិនទំនេរទេ (Status: {$targetTable->status})");
+                }
+
+                // B. រក Order នៃតុបច្ចុប្បន្ន
+                $order = Order::where('table_id', $request->current_table_id)
+                              ->where('status', 'pending') // យកតែ Order ដែលមិនទាន់គិតលុយ
+                              ->first();
+
+                if (!$order) {
+                    throw new \Exception("តុបច្ចុប្បន្នគ្មានការកម្មង់ទេ (ឬត្រូវបានគិតលុយរួចរាល់)");
+                }
+
+                // C. ដំណើរការប្ដូរ (Update)
+                // 1. ប្ដូរលេខតុនៅក្នុង Order
+                $order->update(['table_id' => $request->target_table_id]);
+
+                // 2. Update Status តុចាស់ -> Available
+                Table::where('id', $request->current_table_id)->update(['status' => 'available']);
+                
+                // 3. Update Status តុថ្មី -> Busy
+                $targetTable->update(['status' => 'busy']);
+
+                return response()->json([
+                    'status'  => 'success',
+                    'message' => "បានប្ដូរទៅតុ {$targetTable->name} ជោគជ័យ!"
+                ]);
+            });
+
+        } catch (\Exception $e) {
+            // កត់ត្រាទុកក្នុង Log (storage/logs/laravel.log)
+            Log::error('MOVE TABLE ERROR: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+
+            // បោះ Error មក Frontend ដើម្បីអោយដឹងថាខុសអី
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'System Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+
+    /**
+     * ✅ FINAL & STABLE Khmer Print for ESC/POS (EPSON M188B)
+     */
+    private function printKhmerTextAsImage(Printer $printer, string $text, int $fontSize = 24)
+    {
+        $fontPath = public_path('fonts/KhmerOSsiemreap.ttf');
+
+        if (!file_exists($fontPath)) {
+            $printer->text($text . "\n");
+            return;
+        }
+
+        try {
+            // 🔥 Width MUST be multiple of 8
+            $width = 512;
+
+            // Calculate height dynamically
+            $bbox = imagettfbbox($fontSize, 0, $fontPath, $text);
+            $textHeight = abs($bbox[7] - $bbox[1]);
+            $height = $textHeight + 20;
+
+            // Create image
+            $img = imagecreatetruecolor($width, $height);
+            $white = imagecolorallocate($img, 255, 255, 255);
+            $black = imagecolorallocate($img, 0, 0, 0);
+            imagefilledrectangle($img, 0, 0, $width, $height, $white);
+
+            // Draw Khmer text
+            imagettftext(
+                $img,
+                $fontSize,
+                0,
+                5,
+                $height - 5,
+                $black,
+                $fontPath,
+                $text
+            );
+
+            // Save temp image
+            $temp = storage_path('app/khmer_' . uniqid() . '.png');
+            imagepng($img, $temp);
+            imagedestroy($img);
+
+            // Load and print image
+            $image = EscposImage::load($temp, false);
+            $printer->bitImageColumnFormat($image);
+            $printer->feed(1);
+
+            unlink($temp);
+
+        } catch (\Exception $e) {
+            Log::error('KHMER PRINT FAIL: ' . $e->getMessage());
+            $printer->text($text . "\n");
+        }
+    }
+
+
 }

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>Ice Cream Admin</title>
+    <title>@yield('title', __('messages.dashboard'))</title>
 
     @if(isset($shop) && $shop->fav)
         <link rel="icon" type="image/png" href="{{ asset('storage/' . $shop->fav) }}">
@@ -237,18 +237,21 @@
         
     </div>
 
-    {{-- ហៅ Component មកប្រើនៅទីនេះ --}}
-    @include('partials.bottom_nav')
+    
 
-    {{-- <div class="fixed bottom-6 right-6 flex flex-col gap-2 z-50">
-        <a href="https://t.me/Vannchinh11" 
-        target="_blank"
-        class="bg-blue-600 text-white p-3 rounded-full shadow-lg hover:scale-110 transition-transform flex items-center justify-center"
-        :style="'background-color: rgb(' + $store.theme.settings[$store.theme.darkMode ? 'dark' : 'light'].primary + ')'"
-        >
-            <i class="ri-telegram-line text-xl"></i>
-        </a>
-    </div> --}}
+    <div class="fixed bottom-6 right-6 flex flex-col gap-2 z-50">
+        {{-- ពិនិត្យ Permission មុននឹងបង្ហាញ --}}
+        @can('pos')
+            <a href="{{ url('/pos/tables') }}" 
+            class="btn-primary p-3 rounded-full shadow-lg hover:scale-110 transition-transform flex items-center justify-center"
+            {{-- រក្សាកូដប្ដូរពណ៌តាម Theme --}}
+            :style="'background-color: rgb(' + $store.theme.settings[$store.theme.darkMode ? 'dark' : 'light'].primary + ')'"
+            >
+                {{-- ដាក់ Icon Computer ឬ Shopping Cart ជំនួស Telegram --}}
+                <i class="ri-computer-line text-xl"></i>
+            </a>
+        @endcan
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {

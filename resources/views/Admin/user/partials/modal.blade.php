@@ -57,6 +57,13 @@
                 <input type="password" x-model="form.password" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
             </div>
 
+            {{-- PIN Code (ថ្មី) --}}
+            <div>
+                <label class="block text-sm font-bold text-text-color mb-1" x-text="editMode ? 'PIN Code ថ្មី (មិនចាំបាច់បើមិនចង់ប្ដូរ)' : 'PIN Code សម្រាប់ Login លឿន'"></label>
+                <input type="password" x-model="form.pin" maxlength="4" inputmode="numeric" placeholder="ឧ. 1234" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none tracking-widest">
+                <p x-show="errors.pin" x-text="errors.pin" class="text-red-500 text-xs mt-1"></p>
+            </div>
+
             <div class="pt-4 flex justify-between items-center border-t border-border-color mt-2">
                 <button type="button" x-show="isSequenceMode" @click="nextInSequence()" class="text-secondary hover:text-text-color text-sm font-bold px-2">
                     {{ __('messages.skip_this_user') }} <i class="ri-arrow-right-line align-middle"></i>

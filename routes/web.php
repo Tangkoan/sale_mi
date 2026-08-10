@@ -1,5 +1,6 @@
 <?php
 
+
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\AuthController;
@@ -24,6 +25,15 @@ use App\Http\Controllers\Pos\PosController;
 use App\Http\Controllers\Pos\OrderController; // <--- កុំភ្លេច Import
 use App\Http\Controllers\Pos\KitchenController; // <--- Import នៅខាងលើ
 
+use App\Providers\RouteServiceProvider;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
+
+use App\Http\Controllers\Admin\SaleReportController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\BlockedIpController;
+
 use Illuminate\Support\Facades\Session;
 
 
@@ -39,6 +49,7 @@ use Illuminate\Support\Facades\Session;
 
 
 
+
 /*
 |--------------------------------------------------------------------------
 | ផ្នែកទី ១: Route សម្រាប់អ្នកមិនទាន់ Login (Guest)
@@ -50,16 +61,18 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// អនុញ្ញាតអោយចូលបានតែ ៥ ដងប៉ុណ្ណោះក្នុង ១ នាទី (60s)
-Route::middleware(['guest', 'throttle:5,1'])->group(function () {
-    // បង្ហាញ Login Form
-    // សំខាន់៖ ត្រូវតែដាក់ name('login') ដើម្បីអោយ Middleware 'auth' ស្គាល់កន្លែងដែលត្រូវរុញមកពេលគេមិនទាន់ Login
+// ១. ដក throttle ចចេញពី Group ធំ
+Route::middleware(['guest'])->group(function () {
+    
+    // បង្ហាញ Login Form (មិនបាច់ដាក់ Limit ទេ ឬដាក់អោយច្រើន)
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 
-    // Post ទិន្នន័យ Login
-    Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
+    // ២. ដាក់ throttle តែចំពោះការ Post ទិន្នន័យប៉ុណ្ណោះ
+    // ដាក់ 'throttle:5,1' នៅទីនេះបានន័យថា គេអាចទាយ Password ខុសបានតែ ៥ ដងទេ
+    Route::post('/login', [AuthController::class, 'login'])
+        ->middleware('throttle:5,1') 
+        ->name('login.submit');
 });
-
 // ==========================
 // AUTH MIDDLEWARE
 // ==========================
@@ -68,9 +81,11 @@ Route::middleware('auth')->group(function () {
     // ======================
     // Admin Dashboard
     // ======================
-    Route::get('/dashboard', function () {
-        return view('admin.dashboard');
-    })->name('admin.dashboard')->middleware('permission:dashboard');
+    // Route::get('/dashboard', function () {
+    //     return view('admin.dashboard');
+    // })->name('admin.dashboard')->middleware('permission:view_dashboard');
+
+    Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('admin.dashboard')->middleware('permission:view_dashboard');
 
     // Logout
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
@@ -85,7 +100,30 @@ Route::middleware('auth')->group(function () {
     // ======================
     // All Routes Under /admin
     // ======================
-    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::prefix('admin')->name('admin.')->group(function () {
+
+            
+        Route::get('/blocked-ips', [BlockedIpController::class, 'index'])->name('blocked_ips.index');
+        Route::get('/blocked-ips/fetch', [BlockedIpController::class, 'fetch'])->name('blocked_ips.fetch');
+        Route::delete('/blocked-ips/unblock/{id}', [BlockedIpController::class, 'unblock'])->name('blocked_ips.unblock');
+
+        // report
+        Route::prefix('report')->name('report.')->group(function () {
+            // 1. បង្ហាញផ្ទាំង Report
+            Route::get('/sale-report', [SaleReportController::class, 'index'])
+                ->name('sale_report.index')
+                ->middleware('permission:report-list');
+
+            // 2. Ajax Route សម្រាប់ទាញទិន្នន័យ (API Internal)
+            Route::get('/sale-report/fetch', [SaleReportController::class, 'fetchSaleData'])
+                ->name('sale_report.fetch');
+
+
+            Route::get('sale-report/export-excel', [SaleReportController::class, 'exportExcel'])->name('sale_report.export_excel');
+            Route::get('sale-report/export-pdf', [SaleReportController::class, 'exportPDF'])->name('sale_report.export_pdf');
+        });
+        // end report
+
 
         // Theme
         Route::view('/theme', 'admin.theme')->name('theme')->middleware('permission:theme-color');
@@ -104,8 +142,8 @@ Route::middleware('auth')->group(function () {
         // Shop Info CRUD
         // ======================
         Route::controller(ShopInfoController::class)->group(function () {
-            Route::get('/shop-info', [ShopInfoController::class, 'index'])->name('shop_info.index');
-            Route::post('/shop-info/save', [ShopInfoController::class, 'save'])->name('shop_info.save');
+            Route::get('/shop-info', [ShopInfoController::class, 'index'])->name('shop_info.index')->middleware('permission:setting-shop_info');
+            Route::post('/shop-info/save', [ShopInfoController::class, 'save'])->name('shop_info.save')->middleware('permission:setting-shop_info');
         });
         
         // ======================
@@ -256,17 +294,17 @@ Route::middleware('auth')->group(function () {
         // ======================
         Route::controller(CategoryController::class)->group(function () { 
             // 1. Route ធម្មតា និង Bulk Action (ដាក់នៅពីលើគេ)
-            Route::get('/categories', 'index')->name('categories.index');
+            Route::get('/categories', 'index')->name('categories.index')->middleware('permission:category-list');
             Route::get('/categories/fetch', 'fetchCategories')->name('categories.fetch');
-            Route::post('/categories', 'store')->name('categories.store');
+            Route::post('/categories', 'store')->name('categories.store')->middleware('permission:category-create');
 
             // !!! សំខាន់៖ ដាក់ Bulk Delete នៅពីលើ Route {id} !!!
-            Route::post('/categories/bulk-delete', 'bulkDelete')->name('categories.bulk_delete');
+            Route::post('/categories/bulk-delete', 'bulkDelete')->name('categories.bulk_delete')->middleware('permission:category-delete');
 
             // 2. Route ដែលមាន ID (ដាក់នៅខាងក្រោម)
             // Update (ប្រើ POST ជំនួស PUT សម្រាប់ File Upload)
-            Route::post('/categories/{id}', 'update')->name('categories.update');
-            Route::delete('/categories/{id}', 'destroy')->name('categories.destroy');
+            Route::post('/categories/{id}', 'update')->name('categories.update')->middleware('permission:category-edit');
+            Route::delete('/categories/{id}', 'destroy')->name('categories.destroy')->middleware('permission:category-delete');
         });
 
         
@@ -341,12 +379,12 @@ Route::middleware('auth')->group(function () {
         // Destinations CRUD
         // ======================
         Route::controller(AddonController::class)->group(function () {
-            Route::get('/destinations', [KitchenDestinationController::class, 'index'])->name('destinations.index');
+            Route::get('/destinations', [KitchenDestinationController::class, 'index'])->name('destinations.index')->middleware('permission:destinations-list');
             Route::get('/destinations/fetch', [KitchenDestinationController::class, 'fetchDestinations'])->name('destinations.fetch');
-            Route::post('/destinations/store', [KitchenDestinationController::class, 'store'])->name('destinations.store');
-            Route::post('/destinations/{id}', [KitchenDestinationController::class, 'update'])->name('destinations.update'); // For Edit
-            Route::post('/destinations/{id}/delete', [KitchenDestinationController::class, 'destroy'])->name('destinations.delete');
-            Route::post('/destinations/bulk-delete', [KitchenDestinationController::class, 'bulkDelete'])->name('destinations.bulk_delete');
+            Route::post('/destinations/store', [KitchenDestinationController::class, 'store'])->name('destinations.store')->middleware('permission:destinations-add');
+            Route::post('/destinations/{id}', [KitchenDestinationController::class, 'update'])->name('destinations.update')->middleware('permission:destinations-edit'); // For Edit
+            Route::post('/destinations/{id}/delete', [KitchenDestinationController::class, 'destroy'])->name('destinations.delete')->middleware('permission:destinations-delete');
+            Route::post('/destinations/bulk-delete', [KitchenDestinationController::class, 'bulkDelete'])->name('destinations.bulk_delete')->middleware('permission:destinations-delete');
         });
         
         
@@ -361,7 +399,7 @@ Route::middleware('auth')->group(function () {
         Route::middleware(['auth'])->prefix('pos')->name('pos.')->group(function () {
             
             // Table Selection Screen
-            Route::get('/tables', [PosController::class, 'index'])->name('tables');
+            Route::get('/tables', [PosController::class, 'index'])->name('tables')->middleware('permission:pos');
             Route::get('/tables/fetch', [PosController::class, 'fetchTables'])->name('tables.fetch');
             
             // Action ពេលចុចលើតុ
@@ -373,6 +411,7 @@ Route::middleware('auth')->group(function () {
             // ======================
             // ORDER ROUTES (បន្ថែមថ្មី)
             // ======================
+            Route::get('/order-details/{tableId}', [OrderController::class, 'getOrderDetails'])->name('order.details');
             Route::post('/order/store', [OrderController::class, 'store'])->name('order.store');
             Route::post('/checkout', [OrderController::class, 'checkout'])->name('pos.order.checkout');
             // 1. API សម្រាប់ទាញយកតុដែលរវល់ (Busy Tables)
@@ -382,6 +421,8 @@ Route::middleware('auth')->group(function () {
             // 3. Route សម្រាប់បំបែកវិក្កយបត្រ (Split)
             Route::post('/order/split', [OrderController::class, 'splitPayment'])->name('order.split');
             Route::get('/order/items-for-merge/{tableId}', [OrderController::class, 'getItemsForMerge']);
+
+            Route::post('/table/move', [OrderController::class, 'moveTable'])->name('table.move');
     
             // ✅ ត្រូវតែមាន Route នេះដាច់ខាត ទើប Modal ស្គាល់ទិន្នន័យ
             Route::get('/order-details/{table_id}', [PosController::class, 'getOrderDetails'])->name('order.details');
@@ -394,7 +435,7 @@ Route::middleware('auth')->group(function () {
 
             // === KITCHEN & BAR ROUTES ===
             // ទំព័រដើមសម្រាប់មើលអេក្រង់
-            Route::get('/kitchen', [KitchenController::class, 'index'])->name('kitchen.view'); 
+            Route::get('/kitchen', [KitchenController::class, 'index'])->name('kitchen.view')->middleware('permission:pos-kitchen');
             // APIs សម្រាប់ហៅដោយ JavaScript (AJAX)
             Route::get('/kitchen/fetch', [KitchenController::class, 'fetchOrders'])->name('kitchen.fetch');
             Route::post('/kitchen/update-item', [KitchenController::class, 'updateItemStatus'])->name('kitchen.update_item');
@@ -402,7 +443,6 @@ Route::middleware('auth')->group(function () {
 
             // update status
             Route::get('/products/status', [PosController::class, 'getProductStatuses'])->name('products.status');
-
             Route::get('/addons/status', [PosController::class, 'getAddonStatuses'])->name('addons.status');
         });
 
@@ -411,6 +451,45 @@ Route::prefix('system/exchange-rate')->name('system.exchange-rate.')->group(func
     Route::get('/get', [ExchangeRateController::class, 'getCurrentRate'])->name('get');
     Route::post('/update', [ExchangeRateController::class, 'updateRate'])->name('update');
     Route::get('/fetch-nbc', [ExchangeRateController::class, 'fetchFromNBC'])->name('fetch-nbc');
+});
+
+Route::get('/php-info', function () {
+    phpinfo();
+});
+
+
+Route::get('/test-image', function () {
+    // 1. កំណត់ Path Font
+    $fontPath = public_path('fonts/KhmerOSsiemreap.ttf');
+
+    // Check 1: តើមាន Font នេះអត់?
+    if (!file_exists($fontPath)) {
+        return "❌ រកមិនឃើញ Font នៅ: " . $fontPath;
+    }
+
+    // 2. បង្កើតរូបភាព
+    $width = 512;
+    $height = 100;
+    $fontSize = 24;
+    $text = "សួស្តី នេះជាការតេស្ត";
+
+    $image = imagecreatetruecolor($width, $height);
+    
+    // កំណត់ពណ៌
+    $white = imagecolorallocate($image, 255, 255, 255);
+    $black = imagecolorallocate($image, 0, 0, 0);
+
+    // ចាក់ពណ៌ស (Background)
+    imagefilledrectangle($image, 0, 0, $width, $height, $white);
+
+    // សរសេរអក្សរខ្មៅ
+    // ចំណាំ៖ Path Font ត្រូវតែត្រឹមត្រូវ
+    imagettftext($image, $fontSize, 0, 10, 60, $black, $fontPath, $text);
+
+    // បង្ហាញរូបភាពមក Browser ផ្ទាល់
+    header('Content-Type: image/png');
+    imagepng($image);
+    imagedestroy($image);
 });
 
 // require __DIR__.'/auth.php'; // បិទចោលសិន កុំអោយជាន់គ្នាជាមួយ Custom Auth របស់យើង

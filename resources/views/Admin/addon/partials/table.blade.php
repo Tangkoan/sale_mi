@@ -13,7 +13,7 @@
                         <div class="flex items-center gap-1">{{ __('messages.price') }} <i class="ri-arrow-up-down-fill text-[10px] opacity-50 group-hover:opacity-100"></i></div>
                     </th>
                     <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" @click="sort('destination')" x-show="showCols.destination">
-                        <div class="flex items-center gap-1">Destination <i class="ri-arrow-up-down-fill text-[10px] opacity-50 group-hover:opacity-100"></i></div>
+                        <div class="flex items-center gap-1">{{ __('messages.destination') }} <i class="ri-arrow-up-down-fill text-[10px] opacity-50 group-hover:opacity-100"></i></div>
                     </th>
                     <th class="px-6 py-4 font-bold" x-show="showCols.status">{{ __('messages.status') }}</th>
                     <th class="px-6 py-4 font-bold text-right">{{ __('messages.actions') }}</th>
@@ -35,21 +35,34 @@
                                 </span>
                             </template>
                             <template x-if="!item.destination">
-                                <span class="text-xs text-gray-400 italic">No Destination</span>
+                                <span class="text-xs text-secondary italic">{{ __('messages.no_destination') }}</span>
                             </template>
                         </td>
                         <td class="px-6 py-4" x-show="showCols.status">
+                            @can('addon-edit')
                             <button type="button" @click="toggleStatus(item.id)" 
                                     class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none cursor-pointer"
                                     :class="(item.is_active == 1 || item.is_active == true) ? 'bg-green-500' : 'bg-gray-300'">
                                 <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm"
                                       :class="(item.is_active == 1 || item.is_active == true) ? 'translate-x-6' : 'translate-x-1'"></span>
                             </button>
+                            @else
+                            {{-- Read-only status for users without permission --}}
+                            <span class="px-2 py-1 text-xs rounded-full border" 
+                                  :class="(item.is_active == 1) ? 'bg-green-100 text-green-600 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'"
+                                  x-text="(item.is_active == 1) ? '{{ __('messages.active') }}' : '{{ __('messages.inactive') }}'">
+                            </span>
+                            @endcan
                         </td>
                         <td class="px-6 py-4 text-right">
                             <div class="flex justify-end gap-2 relative z-10">
-                                <button type="button" @click="openModal('edit', item)" class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100 cursor-pointer"><i class="ri-pencil-line"></i></button>
-                                <button type="button" @click="confirmDelete(item.id)" class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer"><i class="ri-delete-bin-line"></i></button>
+                                @can('addon-edit')
+                                <button type="button" @click="openModal('edit', item)" class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100 cursor-pointer" title="{{ __('messages.edit') }}"><i class="ri-pencil-line"></i></button>
+                                @endcan
+
+                                @can('addon-delete')
+                                <button type="button" @click="confirmDelete(item.id)" class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer" title="{{ __('messages.delete') }}"><i class="ri-delete-bin-line"></i></button>
+                                @endcan
                             </div>
                         </td>
                     </tr>
@@ -57,7 +70,7 @@
                 <tr x-show="addons.length === 0">
                     <td colspan="100%" class="px-6 py-12 text-center text-secondary">
                         <i class="ri-puzzle-line text-4xl mb-2 inline-block opacity-50"></i>
-                        <p>{{ __('messages.no_users_found_matching_your_search') }}</p>
+                        <p>{{ __('messages.no_addons_found') }}</p>
                     </td>
                 </tr>
             </tbody>

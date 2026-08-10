@@ -1,11 +1,47 @@
 <header 
-    x-data="{ userDropdownOpen: false, languageOpen: false }" 
+    {{-- បន្ថែម fullScreenMode ចូលក្នុង x-data --}}
+    x-data="{ 
+        userDropdownOpen: false, 
+        languageOpen: false,
+        isFullScreen: localStorage.getItem('user_fullscreen_preference') === 'true',
+        
+        toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable full-screen mode: ${err.message}`);
+                });
+                this.isFullScreen = true;
+                localStorage.setItem('user_fullscreen_preference', 'true');
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+                this.isFullScreen = false;
+                localStorage.setItem('user_fullscreen_preference', 'false');
+            }
+        },
+        
+        init() {
+            // ពិនិត្យមើលពេល Refresh
+            if (this.isFullScreen) {
+                // Browser ត្រូវការ User interaction មុននឹង Full screen
+                // ដូច្នេះយើងចាំចាប់ការ Click លើកដំបូង
+                document.addEventListener('click', () => {
+                    if (!document.fullscreenElement && this.isFullScreen) {
+                        document.documentElement.requestFullscreen().catch(() => {});
+                    }
+                }, { once: true });
+            }
+
+            // ស្ដាប់ព្រឹត្តិការណ៍ពេលគេចុច Esc លើ Keyboard
+            document.addEventListener('fullscreenchange', () => {
+                this.isFullScreen = !!document.fullscreenElement;
+                localStorage.setItem('user_fullscreen_preference', this.isFullScreen);
+            });
+        }
+    }" 
+    x-init="init()"
     x-effect="if ($store.theme.darkMode) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark');"
-    {{-- 
-       ចំណុចសំខាន់ដែលកែប្រែ៖
-       1. ប្រើ bg-header-bg (ជំនួសឱ្យ bg-white dark:bg-gray-900) ដើម្បីឱ្យវាចាប់យកពណ៌ពី var(--header-bg)
-       2. ប្រើ border-border-color (ជំនួសឱ្យ border-gray-200) ដើម្បីឱ្យបន្ទាត់បាតចាប់យកពណ៌ពី var(--custom-border) ផងដែរ
-    --}}
     class="bg-header-bg border-b border-bor-color h-16 flex items-center justify-between px-6 shadow-sm z-10 sticky top-0 transition-colors duration-300">
 
     <button id="sidebarToggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors">
@@ -14,6 +50,37 @@
 
     <div class="flex items-center gap-4">
         
+        {{-- ========================================== --}}
+        {{-- [START] បន្ថែម Button Sale នៅទីនេះ        --}}
+        {{-- ========================================== --}}
+        
+        @can('pos') 
+        <a href="{{ url('/pos/tables') }}" 
+           class="hidden sm:flex items-center gap-2 btn-primary px-4 py-1.5 rounded-lg shadow-sm transition-all duration-200 transform hover:scale-105 mr-1">
+            <i class="ri-computer-line"></i> 
+            <span class="font-medium text-sm">Sale</span>
+        </a>
+        
+        <a href="{{ url('/pos/tables') }}" 
+           class="sm:hidden flex items-center justify-center btn-primary h-8 w-8 rounded-full shadow-sm mr-1">
+            <i class="ri-computer-line"></i>
+        </a>
+        @endcan
+
+        {{-- ========================================== --}}
+        {{-- [NEW] ប៊ូតុង Full Screen 100%             --}}
+        {{-- ========================================== --}}
+        <button type="button" 
+                @click="toggleFullScreen()" 
+                class="relative inline-flex h-8 w-8 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-300"
+                title="Full Screen Mode">
+            {{-- Icon ពេលធម្មតា --}}
+            <i x-show="!isFullScreen" class="ri-fullscreen-line text-lg"></i>
+            {{-- Icon ពេលកំពុង Full Screen --}}
+            <i x-show="isFullScreen" class="ri-fullscreen-exit-line text-lg text-red-500"></i>
+        </button>
+        {{-- ========================================== --}}
+
         {{-- Theme Toggle --}}
         <button type="button" @click="$store.theme.setMode($store.theme.darkMode ? 'light' : 'dark')" class="relative inline-flex h-8 w-14 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900" :class="!$store.theme.darkMode ? 'bg-gray-200' : ''" :style="$store.theme.darkMode ? 'background-color: var(--primary, #308D71)' : ''">
             <span class="sr-only">Toggle Dark Mode</span>
@@ -60,12 +127,6 @@
                 </a>
             </div>
         </div>
-
-        {{-- Notification --}}
-        <button class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 relative">
-            <i class="ri-notification-3-line text-xl"></i>
-            <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white dark:border-gray-900"></span>
-        </button>
 
         {{-- User Dropdown --}}
         <div class="relative">
