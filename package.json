@@ -19,7 +19,7 @@
         "vite": "^7.0.7"
     },
     "dependencies": {
-        "puppeteer": "^24.42.0",
+        "puppeteer": "^24.43.1",
         "remixicon": "^4.7.0"
     }
 }
