@@ -68,7 +68,13 @@
             {{-- Price & Image --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-bold text-text-color mb-1">{{ __('messages.price') }} ($)</label>
+                    {{-- ចំណុច Price --}}
+                    <label class="block text-sm font-bold text-text-color mb-1">{{ __('messages.price') }} (៛)</label>
+                    <!-- ប្ដូរ step ពី 0.01 ទៅ 100 ឬ 1 ដោយសារលុយរៀលគ្មានកន្ទុយសេនទេ -->
+                    <input type="number" step="100" x-model="form.price" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
+
+                    {{-- ចំណុច Addons --}}
+                    <span class="text-secondary" x-text="'+៛ ' + parseFloat(addon.price).toLocaleString()"></span>
                     <input type="number" step="0.01" x-model="form.price" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
                     <p x-show="errors.price" x-text="errors.price" class="text-red-500 text-xs mt-1"></p>
                 </div>

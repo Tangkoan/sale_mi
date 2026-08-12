@@ -42,7 +42,7 @@
                                 </template>
                             </div>
                         </td>
-                        <td class="px-6 py-4 font-bold text-primary" x-text="'$' + parseFloat(item.price).toFixed(2)" x-show="showCols.price"></td>
+                        <td class="px-6 py-4 font-bold text-primary" x-text="parseFloat(item.price).toLocaleString() + ' ៛'" x-show="showCols.price"></td>
                         <td class="px-6 py-4">
                             @can('product-edit-status')
                             <button @click="toggleStatus(item.id)" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none" :class="item.is_active ? 'bg-green-500' : 'bg-gray-300'">

@@ -68,8 +68,10 @@
             {{-- Price & Image --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-bold text-text-color mb-1">{{ __('messages.price') }} ($)</label>
-                    <input type="number" step="0.01" x-model="form.price" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
+                    {{-- ✅ ប្ដូរពី ($) ទៅ (៛) --}}
+                    <label class="block text-sm font-bold text-text-color mb-1">{{ __('messages.price') }} (៛)</label>
+                    {{-- ✅ ប្ដូរ step ពី 0.01 ទៅ 100 --}}
+                    <input type="number" step="100" x-model="form.price" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
                     <p x-show="errors.price" x-text="errors.price" class="text-red-500 text-xs mt-1"></p>
                 </div>
                 <div>
@@ -98,7 +100,8 @@
                             <input type="checkbox" :value="addon.id" x-model="form.addons" class="rounded border-input-border text-primary focus:ring-primary h-4 w-4">
                             <div class="text-xs">
                                 <span class="font-bold text-text-color block" x-text="addon.name"></span>
-                                <span class="text-secondary" x-text="'+$' + parseFloat(addon.price).toFixed(2)"></span>
+                                {{-- ✅ ប្ដូរពី +$ ទៅ + ៛ និងប្រើ toLocaleString() --}}
+                                <span class="text-secondary" x-text="'+ ' + parseFloat(addon.price).toLocaleString() + ' ៛'"></span>
                             </div>
                         </label>
                     </template>
