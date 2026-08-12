@@ -26,7 +26,7 @@
                             <input type="checkbox" :value="item.id" x-model="selectedIds" class="rounded border-input-border text-primary focus:ring-primary h-4 w-4">
                         </td>
                         <td class="px-6 py-4 font-bold text-text-color" x-text="item.name" x-show="showCols.name"></td>
-                        <td class="px-6 py-4 font-bold text-primary" x-text="'$' + parseFloat(item.price).toFixed(2)" x-show="showCols.price"></td>
+                        <td class="px-6 py-4 font-bold text-primary" x-text="parseFloat(item.price).toLocaleString() + ' ៛'" x-show="showCols.price"></td>
                         <td class="px-6 py-4" x-show="showCols.destination">
                             <template x-if="item.destination">
                                 <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-600 border border-blue-200 inline-flex items-center gap-1">

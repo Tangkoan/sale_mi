@@ -663,4 +663,18 @@ return [
     'amount'       => 'Amount',
     'grand_total'  => 'Grand Total',
 
+    'addon_management'   => 'Addon Management',
+    'selected_items'     => 'Selected Items',
+    'edit'               => 'Edit',
+    'delete'             => 'Delete',
+    'columns'            => 'Columns',
+    'addon_name'         => 'Addon Name',
+    'price'              => 'Price',
+    'destination'        => 'Destination',
+    'status'             => 'Status',
+    'all_destinations'   => 'All Destinations',
+    'search_placeholder' => 'Search...',
+    'add_addon'          => 'Add Addon',
+    'add'                => 'Add',
+
 ];

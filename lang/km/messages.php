@@ -663,4 +663,18 @@ return [
     'status'       => 'ស្ថានភាព',
     'amount'       => 'ចំនួនទឹកប្រាក់',
     'grand_total'  => 'សរុបរួម',
+
+    'addon_management'   => 'ការគ្រប់គ្រងសេវាកម្មបន្ថែម',
+    'selected_items'     => 'ធាតុដែលបានជ្រើសរើស',
+    'edit'               => 'កែប្រែ',
+    'delete'             => 'លុប',
+    'columns'            => 'ជួរឈរ',
+    'addon_name'         => 'ឈ្មោះសេវាកម្ម',
+    'price'              => 'តម្លៃ',
+    'destination'        => 'គោលដៅ',
+    'status'             => 'ស្ថានភាព',
+    'all_destinations'   => 'គោលដៅទាំងអស់',
+    'search_placeholder' => 'ស្វែងរក...',
+    'add_addon'          => 'បន្ថែមសេវាកម្ម',
+    'add'                => 'បន្ថែម',
 ];

@@ -29,8 +29,8 @@
 
             {{-- Price --}}
             <div>
-                <label class="block text-sm font-bold text-text-color mb-1">{{ __('messages.price') }} ($)</label>
-                <input type="number" step="0.01" x-model="form.price" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" placeholder="0.00">
+                <label class="block text-sm font-bold text-text-color mb-1">{{ __('messages.price') }} (៛)</label>
+                <input type="number" step="100" x-model="form.price" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" placeholder="0">
                 <p x-show="errors.price" x-text="errors.price" class="text-red-500 text-xs mt-1"></p>
             </div>
 

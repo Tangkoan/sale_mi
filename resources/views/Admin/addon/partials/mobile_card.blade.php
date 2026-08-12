@@ -27,8 +27,8 @@
                         x-show="showCols.name"></h3>
                     
                     <span class="text-sm font-extrabold text-primary shrink-0" 
-                          x-text="'$' + parseFloat(item.price).toFixed(2)" 
-                          x-show="showCols.price"></span>
+                        x-text="parseFloat(item.price).toLocaleString() + ' ៛'" 
+                        x-show="showCols.price"></span>
                 </div>
                 
                 {{-- 2. Destination Row --}}
