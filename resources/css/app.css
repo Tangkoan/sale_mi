@@ -6,12 +6,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/* --------------------------------------------------------
+   ✅ បន្ថែមកូដត្រង់នេះ៖ កំណត់ពណ៌ Background ដើមសម្រាប់ប្រព័ន្ធទាំងមូល 
+   ដើម្បីការពារកុំឲ្យលោតពណ៌ខ្មៅ (FOUC Glitch) ពេល Browser កំពុង Load ទំព័រថ្មី
+-------------------------------------------------------- */
+html, body {
+    /* ប្រើប្រាស់ Variable ពណ៌bg របស់ប្រព័ន្ធអ្នក (Tailwind Config) */
+    background-color: var(--page-bg, #f8fafc) !important; 
+    /* កំណត់ Font ដើមឲ្យទៅប្រព័ន្ធទាំងមូល */
+    font-family: 'Poppins', 'Nokora', sans-serif !important;
+}
+
 /* 2. កំណត់ Font ខ្មែរ */
 .font-khmer {
     font-family: 'Nokora', sans-serif !important;
 }
 
-/* 3. កំណត់ Font អង់គ្លេស (ដូរពី Figtree ទៅ Poppins) */
+/* 3. កំណត់ Font អង់គ្លេស */
 .font-sans {
     font-family: 'Poppins', sans-serif !important;
 }

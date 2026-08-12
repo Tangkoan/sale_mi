@@ -101,10 +101,11 @@ class DashboardController extends Controller
             $topProductsHtml = view('admin.dashboard.partials.top_products', compact('topProducts', 'maxProductSales'))->render();
 
             return response()->json([
-                'totalSales' => number_format($totalSales, 2),
+                // ✅ ដកកន្ទុយទសភាគ (2) ទៅជា (0) សម្រាប់ប្រាក់រៀល
+                'totalSales' => number_format($totalSales, 0),
                 'totalOrders' => number_format($totalOrders),
-                'totalCash' => number_format($totalCash, 2),
-                'totalQR' => number_format($totalQR, 2),
+                'totalCash' => number_format($totalCash, 0),
+                'totalQR' => number_format($totalQR, 0),
                 'cashPercent' => $totalSales > 0 ? ($totalCash/$totalSales)*100 : 0,
                 'qrPercent' => $totalSales > 0 ? ($totalQR/$totalSales)*100 : 0,
                 'comparisonText' => $comparisonText,

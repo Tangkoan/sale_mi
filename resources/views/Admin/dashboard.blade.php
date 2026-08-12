@@ -16,20 +16,31 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @include('components.toast')
     
-    
     <link href="{{ asset('assets/remixicon/remixicon.css') }}" rel="stylesheet">
-
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
-
     {{-- Font --}}
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Nokora:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nokora:wght@400;700&display=swap" rel="stylesheet">
     {{-- End Font --}}
-    
 
     <style>
+        /* =======================================================
+           ✅ កំណត់ Fallback CSS Variables ឲ្យ Browser ស្គាល់ពណ៌ភ្លាមៗ 
+           មុនពេល JavaScript ដំណើរការ (ដោះស្រាយបញ្ហាលោតខ្មៅ ១០០%) 
+        ======================================================== */
+        :root {
+            --page-bg: 243 244 246; /* #f3f4f6 (Light Default) */
+            --sidebar-bg: 255 255 255;
+            --header-bg: 255 255 255;
+        }
+        html.dark {
+            --page-bg: 2 6 23; /* #020617 (Dark Default) */
+            --sidebar-bg: 15 23 42;
+            --header-bg: 30 41 59;
+        }
+
         /* 1. បន្ថែម Class នេះដើម្បីបិទ Animation ពេលកំពុង Load */
         .preload * {
             -webkit-transition: none !important;
@@ -80,10 +91,10 @@
 
     <script>
         (function() {
-            // ១. ចាប់យក Setting ពី Database (Blade) មកដាក់ក្នុង Variable ធម្មតា
+            // ១. ចាប់យក Setting ពី Database (Blade)
             const dbSettings = @json(auth()->user()->theme_settings ?? null);
             
-            // ២. ឆែកមើលថាកំពុងប្រើ Dark Mode ឬអត់
+            // ២. ឆែកមើលថាកំពុងប្រើ Dark Mode ឬអត់ ភ្លាមៗ
             const isDark = localStorage.getItem('theme_mode') === 'dark' || 
                           (!('theme_mode' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
@@ -93,14 +104,12 @@
                 document.documentElement.classList.remove('dark');
             }
 
-            // ៣. បង្កើត CSS Variables ភ្លាមៗ (Hardcode) បើមាន Data
-            // នេះគឺជាចំណុចសំខាន់ដែលកែបញ្ហា Flash White
+            // ៣. បង្កើត CSS Variables ភ្លាមៗ (Hardcode) បើមាន Data ក្នុង DB
             if (dbSettings) {
                 const config = isDark ? (dbSettings.dark || {}) : (dbSettings.light || {});
                 
-                // Helper Function ប្ដូរ Hex ទៅ RGB (សរសេរកាត់)
                 const hexToRgb = (hex) => {
-                    if (!hex) return '255 255 255'; // Fallback white
+                    if (!hex) return '255 255 255';
                     let c;
                     if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){
                         c= hex.substring(1).split('');
@@ -111,13 +120,11 @@
                     return '255 255 255';
                 };
 
-                // បង្កើត Style Tag ថ្មីមួយភ្លាមៗ
                 const css = `
                     :root {
-                        --page-bg: ${hexToRgb(config.pageBg)};
-                        --sidebar-bg: ${hexToRgb(config.sidebarBg)};
-                        --header-bg: ${hexToRgb(config.headerBg)};
-                        /* ដាក់ variables ផ្សេងទៀតតាមការចាំបាច់ ដើម្បីអោយវាឃើញពណ៌លឿន */
+                        --page-bg: ${config.pageBg ? hexToRgb(config.pageBg) : (isDark ? '2 6 23' : '243 244 246')};
+                        --sidebar-bg: ${config.sidebarBg ? hexToRgb(config.sidebarBg) : (isDark ? '15 23 42' : '255 255 255')};
+                        --header-bg: ${config.headerBg ? hexToRgb(config.headerBg) : (isDark ? '30 41 59' : '255 255 255')};
                     }
                 `;
                 const style = document.createElement('style');
@@ -130,7 +137,6 @@
     <style x-data x-text="$store.theme.css"></style>
 
     <script>
-        // Config ដើមរបស់អ្នក (រក្សាទុកដដែល)
         const defaultThemeConfig = {
             light: {
                 primary: '#3b82f6', primaryText: '#ffffff', secondary: '#64748b',
@@ -162,7 +168,6 @@
                         if(dbSettings.dark) this.settings.dark = { ...this.settings.dark, ...dbSettings.dark };
                         if(dbSettings.shadow !== undefined) this.settings.shadow = dbSettings.shadow;
                     }
-                    // លុប Class preload ចេញវិញពេល Alpine រួចរាល់
                     document.body.classList.remove('preload');
                     this.applyThemeClass();
                 },
@@ -206,7 +211,6 @@
                     finally { setTimeout(() => { this.isSaving = false; }, 500); }
                 },
                 get css() {
-                    // កូដបង្កើត CSS របស់អ្នក (ដូចដើម)
                     const l = this.settings.light; const d = this.settings.dark;
                     const shadowVal = this.settings.shadow ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' : 'none';
                     return `:root { --color-primary: ${this.hexToRgb(l.primary)}; --color-primary-text: ${this.hexToRgb(l.primaryText)}; --color-secondary: ${this.hexToRgb(l.secondary)}; --sidebar-bg: ${this.hexToRgb(l.sidebarBg)}; --sidebar-text: ${this.hexToRgb(l.sidebarText)}; --sidebar-hover-bg: ${this.hexToRgb(l.sidebarHoverBg)}; --sidebar-hover-text: ${this.hexToRgb(l.sidebarHoverText)}; --sidebar-hover-opacity: ${l.sidebarHoverBgOpacity / 100}; --header-bg: ${this.hexToRgb(l.headerBg)}; --page-bg: ${this.hexToRgb(l.pageBg)}; --card-bg: ${this.hexToRgb(l.cardBg)}; --input-bg: ${this.hexToRgb(l.inputBg)}; --custom-border: ${this.hexToRgb(l.border)}; --custom-shadow: ${shadowVal}; } .dark { --color-primary: ${this.hexToRgb(d.primary)}; --color-primary-text: ${this.hexToRgb(d.primaryText)}; --color-secondary: ${this.hexToRgb(d.secondary)}; --sidebar-bg: ${this.hexToRgb(d.sidebarBg)}; --sidebar-text: ${this.hexToRgb(d.sidebarText)}; --sidebar-hover-bg: ${this.hexToRgb(d.sidebarHoverBg)}; --sidebar-hover-text: ${this.hexToRgb(d.sidebarHoverText)}; --sidebar-hover-opacity: ${d.sidebarHoverBgOpacity / 100}; --header-bg: ${this.hexToRgb(d.headerBg)}; --page-bg: ${this.hexToRgb(d.pageBg)}; --card-bg: ${this.hexToRgb(d.cardBg)}; --input-bg: ${this.hexToRgb(d.inputBg)}; --custom-border: ${this.hexToRgb(d.border)}; } .btn-primary { background-color: rgb(var(--color-primary)); color: rgb(var(--color-primary-text)); } .sidebar-item:hover { background-color: rgb(var(--sidebar-hover-bg) / var(--sidebar-hover-opacity)); color: rgb(var(--sidebar-hover-text)); }`;
@@ -216,38 +220,27 @@
     </script>
 </head>
 
-<body class="antialiased {{ App::getLocale() == 'km' ? 'font-khmer' : 'font-sans' }} bg-page-bg preload font-sans flex h-screen overflow-hidden text-gray-800 dark:text-gray-100 transition-colors duration-300">
-
-
-    
+{{-- ✅ កែប្រែត្រង់នេះ៖ ដក transition-colors duration-300 ចេញ ដើម្បីកុំអោយវា Animate ពេល Load Page ថ្មី --}}
+<body class="antialiased {{ App::getLocale() == 'km' ? 'font-khmer' : 'font-sans' }} bg-page-bg preload flex h-screen overflow-hidden text-gray-800 dark:text-gray-100">
 
     @include('partials.sidebar')
 
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
         @include('partials.header')
-        {{-- <main class="flex-1 overflow-x-hidden overflow-y-auto bg-page-bg p-6 transition-colors duration-300">
-            @yield('content')
-        </main> --}}
-        {{-- កែប្រែត្រង់នេះ៖ បន្ថែម pb-24 ដើម្បីទុកចន្លោះខាងក្រោមសម្រាប់ Bottom Bar --}}
+        
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-page-bg p-6 md:pb-6 pb-24 transition-colors duration-300">
             @yield('content')
         </main>
-        {{-- Modal របស់ Delete --}}
-        @include('partials.confirm_modal')
         
+        @include('partials.confirm_modal')
     </div>
 
-    
-
     <div class="fixed bottom-6 right-6 flex flex-col gap-2 z-50">
-        {{-- ពិនិត្យ Permission មុននឹងបង្ហាញ --}}
         @can('pos')
             <a href="{{ url('/pos/tables') }}" 
             class="btn-primary p-3 rounded-full shadow-lg hover:scale-110 transition-transform flex items-center justify-center"
-            {{-- រក្សាកូដប្ដូរពណ៌តាម Theme --}}
             :style="'background-color: rgb(' + $store.theme.settings[$store.theme.darkMode ? 'dark' : 'light'].primary + ')'"
             >
-                {{-- ដាក់ Icon Computer ឬ Shopping Cart ជំនួស Telegram --}}
                 <i class="ri-computer-line text-xl"></i>
             </a>
         @endcan
@@ -255,67 +248,59 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-    const body = document.body;
-    const sidebar = document.getElementById('sidebar');
-    const toggleBtn = document.getElementById('sidebarToggle');
-    const overlay = document.getElementById('sidebarOverlay'); // ចាប់យក Overlay ដែលបានបង្កើតខាងលើ
+            const body = document.body;
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const overlay = document.getElementById('sidebarOverlay');
 
-    // Logic ដើមសម្រាប់ Desktop (រក្សាទុកការចងចាំ Collapse)
-    const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
-    if (window.innerWidth >= 768 && isCollapsed) {
-        body.classList.add('collapsed');
-        if(sidebar) { sidebar.classList.remove('w-72'); sidebar.classList.add('w-20'); }
-        document.querySelectorAll('.arrow-icon').forEach(el => el.classList.remove('rotate-180'));
-    }
+            const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+            if (window.innerWidth >= 768 && isCollapsed) {
+                body.classList.add('collapsed');
+                if(sidebar) { sidebar.classList.remove('w-72'); sidebar.classList.add('w-20'); }
+                document.querySelectorAll('.arrow-icon').forEach(el => el.classList.remove('rotate-180'));
+            }
 
-    if(toggleBtn){
-        toggleBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // ការពារកុំអោយប៉ះពាល់ event ផ្សេង
+            if(toggleBtn){
+                toggleBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); 
 
-            // ឆែកមើលថាបើកលើ Mobile ឬ Desktop
-            if (window.innerWidth < 768) {
-                // === សម្រាប់ Mobile (Slide In/Out) ===
-                const isHidden = sidebar.classList.contains('-translate-x-full');
-                if (isHidden) {
-                    // បង្ហាញ Sidebar
-                    sidebar.classList.remove('-translate-x-full');
-                    // បង្ហាញ Overlay
-                    overlay.classList.remove('hidden');
-                    setTimeout(() => overlay.classList.remove('opacity-0'), 10); // Fade in effect
-                } else {
-                    // លាក់ Sidebar
+                    if (window.innerWidth < 768) {
+                        const isHidden = sidebar.classList.contains('-translate-x-full');
+                        if (isHidden) {
+                            sidebar.classList.remove('-translate-x-full');
+                            overlay.classList.remove('hidden');
+                            setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+                        } else {
+                            sidebar.classList.add('-translate-x-full');
+                            overlay.classList.add('opacity-0');
+                            setTimeout(() => overlay.classList.add('hidden'), 300);
+                        }
+                    } else {
+                        body.classList.toggle('collapsed');
+                        const isNowCollapsed = body.classList.contains('collapsed');
+                        localStorage.setItem('sidebar-collapsed', isNowCollapsed);
+                        
+                        if(sidebar) {
+                            if (isNowCollapsed) {
+                                sidebar.classList.remove('w-72'); sidebar.classList.add('w-20');
+                                document.querySelectorAll('.arrow-icon').forEach(el => el.classList.remove('rotate-180'));
+                            } else {
+                                sidebar.classList.remove('w-20'); sidebar.classList.add('w-72');
+                            }
+                        }
+                    }
+                });
+            }
+
+            window.toggleMobileSidebar = function() {
+                if(sidebar && overlay) {
                     sidebar.classList.add('-translate-x-full');
-                    // លាក់ Overlay
                     overlay.classList.add('opacity-0');
                     setTimeout(() => overlay.classList.add('hidden'), 300);
                 }
-            } else {
-                // === សម្រាប់ Desktop (Collapse/Expand) ដូចកូដដើម ===
-                body.classList.toggle('collapsed');
-                const isNowCollapsed = body.classList.contains('collapsed');
-                localStorage.setItem('sidebar-collapsed', isNowCollapsed);
-                
-                if(sidebar) {
-                    if (isNowCollapsed) {
-                        sidebar.classList.remove('w-72'); sidebar.classList.add('w-20');
-                        document.querySelectorAll('.arrow-icon').forEach(el => el.classList.remove('rotate-180'));
-                    } else {
-                        sidebar.classList.remove('w-20'); sidebar.classList.add('w-72');
-                    }
-                }
             }
         });
-    }
-
-    // Function សម្រាប់បិទ Sidebar ពេលចុចលើ Overlay (Mobile)
-    window.toggleMobileSidebar = function() {
-        if(sidebar && overlay) {
-            sidebar.classList.add('-translate-x-full');
-            overlay.classList.add('opacity-0');
-            setTimeout(() => overlay.classList.add('hidden'), 300);
-        }
-    }
-});
+        
         function toggleSubmenu(button) {
             if (document.body.classList.contains('collapsed')) return;
             const submenu = button.nextElementSibling;

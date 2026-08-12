@@ -4,7 +4,7 @@
 @section('content')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<div class="min-h-screen bg-page-bg pb-10 font-sans text-sidebar-text transition-colors duration-300">
+<div class="min-h-screen bg-page-bg pb-10 font-sans text-sidebar-text">
 
     {{-- ================================================================================== --}}
     {{--  ផ្នែកទី ១: HEADER & FILTER (នៅខាងក្រៅ Loading Area ដើម្បីកុំអោយបាត់ពេល Load)  --}}
@@ -45,8 +45,7 @@
     {{-- ================================================================================== --}}
     <div class="relative min-h-[400px]"> {{-- ថែម class relative នៅទីនេះ --}}
 
-        {{-- Loading Overlay (ឥឡូវវាស្ថិតនៅក្រោម Header ហើយ) --}}
-        {{-- ខ្ញុំបានដូរ bg-page-bg ទៅជា bg-page-bg/80 ដើម្បីអោយមើលទៅឃើញស្រមោលៗបន្តិច (Modern) ឬដាក់ bg-page-bg ដូចដើមបើចង់បិទជិត --}}
+        {{-- Loading Overlay --}}
         <div id="loadingOverlay" class="absolute inset-0 bg-page-bg/90 z-50 hidden flex flex-col items-center justify-center rounded-3xl backdrop-blur-sm transition-all duration-300">
             <div class="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-primary mb-4"></div>
             <p class="text-sidebar-text font-bold text-lg animate-pulse">{{ __('messages.loading_data') }}</p>
@@ -66,7 +65,8 @@
                         </span>
                     </div>
                     <p class="text-slate-300 text-xs font-bold uppercase tracking-widest mb-1">{{ __('messages.total_revenue') }}</p>
-                    <h3 class="text-3xl font-black tracking-tight">$<span id="totalSales">{{ number_format($totalSales, 2) }}</span></h3>
+                    {{-- ✅ ប្ដូរពី $ ទៅ ៛ និងដកកន្ទុយទសភាគ --}}
+                    <h3 class="text-3xl font-black tracking-tight"><span id="totalSales">{{ number_format($totalSales, 0) }}</span> ៛</h3>
                 </div>
             </div>
 
@@ -86,7 +86,8 @@
                 <div class="relative z-10">
                     <div class="mb-4 p-2 w-fit bg-white/20 rounded-xl backdrop-blur-sm"><i class="ri-hand-coin-line text-xl"></i></div>
                     <p class="text-white/80 text-xs font-bold uppercase">{{ __('messages.cash_sales') }}</p>
-                    <h3 class="text-2xl font-black mb-2">$<span id="totalCash">{{ number_format($totalCash, 2) }}</span></h3>
+                    {{-- ✅ ប្ដូរពី $ ទៅ ៛ និងដកកន្ទុយទសភាគ --}}
+                    <h3 class="text-2xl font-black mb-2"><span id="totalCash">{{ number_format($totalCash, 0) }}</span> ៛</h3>
                     <div class="w-full bg-black/10 rounded-full h-1">
                         <div id="cashBar" class="bg-white h-1 rounded-full transition-all duration-500" style="width: {{ $totalSales > 0 ? ($totalCash/$totalSales)*100 : 0 }}%"></div>
                     </div>
@@ -99,7 +100,8 @@
                 <div class="relative z-10">
                     <div class="mb-4 p-2 w-fit bg-white/20 rounded-xl backdrop-blur-sm"><i class="ri-qr-code-line text-xl"></i></div>
                     <p class="text-white/80 text-xs font-bold uppercase">{{ __('messages.qr_payments') }}</p>
-                    <h3 class="text-2xl font-black mb-2">$<span id="totalQR">{{ number_format($totalQR, 2) }}</span></h3>
+                    {{-- ✅ ប្ដូរពី $ ទៅ ៛ និងដកកន្ទុយទសភាគ --}}
+                    <h3 class="text-2xl font-black mb-2"><span id="totalQR">{{ number_format($totalQR, 0) }}</span> ៛</h3>
                     <div class="w-full bg-black/10 rounded-full h-1">
                         <div id="qrBar" class="bg-white h-1 rounded-full transition-all duration-500" style="width: {{ $totalSales > 0 ? ($totalQR/$totalSales)*100 : 0 }}%"></div>
                     </div>
@@ -121,11 +123,10 @@
                 </div>
             </div>
         </div>
-    </div> {{-- End Relative Wrapper --}}
+    </div> 
 
 </div>
 
-{{-- SCRIPT នៅដដែលទាំងអស់ (Logic រក្សាដដែល) --}}
 <script>
     let currentFilter = '{{ $filter }}';
     let salesChartInstance = null;
@@ -148,7 +149,7 @@
             data: {
                 labels: labels,
                 datasets: [{
-                    label: '{{ __('messages.revenue') }}', // បកប្រែក្នុង Chart
+                    label: '{{ __('messages.revenue') }} (៛)', 
                     data: data,
                     borderColor: '#3b82f6',
                     backgroundColor: gradient,
@@ -208,10 +209,7 @@
 
         // បង្ហាញ Loading
         document.getElementById('loadingOverlay').classList.remove('hidden');
-        document.getElementById('loadingOverlay').classList.add('flex'); // Ensure flex is added back
-
-        // Reset Text (Optional)
-        // document.getElementById('totalSales').innerText = "...";
+        document.getElementById('loadingOverlay').classList.add('flex');
 
         const url = `{{ route('admin.dashboard') }}?ajax=1&filter=${currentFilter}&date=${date}&month=${month}&year=${year}`;
 
