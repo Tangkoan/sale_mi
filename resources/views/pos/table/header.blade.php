@@ -95,7 +95,7 @@
 
                 <div class="flex items-center gap-2 sm:gap-3">
                     
-                    {{-- 1. Exchange Rate --}}
+                    <!-- {{-- 1. Exchange Rate --}}
                     @can('pos-exchange-rate')
                         <button @click="openExchangeModal()" class="flex items-center justify-center w-10 h-9 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800 relative">
                                 <i class="ri-exchange-dollar-line text-lg"></i>
@@ -104,7 +104,7 @@
                                     <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                                 </span>
                         </button>
-                    @endcan
+                    @endcan -->
 
                     {{-- 2. Language Switcher --}}
                     <div x-data="{ languageOpen: false }" class="relative">
