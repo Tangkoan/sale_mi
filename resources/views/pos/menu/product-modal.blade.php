@@ -22,7 +22,7 @@
          x-transition:leave-end="opacity-0"
          @click="closeProductModal()"></div>
     
-    {{-- Modal Card (Compact No Image) --}}
+    {{-- Modal Card --}}
     <div class="relative w-full max-w-md bg-white dark:bg-gray-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col transition-all transform" 
             x-show="isProductModalOpen" 
             x-transition:enter="transition cubic-bezier(0.22, 1, 0.36, 1) duration-300" 
@@ -32,7 +32,7 @@
             x-transition:leave-start="opacity-100 scale-100"
             x-transition:leave-end="opacity-0 scale-95 translate-y-4">
         
-        {{-- 1. HEADER (Title & Close) --}}
+        {{-- 1. HEADER --}}
         <div class="flex justify-between items-start p-6 pb-2">
             <div>
                 <h2 class="text-2xl font-black text-gray-900 dark:text-white leading-tight" x-text="tempItem.name"></h2>
@@ -52,25 +52,23 @@
                 {{-- Price --}}
                 <div class="flex flex-col pl-2">
                     <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Unit Price</span>
-                    <span class="text-3xl font-black text-primary" x-text="'$' + parseFloat(tempItem.base_price).toFixed(2)"></span>
+                    {{-- កែពី $ ទៅ ៛ --}}
+                    <span class="text-3xl font-black text-primary" x-text="formatNumber(tempItem.base_price) + ' ៛'"></span>
                 </div>
 
-                {{-- Quantity Control (Editable) --}}
+                {{-- Quantity Control --}}
                 <div class="flex items-center bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-1">
-                    {{-- Minus --}}
                     <button @click="if(tempItem.qty > 1) tempItem.qty--" 
                             class="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors active:scale-90">
                         <i class="ri-subtract-line font-bold text-lg"></i>
                     </button>
 
-                    {{-- Input Number (Allows Typing) --}}
                     <input type="number" 
                            x-model.number="tempItem.qty" 
                            @click="$event.target.select()"
                            class="w-14 h-10 text-center font-black text-xl text-gray-900 dark:text-white bg-transparent border-none outline-none focus:ring-0 p-0"
                            min="1">
 
-                    {{-- Plus --}}
                     <button @click="tempItem.qty++" 
                             class="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-green-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors active:scale-90">
                         <i class="ri-add-line font-bold text-lg"></i>
@@ -78,7 +76,6 @@
                 </div>
             </div>
 
-            {{-- Divider --}}
             <div class="h-px bg-gray-100 dark:bg-gray-800 w-full"></div>
 
             {{-- Addons List --}}
@@ -99,11 +96,11 @@
                                 </div>
                                 <div class="flex flex-col">
                                     <span class="text-sm font-bold text-gray-700 dark:text-gray-200" x-text="addon.name"></span>
-                                    <span class="text-[10px] text-gray-500" x-text="'+$' + parseFloat(addon.price).toFixed(2)"></span>
+                                    {{-- កែពី $ ទៅ ៛ --}}
+                                    <span class="text-[10px] text-gray-500" x-text="'+ ' + formatNumber(addon.price) + ' ៛'"></span>
                                 </div>
                             </div>
 
-                            {{-- Mini Qty for Addon --}}
                             <div x-show="isAddonSelected(addon.id)" @click.stop class="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg h-7">
                                 <button @click="updateAddonQty(addon.id, -1)" class="w-7 h-full text-gray-500 hover:text-red-500 flex items-center justify-center"><i class="ri-subtract-line text-[10px]"></i></button>
                                 <span class="text-xs font-bold w-4 text-center" x-text="getAddonQty(addon.id)"></span>
@@ -127,7 +124,7 @@
             </div>
         </div>
 
-        {{-- 3. FOOTER (Action Button) --}}
+        {{-- 3. FOOTER --}}
         <div class="p-6 pt-4 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
             <button @click="addToCart()" 
                     class="w-full bg-primary hover:bg-primary-600 text-white h-14 rounded-2xl font-bold text-base shadow-xl shadow-primary/30 transform transition-all active:scale-[0.98] flex items-center justify-between px-2 p-1 group">
@@ -137,7 +134,8 @@
                 </div>
 
                 <div class="flex items-center bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2 h-10 mr-1 min-w-[80px] justify-center group-hover:bg-white group-hover:text-primary transition-colors">
-                    <span class="font-black text-base" x-text="'$' + calculateItemTotal().toFixed(2)"></span>
+                    {{-- កែពី $ ទៅ ៛ --}}
+                    <span class="font-black text-base" x-text="formatNumber(calculateItemTotal()) + ' ៛'"></span>
                 </div>
             </button>
         </div>

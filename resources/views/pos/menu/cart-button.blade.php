@@ -7,7 +7,8 @@
             <div class="bg-white text-gray-900 w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center font-black text-base sm:text-lg shadow-sm" x-text="cartTotalQty"></div>
             <div class="flex flex-col items-start">
                 <span class="text-[10px] sm:text-xs text-gray-300 uppercase tracking-wider font-semibold">Total</span>
-                <span class="font-bold text-lg sm:text-xl" x-text="'$' + cartTotalPrice.toFixed(2)"></span>
+                {{-- កែពី $ ទៅ ៛ --}}
+                <span class="font-bold text-lg sm:text-xl" x-text="formatNumber(cartTotalPrice) + ' ៛'"></span>
             </div>
         </div>
         <div class="flex items-center gap-1 sm:gap-2 pr-1 sm:pr-2">

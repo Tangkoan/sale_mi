@@ -3,7 +3,6 @@
         <template x-for="product in filteredProducts" :key="product.id">
             
             {{-- MAIN CARD --}}
-            {{-- 🔥 កែសម្រួលត្រង់នេះ៖ ឆែកមើលថាតើវាជា Addon ឬ Product ធម្មតា --}}
             <div @click="product.type === 'addon_item' ? addStandaloneAddon(product) : (product.is_active ? openProductModal(product) : null)" 
                  class="group bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-2 sm:p-2.5 shadow-sm border border-gray-100 dark:border-gray-700 transition-all duration-300 relative overflow-hidden"
                  :class="product.is_active ? 'hover:shadow-lg cursor-pointer hover:-translate-y-1 active:scale-95' : 'cursor-not-allowed bg-gray-50 dark:bg-gray-900'">
@@ -34,7 +33,7 @@
                         </div>
                     </template>
                     
-                    {{-- Add Icon (បង្ហាញតែពេល Active) --}}
+                    {{-- Add Icon --}}
                     <div x-show="product.is_active" class="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center shadow-md text-primary opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
                         <i class="ri-add-line font-bold text-base sm:text-lg"></i>
                     </div>
@@ -48,9 +47,10 @@
                     </h3>
                     
                     <div class="mt-1 sm:mt-2 flex items-center justify-between">
+                        {{-- កែពី $ ទៅ ៛ --}}
                         <span class="font-black text-sm sm:text-base" 
                               :class="product.is_active ? 'text-primary' : 'text-gray-400 dark:text-gray-600'" 
-                              x-text="'$' + parseFloat(product.price).toFixed(2)">
+                              x-text="formatNumber(product.price) + ' ៛'">
                         </span>
                     </div>
                 </div>

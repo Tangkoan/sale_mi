@@ -6,29 +6,24 @@
      */
     function headerController() {
         return {
-            // --- State ---
             search: '',
             activeCategory: 'all',
             isAddonMode: false,
             
-            // Exchange Rate
             isExchangeModalOpen: false,
             exchangeRate: localStorage.getItem('pos_exchange_rate') || 4100,
             tempExchangeRate: 4100,
             isFetchingRate: false,
 
-            // --- Init ---
             init() {
                 this.loadSystemRate();
                 this.tempExchangeRate = this.exchangeRate;
 
-                // Watch Search
                 this.$watch('search', value => {
                     window.dispatchEvent(new CustomEvent('pos-search-changed', { detail: value }));
                 });
             },
 
-            // --- Navigation Functions ---
             setCategory(id) {
                 this.activeCategory = id;
                 window.dispatchEvent(new CustomEvent('pos-category-changed', { detail: id }));
@@ -38,9 +33,8 @@
                 this.isAddonMode = !this.isAddonMode;
                 window.dispatchEvent(new CustomEvent('pos-toggle-addon-mode', { detail: this.isAddonMode }));
                 
-                // Reset UI
-                this.search = '';
                 if (!this.isAddonMode) {
+                    this.search = '';
                     this.activeCategory = 'all';
                     window.dispatchEvent(new CustomEvent('pos-category-changed', { detail: 'all' }));
                 }
@@ -50,7 +44,6 @@
                 window.dispatchEvent(new CustomEvent('pos-open-quick-addon'));
             },
 
-            // --- Exchange Rate Functions ---
             async loadSystemRate() {
                 try {
                     const response = await fetch("{{ route('system.exchange-rate.get') }}");
@@ -117,7 +110,6 @@
                         throw new Error("{{ __('messages.rate_not_found') }}");
                     }
                 } catch (error) {
-                    // Note: showToast is not defined in this snippet but assuming it exists globally or meant dispatchEvent
                     window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "{{ __('messages.api_error') }}" + error.message } }));
                 } finally {
                     this.isFetchingRate = false;
@@ -159,6 +151,11 @@
                 window.addEventListener('pos-search-changed', (e) => { this.search = e.detail; });
                 window.addEventListener('pos-toggle-addon-mode', (e) => { this.viewMode = e.detail ? 'addon' : 'menu'; });
                 window.addEventListener('pos-open-quick-addon', () => { this.openQuickAddon(); });
+            },
+
+            // --- បន្ថែម Function សម្រាប់ Format លុយរៀល ---
+            formatNumber(num) {
+                return new Intl.NumberFormat('km-KH').format(num);
             },
 
             // --- FILTER LOGIC ---

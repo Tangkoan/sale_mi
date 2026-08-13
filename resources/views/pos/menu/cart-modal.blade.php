@@ -37,7 +37,8 @@
                             <div class="flex justify-between items-start gap-2">
                                 <h4 class="font-bold text-gray-800 dark:text-white leading-tight text-sm sm:text-base" x-text="item.name"></h4>
                                 <div class="flex items-center gap-3">
-                                    <span class="font-bold text-primary whitespace-nowrap text-sm sm:text-base" x-text="'$' + (item.base_price * item.qty).toFixed(2)"></span>
+                                    {{-- កែពី $ ទៅ ៛ --}}
+                                    <span class="font-bold text-primary whitespace-nowrap text-sm sm:text-base" x-text="formatNumber(item.base_price * item.qty) + ' ៛'"></span>
                                     
                                     {{-- ប៊ូតុងលុប Product ទាំងមូល --}}
                                     <button @click="removeFromCart(index)" class="text-gray-400 hover:text-red-500 transition-colors" title="Remove Item">
@@ -56,7 +57,7 @@
                         </div>
                     </div>
 
-                    {{-- ផ្នែកខាងក្រោម៖ Addons List (UI ថ្មី៖ បង្ហាញជាបញ្ជី និងមានប៊ូតុងគ្រប់គ្រង) --}}
+                    {{-- ផ្នែកខាងក្រោម៖ Addons List --}}
                     <template x-if="item.addons && item.addons.length > 0">
                         <div class="border-t border-dashed border-gray-200 dark:border-gray-700 pt-2 mt-1 space-y-2">
                             <template x-for="(ad, adIndex) in item.addons" :key="ad.id">
@@ -66,19 +67,18 @@
                                     <div class="flex items-center gap-2 overflow-hidden">
                                         <i class="ri-add-circle-fill text-blue-500 text-xs shrink-0"></i>
                                         <span class="text-gray-700 dark:text-gray-300 font-medium truncate" x-text="ad.name"></span>
-                                        <span class="text-xs text-gray-500 shrink-0" x-text="'(+$' + parseFloat(ad.price).toFixed(2) + ')'"></span>
+                                        {{-- កែពី $ ទៅ ៛ --}}
+                                        <span class="text-xs text-gray-500 shrink-0" x-text="'(+ ' + formatNumber(ad.price) + ' ៛)'"></span>
                                     </div>
 
                                     {{-- Addon Controls (+ - Delete) --}}
                                     <div class="flex items-center gap-2 shrink-0">
-                                        {{-- Qty Control --}}
                                         <div class="flex items-center bg-white dark:bg-gray-600 rounded-md border border-gray-200 dark:border-gray-600 h-6 sm:h-7">
                                             <button @click="updateCartAddonQty(index, adIndex, -1)" class="px-1.5 sm:px-2 text-gray-500 hover:text-red-500 border-r border-gray-200 dark:border-gray-600 h-full flex items-center">-</button>
                                             <span class="px-1.5 sm:px-2 font-bold text-xs text-gray-800 dark:text-white" x-text="ad.qty"></span>
                                             <button @click="updateCartAddonQty(index, adIndex, 1)" class="px-1.5 sm:px-2 text-gray-500 hover:text-blue-500 border-l border-gray-200 dark:border-gray-600 h-full flex items-center">+</button>
                                         </div>
                                         
-                                        {{-- Delete Individual Addon --}}
                                         <button @click="removeAddonFromCart(index, adIndex)" class="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 p-1 rounded transition-colors" title="Remove Addon">
                                             <i class="ri-close-line"></i>
                                         </button>
@@ -92,7 +92,8 @@
                     {{-- Subtotal for this Row --}}
                     <div class="flex justify-end border-t border-gray-100 dark:border-gray-700 pt-2 mt-1">
                         <span class="text-xs text-gray-500 mr-2">Subtotal:</span>
-                        <span class="text-sm font-black text-gray-900 dark:text-white" x-text="'$' + item.total_price_calculated.toFixed(2)"></span>
+                        {{-- កែពី $ ទៅ ៛ --}}
+                        <span class="text-sm font-black text-gray-900 dark:text-white" x-text="formatNumber(item.total_price_calculated) + ' ៛'"></span>
                     </div>
 
                 </div>
@@ -109,7 +110,8 @@
         <div class="p-4 sm:p-6 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 pb-6 sm:pb-8 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] z-20">
             <div class="flex justify-between items-center mb-4 sm:mb-6">
                 <span class="text-gray-500 font-bold text-base sm:text-lg">Total Amount</span>
-                <span class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white" x-text="'$' + cartTotalPrice.toFixed(2)"></span>
+                {{-- កែពី $ ទៅ ៛ --}}
+                <span class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white" x-text="formatNumber(cartTotalPrice) + ' ៛'"></span>
             </div>
             
             <button @click="submitOrder" 
