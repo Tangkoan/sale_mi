@@ -104,12 +104,12 @@
             .then(data => {
                 if(data.status === 'error') throw new Error(data.message);
 
-                const isKhmer = currentLocale === 'km';
-
                 if(data.summary) {
-                    updateSummary('summaryTotalSales', data.summary.total_sales_usd, data.summary.total_sales_khr, isKhmer);
-                    updateSummary('summaryCash', data.summary.cash_usd, data.summary.cash_khr, isKhmer);
-                    updateSummary('summaryQR', data.summary.qr_usd, data.summary.qr_khr, isKhmer);
+                    // Update ដោយប្រើប្រាស់តែលុយរៀល (KHR) ឥឡូវគ្មាន USD ទេ
+                    updateSummary('summaryTotalSales', data.summary.total_sales_khr);
+                    updateSummary('summaryCash', data.summary.cash_khr);
+                    updateSummary('summaryQR', data.summary.qr_khr);
+                    
                     if(document.getElementById('summaryTotalOrders')) {
                         document.getElementById('summaryTotalOrders').innerText = data.summary.total_orders;
                     }
@@ -126,14 +126,11 @@
             });
     }
 
-    function updateSummary(elementId, amountUsd, amountKhr, isKhmer) {
+    // Function នេះកែអោយ Support តែប្រាក់រៀល
+    function updateSummary(elementId, amountKhr) {
         const el = document.getElementById(elementId);
         if(!el) return;
-        if(isKhmer) {
-            el.innerText = new Intl.NumberFormat('en-US').format(amountKhr) + ' ៛';
-        } else {
-            el.innerText = '$' + new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(amountUsd);
-        }
+        el.innerText = new Intl.NumberFormat('en-US').format(amountKhr) + ' ៛';
     }
 
     // --- 5. RENDER LOGIC ---
@@ -168,19 +165,19 @@
              showingCount.parentElement.innerHTML = `${lang.showing} <span class="font-bold text-sidebar-text">${displayData.length}</span> ${lang.of} ${allOrdersData.length} ${lang.transactions}`;
         }
 
-        const isKhmer = currentLocale === 'km';
-
         displayData.forEach(order => {
-            // 🔥 FIXED: Defensively handle null/undefined values
             let statusSafe = (order.status || '').toString();
             let paymentSafe = (order.payment || '').toString();
-            let dateSafe = (order.date || '').toString(); // ✅ បន្ថែម dateSafe ដើម្បីការពារ error .split
+            let dateSafe = (order.date || '').toString(); 
 
             let isCompleted = statusSafe.toLowerCase() === 'completed';
             let statusColor = isCompleted ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
             let statusIcon = isCompleted ? '<i class="ri-checkbox-circle-fill"></i>' : '<i class="ri-close-circle-fill"></i>';
-            let displayAmount = isKhmer ? `${order.total_khr} ៛` : `$${order.total_usd}`;
-            let paymentIcon = paymentSafe.toLowerCase().includes('qr') ? 'ri-qr-code-line' : 'ri-money-dollar-circle-line';
+            
+            // បង្ហាញជាលុយរៀលតែម្ដង
+            let displayAmount = `${order.total_khr} ៛`; 
+            
+            let paymentIcon = paymentSafe.toLowerCase().includes('qr') ? 'ri-qr-code-line' : 'ri-bank-note-line';
             
             // Desktop Row
             if(tbody) {
@@ -196,7 +193,6 @@
 
             // Mobile Card
             if(mobileContainer) {
-                // ✅ ប្រើ dateSafe.split ជំនួស order.date.split
                 let shortDate = dateSafe.includes(' ') ? dateSafe.split(' ')[0] : dateSafe;
 
                 mobileContainer.innerHTML += `
@@ -235,18 +231,15 @@
     }
 
     // --- 6. MODAL FUNCTIONS ---
-
     function openModal(invoiceId) {
         const order = allOrdersData.find(o => o.invoice === invoiceId);
         if (!order) return;
 
-        // 🔥 FIXED: Defensively handle null/undefined values
         let statusSafe = (order.status || '').toString();
         let paymentSafe = (order.payment || '').toString();
         let dateSafe = (order.date || '').toString();
 
-        const isKhmer = currentLocale === 'km';
-        let displayAmount = isKhmer ? `${order.total_khr} ៛` : `$${order.total_usd}`;
+        let displayAmount = `${order.total_khr} ៛`;
         let statusColor = statusSafe.toLowerCase() === 'completed' ? 'text-green-600' : 'text-red-600';
 
         document.getElementById('modalInvoice').innerText = '#' + order.invoice;
@@ -268,7 +261,7 @@
                 itemsList.innerHTML += `
                     <div class="flex justify-between text-xs border-b border-bor-color pb-1 last:border-0">
                         <span class="text-sidebar-text">${item.name} <span class="text-gray-400">x${item.qty}</span></span>
-                        <span class="font-semibold text-sidebar-text">${isKhmer ? item.total_khr : item.total_usd}</span>
+                        <span class="font-semibold text-sidebar-text">${item.total_khr} ៛</span>
                     </div>`;
             });
         } else {

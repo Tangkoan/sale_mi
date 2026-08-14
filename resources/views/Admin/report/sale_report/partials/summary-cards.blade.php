@@ -1,7 +1,7 @@
 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
     {{-- Total Sales --}}
     <div class="bg-card-bg p-3 md:p-4 rounded-xl shadow-custom border border-bor-color flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-4">
-        <div class="w-8 h-8 md:w-12 md:h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-lg md:text-xl"><i class="ri-money-dollar-circle-fill"></i></div>
+        <div class="w-8 h-8 md:w-12 md:h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-lg md:text-xl"><i class="ri-bank-note-fill"></i></div>
         <div>
             <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{{ __('messages.total_sales') }}</p>
             <h3 class="text-base md:text-xl font-black text-sidebar-text break-words" id="summaryTotalSales">...</h3>
