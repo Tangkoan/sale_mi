@@ -387,8 +387,9 @@ class OrderController extends Controller
             $totalAmount = $this->recalculateOrderTotal($mainOrder->id);
             $change = $request->received_amount - $totalAmount;
 
-            if ($request->payment_method == 'cash' && round($change, 2) < 0) {
-                return response()->json(['status' => 'error', 'message' => 'Not enough cash!'], 422);
+            // ✅ កែប្រែ៖ ដក round($change, 2) ចេញ ព្រោះប្រាក់រៀលមិនមានសេនទេ
+            if ($request->payment_method == 'cash' && $change < 0) {
+                return response()->json(['status' => 'error', 'message' => 'ទឹកប្រាក់ដែលទទួលបានមិនគ្រប់គ្រាន់ទេ!'], 422);
             }
 
             $mainOrder->update([
@@ -407,7 +408,7 @@ class OrderController extends Controller
 
             return response()->json([
                 'status'   => 'success',
-                'message'  => 'Transaction completed (Merged & Paid)!',
+                'message'  => 'ការទូទាត់ប្រាក់ជោគជ័យ!',
                 'change'   => $change,
             ]);
         });
@@ -591,7 +592,7 @@ class OrderController extends Controller
             'original_order_id' => 'required|exists:orders,id',
             'split_items'       => 'required|array|min:1', 
             'payment_method'    => 'required',
-            'received_amount'   => 'required'
+            'received_amount'   => 'required|numeric|min:0'
         ]);
 
         return DB::transaction(function () use ($request) {
@@ -637,6 +638,12 @@ class OrderController extends Controller
             $this->recalculateOrderTotal($originalOrder->id);
 
             $change = $request->received_amount - $splitTotal;
+
+            // ✅ បន្ថែម៖ ការពារកុំអោយគិតលុយបំបែកបេកវិក្កយបត្រ (Split Payment) ខ្វះប្រាក់ (ពេលបង់ជាសាច់ប្រាក់)
+            if ($request->payment_method == 'cash' && $change < 0) {
+                throw new \Exception('ទឹកប្រាក់ដែលទទួលបានមិនគ្រប់គ្រាន់ទេ!');
+            }
+
             $splitOrder->update(['total_amount' => $splitTotal, 'change_amount' => $change]);
 
             if ($originalOrder->items()->count() == 0) {
