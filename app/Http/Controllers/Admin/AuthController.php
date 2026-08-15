@@ -144,11 +144,14 @@ class AuthController extends Controller
         // កំណត់ Route ទៅកាន់ Dashboard ឬទំព័រ POS ទៅតាម Role
         $redirectUrl = route('admin.dashboard'); // Default
 
-        if ($user->hasRole('Cashier') || $user->hasRole('Service')) {
+        if ($user->hasRole('អ្នករត់តុ') || $user->hasRole('Service')) {
             $redirectUrl = url('/pos/tables'); 
         } 
-        elseif ($user->hasRole(['Chef', 'Bartender'])) {
-            $redirectUrl = url('/pos/kitchen');
+        elseif ($user->hasRole(['ចុងភៅ', 'ភេជ្ជៈ'])) {
+            $redirectUrl = url('admin/products');
+        } 
+        elseif ($user->hasRole(['អ្នកគិតលុយ', 'Cashier'])) {
+            $redirectUrl = url('pos/tables');
         } 
         
         return response()->json([

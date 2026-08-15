@@ -4,7 +4,7 @@
         {{ __('messages.product_management') }}
     </h1>
     
-    <div class="hidden md:flex gap-2">
+    <!-- <div class="hidden md:flex gap-2">
         {{-- ✅ Add Permission: pos-kitchen --}}
         @can('pos-kitchen')
         <a href="{{ url('/pos/kitchen') }}" target="_blank" class="font-bold py-2.5 px-4 rounded-xl flex items-center gap-2 border border-input-border bg-card-bg text-text-color hover:bg-input-bg shadow-sm">
@@ -17,7 +17,7 @@
             <i class="ri-add-circle-line text-xl"></i><span>{{ __('messages.add_product') }}</span>
         </button>
         @endcan
-    </div>
+    </div> -->
 </div>
 
 <div class="flex flex-col md:flex-row gap-3 mb-4 sm:mb-6">

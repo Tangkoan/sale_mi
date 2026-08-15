@@ -214,7 +214,7 @@
                                                 {{ request()->routeIs('admin.destinations.*') ? 'text-primary font-bold' : 'opacity-80' }}">
                                     <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
                                                     {{ request()->routeIs('admin.destinations.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
-                                    <span>Kitchen Destinations</span>
+                                    <span>{{ __('sidebar.kitchen_destinations') }}</span>
                                 </a>
                             </li>
                         @endcan

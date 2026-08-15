@@ -335,7 +335,6 @@ return [
     'busy' => 'Busy',
     
 
-    'kitchen_destinations' => 'Kitchen Destinations',
     'selected'             => 'Selected',
     'search_placeholder'   => 'Search Name or ID...',
     'add'                  => 'Add',

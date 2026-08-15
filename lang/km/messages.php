@@ -677,4 +677,5 @@ return [
     'search_placeholder' => 'ស្វែងរក...',
     'add_addon'          => 'បន្ថែមសេវាកម្ម',
     'add'                => 'បន្ថែម',
+
 ];

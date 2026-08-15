@@ -27,5 +27,7 @@ return [
     'reports' => "របាយការណ៏",
     'report' => "របាយការណ៏",
     'sale_report' => "របាយការណ៏លក់",
+    'kitchen_destinations' => 'កំណត់ IP ម៉ាស៊ីនបោះពុម្ពផ្ទះបាយ',
+
     // end
 ];

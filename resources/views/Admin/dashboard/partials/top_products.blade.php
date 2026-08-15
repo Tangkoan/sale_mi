@@ -15,9 +15,10 @@
                 <h4 class="text-sm font-bold text-sidebar-text truncate w-32 group-hover:text-primary transition-colors">
                     {{ $item->product->name ?? 'Unknown' }}
                 </h4>
-                {{-- Price: ប្រើ text-sidebar-text --}}
+                
+                {{-- Price: បានកែប្រែទៅជាលុយរៀល (៛) និងបិទកន្ទុយទសភាគ --}}
                 <span class="text-sm font-bold text-sidebar-text">
-                    ${{ number_format($item->total_revenue, 2) }}
+                    {{ number_format($item->total_revenue, 0) }} ៛
                 </span>
             </div>
             
@@ -25,7 +26,7 @@
             <div class="w-full bg-input-bg rounded-full h-1.5 relative overflow-hidden">
                 <div class="absolute left-0 top-0 bottom-0 rounded-full 
                     {{ $index == 0 ? 'bg-amber-400' : ($index == 1 ? 'bg-gray-400' : ($index == 2 ? 'bg-orange-400' : 'bg-blue-400')) }}" 
-                    style="width: {{ ($item->total_revenue / $maxProductSales) * 100 }}%"></div>
+                    style="width: {{ $maxProductSales > 0 ? ($item->total_revenue / $maxProductSales) * 100 : 0 }}%"></div>
             </div>
             <div class="text-[10px] text-gray-400 mt-1">{{ number_format($item->total_qty) }} units sold</div>
         </div>

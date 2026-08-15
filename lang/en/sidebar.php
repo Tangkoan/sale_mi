@@ -17,6 +17,8 @@ return [
     'shop_info' => 'Shop Info',
     'created_by' => 'Created By',
     'staff_member' => 'Staff Member',
+    'kitchen_destinations' => 'Kitchen Destinations',
+
 
 
     'product_management' => 'Product Management',
