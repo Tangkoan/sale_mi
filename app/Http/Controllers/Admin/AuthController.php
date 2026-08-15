@@ -147,10 +147,10 @@ class AuthController extends Controller
         if ($user->hasRole('អ្នករត់តុ') || $user->hasRole('Service')) {
             $redirectUrl = url('/pos/tables'); 
         } 
-        elseif ($user->hasRole(['ចុងភៅ', 'ភេជ្ជៈ'])) {
+        elseif ($user->hasRole(['ចុងភៅ', 'ភេជ្ជៈ', 'bartender', 'chef'])) {
             $redirectUrl = url('admin/products');
         } 
-        elseif ($user->hasRole(['អ្នកគិតលុយ', 'Cashier'])) {
+        elseif ($user->hasRole(['អ្នកគិតលុយ', 'Cashier', 'cashier'])) {
             $redirectUrl = url('pos/tables');
         } 
         
