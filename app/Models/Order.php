@@ -14,7 +14,9 @@ class Order extends Model
         'table_id', 
         'user_id', 
         'status', 
-        'total_amount', 
+        'total_amount',
+        'check_in_time',
+        'check_out_time',
         'payment_method'
     ];
 
@@ -44,5 +46,13 @@ class Order extends Model
     protected function serializeDate(\DateTimeInterface $date)
     {
         return $date->format('Y-m-d\TH:i:s\Z'); // បង្ខំអោយចេញជា UTC Format
+    }
+
+    /**
+     * Get the user (cashier) that created the order.
+     */
+    public function user()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'user_id');
     }
 }

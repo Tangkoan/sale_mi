@@ -73,7 +73,8 @@
                                                             <div class="flex items-center gap-1">
                                                                 <i class="ri-add-circle-fill text-primary text-xs"></i>
                                                                 <span class="text-gray-600 dark:text-gray-300 font-medium" x-text="ad.addon?.name || ad.name"></span>
-                                                                <span x-show="parseFloat(ad.price) > 0" class="text-xs text-gray-500" x-text="'($' + parseFloat(ad.price).toFixed(2) + ')'"></span>
+                                                                {{-- បង្ហាញតម្លៃ Addon ជារៀល --}}
+                                                                <span x-show="parseFloat(ad.price) > 0" class="text-xs text-gray-500" x-text="'(' + formatRiel(ad.price) + ' ៛)'"></span>
                                                             </div>
                                                             <div class="flex items-center gap-2" :class="isSplitMode ? 'hidden' : ''">
                                                                 <div class="flex items-center bg-card-bg rounded border border-bor-color h-6">
@@ -91,7 +92,8 @@
                                         </div>
                                     </div>
                                     <div class="font-bold text-gray-900 dark:text-white text-lg">
-                                        <span x-text="'$' + formatNumber((parseFloat(item.price) + (item.addons ? item.addons.reduce((sum, ad) => sum + (parseFloat(ad.price) * (ad.quantity || 1)), 0) : 0)) * item.quantity)"></span>
+                                        {{-- បង្ហាញតម្លៃសរុបនៃមុខម្ហូបនិមួយៗជារៀល --}}
+                                        <span x-text="formatRiel((parseFloat(item.price) + (item.addons ? item.addons.reduce((sum, ad) => sum + (parseFloat(ad.price) * (ad.quantity || 1)), 0) : 0)) * item.quantity) + ' ៛'"></span>
                                     </div>
                                 </div>
                                 <div class="flex items-center justify-between" :class="isSplitMode ? 'opacity-50 pointer-events-none' : ''">
@@ -116,12 +118,9 @@
                     <div class="flex flex-col">
                         <span class="text-[10px] md:text-xs font-bold uppercase tracking-widest text-gray-400">{{ __('messages.total_payble') }}</span>
                     </div>
+                    {{-- បង្ហាញតែលុយរៀលមួយគត់ --}}
                     <div class="flex items-center gap-2 md:gap-3">
-                        <h1 class="text-2xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tight" x-text="'$' + currentTotalUSD.toFixed(2)"></h1>
-                        <span class="text-gray-300 text-2xl font-light hidden md:block">/</span>
-                        <div class="px-3 py-1 rounded-lg bg-primary/10 text-primary border border-primary/20 font-bold text-sm md:text-base whitespace-nowrap flex items-center">
-                            <span x-text="totalRiel"></span> <span class="ml-1 text-xs">៛</span>
-                        </div>
+                        <h1 class="text-2xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tight" x-text="formatRiel(currentTotal) + ' ៛'"></h1>
                     </div>
                 </div>
 
@@ -177,14 +176,13 @@
                     </div>
                     <div class="text-primary"><i class="ri-arrow-right-line text-xl bg-primary/10 p-1.5 rounded-full"></i></div>
                     <div class="flex flex-col items-center w-1/3">
-                        <span class="text-[10px] text-primary font-bold uppercase mb-1">{{ __('messages.new_table') }}</span> {{-- 🔥 ប្រើ Message --}}
+                        <span class="text-[10px] text-primary font-bold uppercase mb-1">{{ __('messages.new_table') }}</span>
                         <div class="font-black text-lg px-3 py-1 rounded-lg w-full text-center transition-all border-2 border-dashed"
                             :class="selectedTargetTable ? 'bg-primary text-white border-primary shadow-lg shadow-primary/30' : 'bg-card-bg text-gray-400 border-bor-color'">
                             <span x-text="selectedTargetTable ? selectedTargetTable.name : '?'"></span>
                         </div>
                     </div>
                 </div>
-                {{-- 🔥 ប្រើ Message --}}
                 <p class="text-xs text-gray-500 mt-3" x-show="!selectedTargetTable">{{ __('messages.select_move_target') }}</p>
             </div>
             <div class="p-4 overflow-y-auto custom-scrollbar flex-1 bg-card-bg">
@@ -216,7 +214,7 @@
         </div>
     </div>
 
-    {{-- 🔥 MERGE TABLE MODAL (MULTIPLE SELECTION - PRIMARY COLOR FIX) 🔥 --}}
+    {{-- MERGE TABLE MODAL --}}
     <div x-show="isMergeModalOpen" 
         style="display: none;"
         class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-gray-900/80 backdrop-blur-sm"
@@ -229,15 +227,10 @@
         x-transition:leave-end="opacity-0 scale-95">
 
         <div class="bg-card-bg w-full max-w-md rounded-[24px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]" @click.away="isMergeModalOpen = false">
-            
-            {{-- HEADER: ប្រើ bg-primary/5 ជំនួស secondary --}}
             <div class="bg-primary/5 p-6 text-center border-b border-primary/10">
                 <h3 class="text-lg font-black text-gray-800 dark:text-white mb-4">{{ __('messages.merge') }}</h3>
                 
-                {{-- Merge Info Box --}}
                 <div class="flex items-center justify-between gap-2 bg-card-bg p-3 rounded-xl shadow-sm border border-primary/10">
-                    
-                    {{-- Current Table --}}
                     <div class="flex flex-col items-center w-1/3">
                         <span class="text-[10px] text-gray-400 font-bold uppercase mb-1">{{ __('messages.now') }}</span>
                         <div class="font-black text-gray-800 dark:text-white text-lg px-3 py-1 bg-input-bg rounded-lg w-full text-center border border-bor-color">
@@ -245,17 +238,12 @@
                         </div>
                     </div>
                     
-                    {{-- Icon (Add) --}}
                     <div class="text-primary"><i class="ri-add-circle-fill text-2xl"></i></div>
                     
-                    {{-- Selected Tables List --}}
                     <div class="flex flex-col items-center w-1/3">
                         <span class="text-[10px] text-primary font-bold uppercase mb-1">{{ __('messages.merge_from') }}</span>
-                        
-                        {{-- Active Selection Box (Primary Color) --}}
                         <div class="font-black text-lg px-2 py-1 rounded-lg w-full text-center transition-all border-2 border-dashed flex items-center justify-center min-h-[40px]"
                             :class="selectedMergeTables.length > 0 ? 'bg-primary text-white border-primary shadow-lg shadow-primary/30' : 'bg-card-bg text-gray-400 border-bor-color'">
-                            
                             <span class="text-sm leading-tight" 
                                   x-text="selectedMergeTables.length > 0 ? selectedMergeTables.map(t => t.name).join(', ') : '?'">
                             </span>
@@ -263,14 +251,12 @@
                     </div>
                 </div>
                 
-                {{-- Helper Text --}}
                 <p class="text-xs text-gray-500 mt-3" x-show="selectedMergeTables.length === 0">{{ __('messages.select_merge_source') }}</p>
                 <p class="text-xs text-primary font-bold mt-3" x-show="selectedMergeTables.length > 0">
                     <span x-text="selectedMergeTables.length"></span> តុត្រូវបានជ្រើសរើស
                 </p>
             </div>
 
-            {{-- BODY: List of Tables --}}
             <div class="p-4 overflow-y-auto custom-scrollbar flex-1 bg-card-bg">
                 <div class="grid grid-cols-3 gap-3">
                     <template x-for="table in busyTables" :key="table.id">
@@ -280,18 +266,15 @@
                                     ? 'border-primary bg-primary/5 ring-2 ring-primary/30' 
                                     : 'border-bor-color bg-card-bg hover:border-primary/50 hover:bg-primary/5'">
                             
-                            {{-- Checkbox Icon --}}
                             <div x-show="isTableSelectedForMerge(table.id)" class="absolute top-2 right-2 text-primary bg-card-bg rounded-full shadow-sm">
                                 <i class="ri-checkbox-circle-fill text-lg"></i>
                             </div>
                             
-                            {{-- Table Icon --}}
                             <div class="w-10 h-10 rounded-full flex items-center justify-center mb-1 transition-colors" 
                                  :class="isTableSelectedForMerge(table.id) ? 'bg-card-bg text-primary' : 'bg-input-bg text-gray-400'">
                                  <i class="ri-restaurant-fill text-lg"></i>
                             </div>
                             
-                            {{-- Table Name --}}
                             <span class="font-bold text-sm" 
                                   :class="isTableSelectedForMerge(table.id) ? 'text-primary' : 'text-gray-600 dark:text-gray-300'" 
                                   x-text="table.name"></span>
@@ -299,7 +282,6 @@
                     </template>
                 </div>
 
-                {{-- Empty State --}}
                 <template x-if="busyTables.length === 0">
                     <div class="flex flex-col items-center justify-center py-10 text-center text-gray-400">
                         <i class="ri-emotion-sad-line text-4xl mb-2 opacity-50"></i>
@@ -308,14 +290,12 @@
                 </template>
             </div>
 
-            {{-- FOOTER --}}
             <div class="p-4 border-t border-bor-color bg-input-bg flex gap-3">
                 <button @click="isMergeModalOpen = false" 
                         class="flex-1 py-3 rounded-xl border border-bor-color text-gray-600 dark:text-gray-300 font-bold text-sm hover:bg-card-bg transition">
                     {{ __('messages.cancel') }}
                 </button>
                 
-                {{-- Confirm Button (Primary) --}}
                 <button @click="submitMergeTable()" 
                         :disabled="selectedMergeTables.length === 0 || isProcessing" 
                         class="flex-[2] py-3 rounded-xl text-white font-bold text-sm shadow-lg flex justify-center items-center gap-2 transition-all" 

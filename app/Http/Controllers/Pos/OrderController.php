@@ -17,18 +17,15 @@ use App\Models\KitchenDestination;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\View; // ✅ បន្ថែម View Facade សម្រាប់ Render Blade
+use Illuminate\Support\Facades\View;
 
 // Library សម្រាប់ Print
 use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
 use Mike42\Escpos\Printer;
 use Mike42\Escpos\EscposImage;
 use Illuminate\Support\Facades\File;
-use Mike42\Escpos\CapabilityProfile;
-use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
-use Mike42\Escpos\ImagickEscposImage;
 
-// Library សម្រាប់ថតរូបវិក្កយបត្រ (ថ្មី)
+// Library សម្រាប់ថតរូបវិក្កយបត្រ
 use Spatie\Browsershot\Browsershot; 
 
 class OrderController extends Controller
@@ -53,7 +50,6 @@ class OrderController extends Controller
 
         return DB::transaction(function () use ($request) {
             try {
-                // 1. Create/Find Order
                 $order = Order::firstOrCreate(
                     ['table_id' => $request->table_id, 'status' => 'pending'],
                     [
@@ -64,13 +60,11 @@ class OrderController extends Controller
                     ]
                 );
 
-                // Update Table Status
                 $table = Table::find($request->table_id);
                 if ($table) {
                     $table->update(['status' => 'busy']);
                 }
 
-                // 2. Add Items
                 foreach ($request->items as $itemData) {
                     $product = Product::find($itemData['product_id']);
                     
@@ -101,22 +95,16 @@ class OrderController extends Controller
                     }
                 }
                 
-                // Recalculate Total
                 $this->recalculateOrderTotal($order->id);
 
                 ob_start();
-
                 try {
                     $this->printOrderToKitchen($order->id);
                 } catch (\Exception $printError) {
                     Log::error("🖨️ Printing Error: " . $printError->getMessage());
                 }
-
                 ob_end_clean();
-
-                if (ob_get_level() > 0) {
-                    ob_clean();
-                }
+                if (ob_get_level() > 0) { ob_clean(); }
 
                 return response()->json([
                     'status' => 'success',
@@ -125,10 +113,7 @@ class OrderController extends Controller
                 ]);
 
             } catch (\Exception $e) {
-                if (ob_get_level() > 0) {
-                    ob_clean();
-                }
-                
+                if (ob_get_level() > 0) { ob_clean(); }
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Server Error: ' . $e->getMessage()
@@ -137,14 +122,6 @@ class OrderController extends Controller
         });
     }
 
-    /**
-     * 🔥 FUNCTION: បោះទៅ Printer តាមផ្នែកដោយប្រើ Browsershot (HTML ទៅ Image) 
-     * ដើម្បីให้อក្សរខ្មែរចេញមកត្រូវទម្រង់ស្អាត ១០០%
-     */
-    /**
-     * 🔥 FUNCTION: បោះទៅ Printer តាមផ្នែកដោយប្រើ Browsershot (HTML ទៅ Image) 
-     * ធានាថាអក្សរខ្មែរចេញមកត្រូវទម្រង់ស្អាត ១០០%
-     */
     private function printOrderToKitchen($orderId)
     {
         $itemsToPrint = OrderItem::with([
@@ -179,36 +156,30 @@ class OrderController extends Controller
                 $firstItem = $items[0];
                 $tableName = $firstItem->order->table->name ?? ('Table: ' . $firstItem->order->table_id);
 
-                // ១. បង្កើត HTML ពី Blade View របស់អ្នក
                 $html = \Illuminate\Support\Facades\View::make('pos.kitchen_receipt', compact('printerInfo', 'items', 'tableName'))->render();
-
-                // ២. កំណត់កន្លែងរក្សាទុករូបភាពបណ្តោះអាសន្ន
                 $imagePath = storage_path('app/kitchen_receipt_' . uniqid() . '.png');
+                $chromePath = env('CHROME_PATH', 'C:\Program Files\Google\Chrome\Application\chrome.exe');
 
-                // ៣. ថតអេក្រង់ HTML ទៅជា Image ដោយប្រើ Chrome ផ្ទាល់ក្នុងកុំព្យូទ័ររបស់អ្នក (កូដត្រឹមត្រូវគឺ setChromePath)
                 \Spatie\Browsershot\Browsershot::html($html)
-                    ->setChromePath('C:\Program Files\Google\Chrome\Application\chrome.exe') // 👈 ទីតាំង Chrome របស់អ្នក
-                    ->windowSize(512, 800) // ទំហំទទឹងក្រដាស 80mm
+                    ->setChromePath($chromePath)
+                    ->windowSize(576, 100) // ✅ ដូរពី 512 ទៅ 576 សម្រាប់ក្រដាស 80mm
                     ->fullPage()           
                     ->save($imagePath);
 
-                // ៤. បញ្ជូនរូបភាពនោះទៅ Print តាម Network
                 $connector = new NetworkPrintConnector($ipAddress, 9100, 3);
                 $printer = new Printer($connector);
 
                 $image = EscposImage::load($imagePath, false);
                 $printer->bitImageColumnFormat($image);
                 
-                $printer->feed(2);
+                $printer->feed(1);
                 $printer->cut();
                 $printer->close();
 
-                // ៥. លុបរូបភាពបណ្តោះអាសន្នចេញវិញ
                 if (file_exists($imagePath)) {
                     unlink($imagePath);
                 }
 
-                // ៦. Update ថាបាន Print រួចរាល់
                 foreach ($items as $item) {
                     $item->update(['is_printed' => true]);
                 }
@@ -216,58 +187,6 @@ class OrderController extends Controller
             } catch (\Exception $e) {
                 Log::error("❌ Print Error: " . $e->getMessage());
             }
-        }
-    }
-
-    /**
-     * 🔥 Function សម្រាប់បំលែងអក្សរខ្មែរទៅជារូបភាព ហើយបញ្ជូនទៅម៉ាស៊ីនព្រីន
-     */
-    private function printKhmerTextAsImage(Printer $printer, string $text, int $fontSize = 24)
-    {
-        $fontPath = public_path('fonts/KhmerOSbattambang.ttf');
-
-        if (!file_exists($fontPath)) {
-            $printer->text($text . "\n");
-            return;
-        }
-
-        try {
-            $width = 512; 
-            
-            $bbox = imagettfbbox($fontSize, 0, $fontPath, $text);
-            $textHeight = abs($bbox[7] - $bbox[1]);
-            $height = $textHeight + 16;
-
-            $img = imagecreatetruecolor($width, $height);
-            $white = imagecolorallocate($img, 255, 255, 255);
-            $black = imagecolorallocate($img, 0, 0, 0);
-            imagefilledrectangle($img, 0, 0, $width, $height, $white);
-
-            imagettftext(
-                $img,
-                $fontSize,
-                0,
-                5,
-                $height - 6,
-                $black,
-                $fontPath,
-                $text
-            );
-
-            $tempPath = storage_path('app/khmer_pos_' . uniqid() . '.png');
-            imagepng($img, $tempPath);
-            imagedestroy($img);
-
-            $escImage = EscposImage::load($tempPath, false);
-            $printer->bitImageColumnFormat($escImage);
-
-            if (file_exists($tempPath)) {
-                unlink($tempPath);
-            }
-
-        } catch (\Exception $e) {
-            Log::error('KHMER IMAGE PRINT FAIL: ' . $e->getMessage());
-            $printer->text($text . "\n");
         }
     }
 
@@ -296,13 +215,8 @@ class OrderController extends Controller
                     $item->delete();
                 }
             }
-
             $newTotal = $this->recalculateOrderTotal($item->order_id);
-
-            return response()->json([
-                'status' => 'success',
-                'total'  => $newTotal
-            ]);
+            return response()->json(['status' => 'success', 'total' => $newTotal]);
         });
     }
 
@@ -317,101 +231,7 @@ class OrderController extends Controller
             return response()->json(['items' => []]);
         }
 
-        return response()->json([
-            'items' => $order->items,
-            'source_order_id' => $order->id 
-        ]);
-    }
-
-    public function checkout(Request $request)
-    {
-        $request->validate([
-            'order_id'       => 'required|exists:orders,id',
-            'received_amount'=> 'required|numeric|min:0',
-            'payment_method' => 'required|in:cash,qr,card',
-            'items'          => 'required|array', 
-        ]);
-
-        return DB::transaction(function () use ($request) {
-            $mainOrder = Order::findOrFail($request->order_id);
-
-            if ($mainOrder->status == 'completed') {
-                return response()->json(['status' => 'error', 'message' => 'Order is already paid!'], 400);
-            }
-
-            $submittedItemIds = collect($request->items)->pluck('id')->filter()->toArray();
-
-            OrderItem::where('order_id', $mainOrder->id)
-                     ->whereNotIn('id', $submittedItemIds)
-                     ->delete(); 
-
-            $affectedOrderIds = [$mainOrder->id];
-
-            foreach ($request->items as $itemData) {
-                $item = OrderItem::find($itemData['id']);
-                
-                if ($item) {
-                    if ($item->order_id != $mainOrder->id) {
-                        $affectedOrderIds[] = $item->order_id;
-                    }
-
-                    $item->update([
-                        'quantity' => $itemData['quantity'],
-                        'order_id' => $mainOrder->id 
-                    ]);
-
-                    if (!empty($itemData['addons'])) {
-                        $submittedAddonIds = collect($itemData['addons'])->pluck('id')->toArray();
-                        OrderItemAddon::where('order_item_id', $item->id)->whereNotIn('id', $submittedAddonIds)->delete();
-                        foreach ($itemData['addons'] as $addonData) {
-                            OrderItemAddon::where('id', $addonData['id'])->update(['quantity' => $addonData['quantity']]);
-                        }
-                    } else {
-                        $item->addons()->delete();
-                    }
-                }
-            }
-
-            $otherOrderIds = array_unique(array_diff($affectedOrderIds, [$mainOrder->id]));
-            
-            foreach ($otherOrderIds as $oldOrderId) {
-                $oldOrder = Order::find($oldOrderId);
-                if ($oldOrder && $oldOrder->items()->count() == 0) {
-                    if ($oldOrder->table_id) {
-                        Table::where('id', $oldOrder->table_id)->update(['status' => 'available']);
-                    }
-                    $oldOrder->delete();
-                }
-            }
-
-            $totalAmount = $this->recalculateOrderTotal($mainOrder->id);
-            $change = $request->received_amount - $totalAmount;
-
-            // ✅ កែប្រែ៖ ដក round($change, 2) ចេញ ព្រោះប្រាក់រៀលមិនមានសេនទេ
-            if ($request->payment_method == 'cash' && $change < 0) {
-                return response()->json(['status' => 'error', 'message' => 'ទឹកប្រាក់ដែលទទួលបានមិនគ្រប់គ្រាន់ទេ!'], 422);
-            }
-
-            $mainOrder->update([
-                'status'          => 'completed',
-                'total_amount'    => $totalAmount,
-                'payment_method'  => $request->payment_method,
-                'received_amount' => $request->received_amount,
-                'change_amount'   => $change,
-                'paid_at'         => now(),
-                'check_out_time'  => now(), 
-            ]);
-
-            if ($mainOrder->table_id) {
-                Table::where('id', $mainOrder->table_id)->update(['status' => 'available']);
-            }
-
-            return response()->json([
-                'status'   => 'success',
-                'message'  => 'ការទូទាត់ប្រាក់ជោគជ័យ!',
-                'change'   => $change,
-            ]);
-        });
+        return response()->json(['items' => $order->items, 'source_order_id' => $order->id ]);
     }
 
     public function getOrderDetails($tableId)
@@ -429,7 +249,6 @@ class OrderController extends Controller
 
             $order->items->transform(function($item) {
                 $addonTotal = 0;
-                
                 if ($item->addons) {
                     foreach ($item->addons as $addon) {
                         $qty = intval($addon->quantity ?? 1); 
@@ -437,10 +256,8 @@ class OrderController extends Controller
                         $addonTotal += ($price * $qty);
                     }
                 }
-
                 $item->unit_price_calculated = $item->price + $addonTotal;
                 $item->total_line_price_calculated = $item->unit_price_calculated * $item->quantity;
-
                 return $item;
             });
 
@@ -471,68 +288,26 @@ class OrderController extends Controller
             foreach ($order->items as $item) {
                 $itemTotal = $item->price * $item->quantity;
                 $addonTotal = 0;
-
                 foreach ($item->addons ?? [] as $addon) { 
                     $addonTotal += ($addon->price * ($addon->quantity ?? 1));
                 }
-                
                 $totalAmount += ($itemTotal + $addonTotal);
             }
-
             $order->update(['total_amount' => $totalAmount]);
         }
-        
         return $totalAmount;
-    }
-
-    public function updateAddon(Request $request)
-    {
-        $request->validate([
-            'addon_row_id' => 'required|exists:order_item_addons,id', 
-            'action'       => 'required|in:increase,decrease,remove',
-        ]);
-
-        return DB::transaction(function () use ($request) {
-            $addon = OrderItemAddon::findOrFail($request->addon_row_id);
-            $orderItem = OrderItem::find($addon->order_item_id);
-
-            if ($request->action === 'remove') {
-                $addon->delete();
-            } 
-            elseif ($request->action === 'increase') {
-                $addon->increment('quantity');
-            } 
-            elseif ($request->action === 'decrease') {
-                if ($addon->quantity > 1) {
-                    $addon->decrement('quantity');
-                } else {
-                    $addon->delete();
-                }
-            }
-
-            $newTotal = $this->recalculateOrderTotal($orderItem->order_id);
-
-            return response()->json([
-                'status' => 'success',
-                'total'  => $newTotal
-            ]);
-        });
     }
 
     public function getBusyTablesForMerge(Request $request)
     {
         $currentTableId = $request->query('current');
-
-        if (!$currentTableId) {
-            return response()->json([]);
-        }
+        if (!$currentTableId) return response()->json([]);
 
         $tables = Table::where('status', 'busy')
                     ->where('id', '!=', $currentTableId)
                     ->select('id', 'name')
                     ->orderBy('name', 'asc')
                     ->get();
-
         return response()->json($tables);
     }
 
@@ -545,30 +320,18 @@ class OrderController extends Controller
 
         return DB::transaction(function () use ($request) {
             try {
-                $mainOrder = Order::where('table_id', $request->main_table_id)
-                                  ->where('status', 'pending')
-                                  ->first();
+                $mainOrder = Order::where('table_id', $request->main_table_id)->where('status', 'pending')->first();
+                $targetOrder = Order::where('table_id', $request->target_table_id)->where('status', 'pending')->first();
 
-                $targetOrder = Order::where('table_id', $request->target_table_id)
-                                    ->where('status', 'pending')
-                                    ->first();
-
-                if (!$mainOrder) {
-                    throw new \Exception("តុបច្ចុប្បន្នគ្មាន Order ដើម្បីបញ្ចូលទេ");
-                }
-                if (!$targetOrder) {
-                    throw new \Exception("តុដែលត្រូវបញ្ចូល (Target) គ្មាន Order ទេ");
-                }
+                if (!$mainOrder) throw new \Exception("តុបច្ចុប្បន្នគ្មាន Order ដើម្បីបញ្ចូលទេ");
+                if (!$targetOrder) throw new \Exception("តុដែលត្រូវបញ្ចូល (Target) គ្មាន Order ទេ");
 
                 foreach ($targetOrder->items as $item) {
                     $item->update(['order_id' => $mainOrder->id]);
                 }
 
                 $targetOrder->delete();
-                
-                Table::where('id', $request->target_table_id)
-                                 ->update(['status' => 'available']);
-
+                Table::where('id', $request->target_table_id)->update(['status' => 'available']);
                 $newTotal = $this->recalculateOrderTotal($mainOrder->id);
 
                 return response()->json([
@@ -576,13 +339,143 @@ class OrderController extends Controller
                     'message' => 'បញ្ចូលតុជោគជ័យ!',
                     'new_total' => $newTotal
                 ]);
-
             } catch (\Exception $e) {
-                return response()->json([
-                    'status' => 'error', 
-                    'message' => 'Server Error: ' . $e->getMessage()
-                ], 500);
+                return response()->json(['status' => 'error', 'message' => 'Server Error: ' . $e->getMessage()], 500);
             }
+        });
+    }
+
+    public function moveTable(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'current_table_id' => 'required',
+            'target_table_id'  => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'message' => $validator->errors()->first()], 422);
+        }
+
+        try {
+            return DB::transaction(function () use ($request) {
+                $targetTable = Table::find($request->target_table_id);
+                if (!$targetTable) throw new \Exception("រកមិនឃើញតុគោលដៅ (ID: {$request->target_table_id})");
+                if ($targetTable->status !== 'available') throw new \Exception("តុ {$targetTable->name} មិនទំនេរទេ (Status: {$targetTable->status})");
+
+                $order = Order::where('table_id', $request->current_table_id)->where('status', 'pending')->first();
+                if (!$order) throw new \Exception("តុបច្ចុប្បន្នគ្មានការកម្មង់ទេ (ឬត្រូវបានគិតលុយរួចរាល់)");
+
+                $order->update(['table_id' => $request->target_table_id]);
+                Table::where('id', $request->current_table_id)->update(['status' => 'available']);
+                $targetTable->update(['status' => 'busy']);
+
+                return response()->json([
+                    'status'  => 'success',
+                    'message' => "បានប្ដូរទៅតុ {$targetTable->name} ជោគជ័យ!"
+                ]);
+            });
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => 'System Error: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function checkout(Request $request)
+    {
+        $request->validate([
+            'order_id'       => 'required|exists:orders,id',
+            'received_amount'=> 'required|numeric|min:0',
+            'payment_method' => 'required|in:cash,qr,card',
+            'items'          => 'required|array', 
+        ]);
+
+        return DB::transaction(function () use ($request) {
+            $mainOrder = Order::findOrFail($request->order_id);
+
+            if ($mainOrder->status == 'completed') {
+                return response()->json(['status' => 'error', 'message' => 'Order is already paid!'], 400);
+            }
+
+            $submittedItemIds = collect($request->items)->pluck('id')->filter()->toArray();
+
+            OrderItem::where('order_id', $mainOrder->id)
+                     ->whereNotIn('id', $submittedItemIds)
+                     ->delete(); 
+
+            $affectedOrderIds = [$mainOrder->id];
+
+            foreach ($request->items as $itemData) {
+                $item = OrderItem::find($itemData['id']);
+                if ($item) {
+                    if ($item->order_id != $mainOrder->id) {
+                        $affectedOrderIds[] = $item->order_id;
+                    }
+                    $item->update([
+                        'quantity' => $itemData['quantity'],
+                        'order_id' => $mainOrder->id 
+                    ]);
+
+                    if (!empty($itemData['addons'])) {
+                        $submittedAddonIds = collect($itemData['addons'])->pluck('id')->toArray();
+                        OrderItemAddon::where('order_item_id', $item->id)->whereNotIn('id', $submittedAddonIds)->delete();
+                        foreach ($itemData['addons'] as $addonData) {
+                            OrderItemAddon::where('id', $addonData['id'])->update(['quantity' => $addonData['quantity']]);
+                        }
+                    } else {
+                        $item->addons()->delete();
+                    }
+                }
+            }
+
+            $otherOrderIds = array_unique(array_diff($affectedOrderIds, [$mainOrder->id]));
+            foreach ($otherOrderIds as $oldOrderId) {
+                $oldOrder = Order::find($oldOrderId);
+                if ($oldOrder && $oldOrder->items()->count() == 0) {
+                    if ($oldOrder->table_id) {
+                        Table::where('id', $oldOrder->table_id)->update(['status' => 'available']);
+                    }
+                    $oldOrder->delete();
+                }
+            }
+
+            $totalAmount = $this->recalculateOrderTotal($mainOrder->id);
+            $change = $request->received_amount - $totalAmount;
+
+            if ($request->payment_method == 'cash' && $change < 0) {
+                return response()->json(['status' => 'error', 'message' => 'ទឹកប្រាក់ដែលទទួលបានមិនគ្រប់គ្រាន់ទេ!'], 422);
+            }
+
+            $mainOrder->update([
+                'status'          => 'completed',
+                'total_amount'    => $totalAmount,
+                'payment_method'  => $request->payment_method,
+                'received_amount' => $request->received_amount,
+                'change_amount'   => $change,
+                'paid_at'         => now(),
+                'check_out_time'  => now(), 
+            ]);
+
+            if ($mainOrder->table_id) {
+                Table::where('id', $mainOrder->table_id)->update(['status' => 'available']);
+            }
+
+            // ✅ បញ្ជាឲ្យ Print វិក្កយបត្រទៅម៉ាស៊ីនអ្នកគិតលុយតាម Network
+            $paymentDetails = [
+                'received_amount' => $request->received_amount,
+                'payment_method'  => $request->payment_method,
+                'change_amount'   => $change,
+            ];
+
+            try {
+                $this->printInvoiceToNetwork($mainOrder->id, $paymentDetails);
+            } catch (\Exception $printError) {
+                Log::error("🖨️ Invoice Printing Error: " . $printError->getMessage());
+            }
+
+            return response()->json([
+                'status'   => 'success',
+                'message'  => 'ការទូទាត់ប្រាក់ជោគជ័យ!',
+                'change'   => $change,
+            ]);
         });
     }
 
@@ -611,7 +504,6 @@ class OrderController extends Controller
 
             foreach ($request->split_items as $splitItem) {
                 $originalItem = OrderItem::with('addons')->find($splitItem['id']);
-                
                 if (!$originalItem) continue;
 
                 $qtyToSplit = intval($splitItem['qty']);
@@ -620,7 +512,6 @@ class OrderController extends Controller
                     $originalItem->update(['order_id' => $splitOrder->id]);
                 } else {
                     $originalItem->decrement('quantity', $qtyToSplit);
-
                     $newItem = $originalItem->replicate();
                     $newItem->order_id = $splitOrder->id;
                     $newItem->quantity = $qtyToSplit;
@@ -636,10 +527,8 @@ class OrderController extends Controller
 
             $splitTotal = $this->recalculateOrderTotal($splitOrder->id);
             $this->recalculateOrderTotal($originalOrder->id);
-
             $change = $request->received_amount - $splitTotal;
 
-            // ✅ បន្ថែម៖ ការពារកុំអោយគិតលុយបំបែកបេកវិក្កយបត្រ (Split Payment) ខ្វះប្រាក់ (ពេលបង់ជាសាច់ប្រាក់)
             if ($request->payment_method == 'cash' && $change < 0) {
                 throw new \Exception('ទឹកប្រាក់ដែលទទួលបានមិនគ្រប់គ្រាន់ទេ!');
             }
@@ -649,6 +538,19 @@ class OrderController extends Controller
             if ($originalOrder->items()->count() == 0) {
                 $originalOrder->update(['status' => 'completed']);
                 Table::where('id', $originalOrder->table_id)->update(['status' => 'available']);
+            }
+
+            // ✅ បញ្ជាឲ្យ Print វិក្កយបត្របំបែកទៅម៉ាស៊ីនអ្នកគិតលុយតាម Network
+            $paymentDetails = [
+                'received_amount' => $request->received_amount,
+                'payment_method'  => $request->payment_method,
+                'change_amount'   => $change,
+            ];
+
+            try {
+                $this->printInvoiceToNetwork($splitOrder->id, $paymentDetails);
+            } catch (\Exception $printError) {
+                Log::error("🖨️ Split Invoice Printing Error: " . $printError->getMessage());
             }
 
             return response()->json([
@@ -661,54 +563,133 @@ class OrderController extends Controller
         });
     }
 
-    public function moveTable(Request $request)
+    /**
+     * 🔥 FUNCTION: បោះវិក្កយបត្រទៅ Network Printer 
+     */
+    private function printInvoiceToNetwork($orderId, $paymentDetails)
     {
-        $validator = Validator::make($request->all(), [
-            'current_table_id' => 'required',
-            'target_table_id'  => 'required',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => $validator->errors()->first()], 422);
-        }
-
+        $printer = null;
         try {
-            return DB::transaction(function () use ($request) {
-                $targetTable = Table::find($request->target_table_id);
-                if (!$targetTable) {
-                    throw new \Exception("រកមិនឃើញតុគោលដៅ (ID: {$request->target_table_id})");
-                }
+            $order = Order::with(['items.product', 'items.addons.addon', 'table', 'user'])->find($orderId);
+            if (!$order) return;
+
+            // =========================================================
+            // 🌟 មុខងារថ្មី: បូកឈ្មោះម្ហូបដូចគ្នាចូលគ្នា (ទោះ Addon ខុសគ្នាក៏ដោយ) រួចបូក Addon សរុប
+            // =========================================================
+            $groupedItems = [];
+
+            foreach ($order->items as $item) {
+                // ១. ចាប់យកចំណាំ (Note) 
+                $noteKey = $item->note ? strtolower(trim($item->note)) : '';
                 
-                if ($targetTable->status !== 'available') {
-                    throw new \Exception("តុ {$targetTable->name} មិនទំនេរទេ (Status: {$targetTable->status})");
+                // ២. បង្កើត Key សម្គាល់តែឈ្មោះម្ហូប តម្លៃ និងចំណាំ (លែងខ្វល់រឿង Addon ខុសគ្នា)
+                $rowKey = $item->product_id . '_' . floatval($item->price) . '_' . $noteKey;
+
+                if (array_key_exists($rowKey, $groupedItems)) {
+                    // ---- ក. បើមានមុខម្ហូបនេះរួចហើយ: បូកចំនួនមុខម្ហូប (Qty) ----
+                    $groupedItems[$rowKey]->quantity += $item->quantity;
+
+                    // ---- ខ. បូកបញ្ជូលចំនួន Addons ចូលគ្នានៅក្រោមម្ហូបតែមួយ ----
+                    if ($item->addons) {
+                        $existingAddons = $groupedItems[$rowKey]->addons;
+                        
+                        foreach ($item->addons as $incomingAddon) {
+                            $incomingId = $incomingAddon->addon_id ?? $incomingAddon->name ?? 'unknown';
+                            $found = false;
+
+                            // ស្វែងរក Addon ថាមានតេអត់ ដើម្បីបូក Quantity
+                            foreach ($existingAddons as $exAddon) {
+                                $exId = $exAddon->addon_id ?? $exAddon->name ?? 'unknown';
+                                if ($exId == $incomingId) {
+                                    $currentQty = floatval($exAddon->quantity ?? 1);
+                                    $addQty = floatval($incomingAddon->quantity ?? 1);
+                                    
+                                    // ធ្វើការបូកបញ្ចូលចំនួន Addon (ឧទាហរណ៍ សាច់ក្រក១ បូក សាច់ក្រក១ ស្មើ ២)
+                                    $exAddon->quantity = $currentQty + $addQty;
+                                    $found = true;
+                                    break;
+                                }
+                            }
+
+                            // បើមិនទាន់មាន Addon នេះទេ គឺ Push បញ្ចូលបន្ថែមពីក្រោម
+                            if (!$found) {
+                                $existingAddons->push(clone $incomingAddon);
+                            }
+                        }
+                    }
+                } else {
+                    // ---- គ. បើមិនទាន់មានម្ហូបនេះទេ: ចម្លងទុកជាជួរថ្មី (Clone) ----
+                    $clonedItem = clone $item;
+                    
+                    $clonedAddons = collect();
+                    if ($item->addons) {
+                        foreach ($item->addons as $addon) {
+                            $addonId = $addon->addon_id ?? $addon->name ?? 'unknown';
+                            
+                            $existing = $clonedAddons->first(function($a) use ($addonId) {
+                                $id = $a->addon_id ?? $a->name ?? 'unknown';
+                                return $id == $addonId;
+                            });
+
+                            if ($existing) {
+                                $existing->quantity = floatval($existing->quantity ?? 1) + floatval($addon->quantity ?? 1);
+                            } else {
+                                $clonedAddons->push(clone $addon);
+                            }
+                        }
+                    }
+                    $clonedItem->setRelation('addons', $clonedAddons);
+                    
+                    $groupedItems[$rowKey] = $clonedItem;
                 }
+            }
 
-                $order = Order::where('table_id', $request->current_table_id)
-                              ->where('status', 'pending') 
-                              ->first();
+            // ៣. យកទិន្នន័យដែលបាន Group រួច ទៅជំនួស Items ចាស់ដើម្បីត្រៀម Print
+            $order->setRelation('items', collect(array_values($groupedItems)));
+            // =========================================================
 
-                if (!$order) {
-                    throw new \Exception("តុបច្ចុប្បន្នគ្មានការកម្មង់ទេ (ឬត្រូវបានគិតលុយរួចរាល់)");
-                }
+            $cashierDestination = KitchenDestination::where('name', 'like', '%អ្នកគិតលុយ%')->first();
+            if (!$cashierDestination || empty($cashierDestination->printnode_id)) {
+                throw new \Exception("រកមិនឃើញ IP សម្រាប់ម៉ាស៊ីនអ្នកគិតលុយទេ!");
+            }
+            $ipAddress = $cashierDestination->printnode_id;
+            $shop = ShopInfo::first();
 
-                $order->update(['table_id' => $request->target_table_id]);
-                Table::where('id', $request->current_table_id)->update(['status' => 'available']);
-                $targetTable->update(['status' => 'busy']);
+            // បង្កើត HTML ពីឯកសារ pos/invoice_receipt.blade.php
+            $html = \Illuminate\Support\Facades\View::make('pos.invoice_receipt', compact('order', 'paymentDetails', 'shop'))->render();
 
-                return response()->json([
-                    'status'  => 'success',
-                    'message' => "បានប្ដូរទៅតុ {$targetTable->name} ជោគជ័យ!"
-                ]);
-            });
+            $imagePath = storage_path('app/invoice_' . uniqid() . '.png');
+            $chromePath = env('CHROME_PATH', 'C:\Program Files\Google\Chrome\Application\chrome.exe');
 
-        } catch (\Exception $e) {
-            Log::error('MOVE TABLE ERROR: ' . $e->getMessage());
-            Log::error($e->getTraceAsString());
+            // ថតរូបវិក្កយបត្រដោយ Browsershot
+            \Spatie\Browsershot\Browsershot::html($html)
+                ->setChromePath($chromePath)
+                ->windowSize(576, 800)
+                ->fullPage()           
+                ->save($imagePath);
 
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'System Error: ' . $e->getMessage()
-            ], 500);
+            // បញ្ជូនទៅកាន់ Network Printer (IP)
+            $connector = new NetworkPrintConnector($ipAddress, 9100, 3);
+            $printer = new Printer($connector);
+
+            $image = EscposImage::load($imagePath, false);
+            $printer->bitImageColumnFormat($image);
+            
+            $printer->feed(2);
+            $printer->cut();
+
+            if (file_exists($imagePath)) {
+                unlink($imagePath);
+            }
+
+        } catch (\Throwable $e) {
+            Log::error("❌ Invoice Print Error: " . $e->getMessage());
+        } finally {
+            if ($printer !== null) {
+                try {
+                    $printer->close();
+                } catch (\Throwable $t) {}
+            }
         }
     }
 }

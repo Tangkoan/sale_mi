@@ -1,33 +1,11 @@
 <script>
     // ==========================================
-    // 1. RECEIPT PRINTER LOGIC
+    // 1. RECEIPT PRINTER LOGIC (ទុកសម្រាប់មើលកូដចាស់ តែលែងប្រើសម្រាប់ព្រីនវិក្កយបត្រហើយ)
     // ==========================================
     function receiptPrinter() {
         return {
             orderDetails: null,
-            exchangeRate: 4100,
             groupedItems: [],
-
-            prepareAndPrint(data) {
-                this.orderDetails = data.order;
-                if(!this.orderDetails.change_amount) {
-                    this.orderDetails.change_amount = (this.orderDetails.received_amount || 0) - (this.orderDetails.total_amount || 0);
-                }
-                this.exchangeRate = data.exchangeRate || 4100;
-                
-                // Parse Addons
-                if(this.orderDetails.items && this.orderDetails.items.length > 0) {
-                    this.orderDetails.items = this.orderDetails.items.map(item => {
-                        return {
-                            ...item,
-                            addons: this.parseAddons(item.addons)
-                        };
-                    });
-                }
-
-                this.groupItems(); 
-                setTimeout(() => { window.print(); }, 500);
-            },
 
             parseAddons(addons) {
                 if (!addons) return [];
@@ -35,45 +13,9 @@
                 try { return JSON.parse(addons); } catch (e) { return []; }
             },
 
-            groupItems() {
-                if (!this.orderDetails || !this.orderDetails.items) {
-                    this.groupedItems = [];
-                    return;
-                }
-                const groups = {};
-                
-                this.orderDetails.items.forEach(item => {
-                    const addonKey = JSON.stringify(item.addons); 
-                    const uniqueKey = item.product_id + '-' + addonKey;
-                    
-                    let itemQty = parseInt(item.quantity) || 1;
-
-                    if (!groups[uniqueKey]) {
-                        groups[uniqueKey] = { 
-                            ...item, 
-                            addons: item.addons.map(a => ({...a, quantity: parseInt(a.quantity) || 1})),
-                            uniqueKey: uniqueKey,
-                            quantity: itemQty,
-                        };
-                    } else {
-                        groups[uniqueKey].quantity += itemQty;
-                        if (groups[uniqueKey].addons && groups[uniqueKey].addons.length > 0) {
-                            groups[uniqueKey].addons.forEach((gAddon, index) => {
-                                let incomingAddon = item.addons[index];
-                                if(incomingAddon) {
-                                    gAddon.quantity += (parseInt(incomingAddon.quantity) || 1);
-                                }
-                            });
-                        }
-                    }
-                });
-                this.groupedItems = Object.values(groups);
-            },
-
             formatPrice(price) { return parseFloat(price).toFixed(2); },
             formatNumber(num) { return new Intl.NumberFormat('en-US').format(num); },
             
-            // ✅ កែសម្រួល៖ លុបការគុណនឹង exchangeRate ចេញ ព្រោះតម្លៃគិតជារៀលស្រាប់
             formatRiel(amount) {
                 return new Intl.NumberFormat('km-KH').format(amount);
             },
@@ -111,8 +53,6 @@
             isMoveModalOpen: false,
             busyTables: [],
             availableTables: [],
-            
-            // SELECTED MERGE TABLE
             selectedMergeTables: [],
 
             isSplitMode: false,
@@ -122,20 +62,12 @@
             selectedTable: null,
             paymentMethod: 'cash',
             receivedAmount: '',
-            
-            // Exchange Rate
-            isExchangeModalOpen: false,
-            exchangeRate: localStorage.getItem('pos_exchange_rate') || 4100,
-            tempExchangeRate: 4100,
-            isFetchingRate: false,
             confirmEmpty: false, 
             
             orderDetails: { id: null, table_id: null, items: [], total: 0, invoice_number: '', shop: null },
 
             init() {
                 this.fetchTables();
-                this.loadSystemRate();
-                this.tempExchangeRate = this.exchangeRate;
                 this.interval = setInterval(() => { 
                     if(!this.isCheckoutModalOpen) this.fetchTables(true); 
                 }, 5000);
@@ -158,7 +90,7 @@
 
             isExtraItem(item) { return item.product && item.product.name.toLowerCase().includes('extra'); },
             
-            get currentTotalUSD() {
+            get currentTotal() {
                 if (this.isSplitMode) {
                     return this.selectedSplitItems.reduce((total, splitItem) => {
                         let originalItem = this.orderDetails.items.find(i => i.id === splitItem.id);
@@ -178,62 +110,9 @@
                 }
                 return parseFloat(this.orderDetails.total || 0);
             },
-            
-            // ✅ កែសម្រួល៖ លុបការគុណនឹង exchangeRate ចេញ
-            get totalRiel() { 
-                return new Intl.NumberFormat('km-KH').format(this.currentTotalUSD); 
-            },
 
-            async loadSystemRate() {
-                try {
-                    const response = await fetch("{{ route('system.exchange-rate.get') }}");
-                    const data = await response.json();
-                    if(data.rate) {
-                        this.exchangeRate = parseFloat(data.rate);
-                        this.tempExchangeRate = this.exchangeRate;
-                        localStorage.setItem('pos_exchange_rate', this.exchangeRate);
-                    }
-                } catch (e) { console.error("Failed to load rate", e); }
-            },
-            
-            openExchangeModal() { this.tempExchangeRate = this.exchangeRate; this.isExchangeModalOpen = true; },
-            formatNumber(num) { return new Intl.NumberFormat('en-US').format(num); },
-            
-            async saveExchangeRate() {
-                if (this.tempExchangeRate > 0) {
-                    try {
-                        const response = await fetch("{{ route('system.exchange-rate.update') }}", {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
-                            body: JSON.stringify({ rate: this.tempExchangeRate })
-                        });
-                        if(response.ok) {
-                            this.exchangeRate = this.tempExchangeRate;
-                            localStorage.setItem('pos_exchange_rate', this.exchangeRate);
-                            this.isExchangeModalOpen = false;
-                            this.showToast("{{ __('messages.exchange_rate_updated') }}", 'success');
-                        }
-                    } catch (e) { this.showToast("{{ __('messages.failed_save_rate') }}", 'error'); }
-                }
-            },
-            
-            async fetchRateFromApi() {
-                this.isFetchingRate = true;
-                try {
-                    const response = await fetch("{{ route('system.exchange-rate.fetch-nbc') }}");
-                    const data = await response.json();
-                    if (data.status === 'error') throw new Error(data.message);
-                    let khrRate = 0;
-                    if (data.data && typeof data.data === 'object' && !Array.isArray(data.data)) {
-                        khrRate = parseFloat(data.data.average || data.data.ask || data.data.bid);
-                    } else if (data.data && Array.isArray(data.data)) {
-                        const usdItem = data.data.find(i => i.currency_id === 'USD' || i.symbol === 'USD/KHR');
-                        if (usdItem) khrRate = parseFloat(usdItem.average || usdItem.ask || usdItem.bid);
-                    }
-                    if (khrRate > 0) { this.tempExchangeRate = khrRate; await this.saveExchangeRate(); } 
-                    else throw new Error("{{ __('messages.rate_not_found') }}");
-                } catch (error) { this.showToast("{{ __('messages.api_error') }}" + error.message, 'error'); } 
-                finally { this.isFetchingRate = false; }
+            formatRiel(amount) {
+                return new Intl.NumberFormat('km-KH').format(amount);
             },
 
             async openQuickCheckout(table) {
@@ -325,7 +204,7 @@
 
             async confirmPayment() {
                 if (this.isSplitMode) { await this.processSplitPayment(); return; }
-                if (this.paymentMethod === 'cash' && (parseFloat(this.receivedAmount || 0) < this.currentTotalUSD)) { return this.showToast("{{ __('messages.insufficient_amount') }}", 'error'); }
+                if (this.paymentMethod === 'cash' && (parseFloat(this.receivedAmount || 0) < this.currentTotal)) { return this.showToast("{{ __('messages.insufficient_amount') }}", 'error'); }
                 if (this.orderDetails.items.length === 0) {
                      if(!confirm("{{ __('messages.confirm_cancel_empty_order') }}")) return;
                      this.confirmEmpty = true;
@@ -341,8 +220,12 @@
                         })
                     });
                     const data = await response.json();
-                    if (response.ok && data.status === 'success') this.finishTransaction(data);
-                    else this.showToast(data.message || "{{ __('messages.payment_failed') }}", 'error');
+                    if (response.ok && data.status === 'success') {
+                        // ✅ បិទ Modal និងបង្ហាញសារជោគជ័យ (Controller ព្រីនឲ្យរួចហើយ)
+                        this.finishTransaction(data);
+                    } else {
+                        this.showToast(data.message || "{{ __('messages.payment_failed') }}", 'error');
+                    }
                 } catch (error) { this.showToast("{{ __('messages.system_error') }}", 'error'); } 
                 finally { this.isProcessing = false; }
             },
@@ -374,17 +257,13 @@
                 if (this.selectedMergeTables.length === 0) {
                     return this.showToast("{{ __('messages.select_table_first') }}", 'warning');
                 }
-
                 this.isProcessing = true;
                 let successCount = 0;
-
                 for (const table of this.selectedMergeTables) {
                     const result = await this.confirmMerge(table.id, false); 
                     if(result) successCount++;
                 }
-
                 this.isProcessing = false;
-
                 if(successCount > 0) {
                     this.showToast("{{ __('messages.merge_success') }}", 'success');
                     this.isMergeModalOpen = false;
@@ -456,14 +335,14 @@
                 let existing = this.selectedSplitItems.find(i => i.id === item.id);
                 if (existing) this.selectedSplitItems = this.selectedSplitItems.filter(i => i.id !== item.id);
                 else this.selectedSplitItems.push({ id: item.id, qty: item.quantity });
-                this.receivedAmount = this.currentTotalUSD;
+                this.receivedAmount = this.currentTotal;
             },
             
             isItemSplitted(itemId) { return this.selectedSplitItems.some(i => i.id === itemId); },
             
             async processSplitPayment() {
                 if (this.selectedSplitItems.length === 0) return this.showToast("{{ __('messages.select_items_first') }}", 'warning');
-                if (this.paymentMethod === 'cash' && (parseFloat(this.receivedAmount || 0) < this.currentTotalUSD)) return this.showToast("{{ __('messages.insufficient_funds') }}", 'error');
+                if (this.paymentMethod === 'cash' && (parseFloat(this.receivedAmount || 0) < this.currentTotal)) return this.showToast("{{ __('messages.insufficient_funds') }}", 'error');
                 this.isProcessing = true;
                 try {
                     const response = await fetch("{{ route('pos.order.split') }}", {
@@ -477,20 +356,8 @@
                     const data = await response.json();
                     if (response.ok) {
                         this.showToast("{{ __('messages.split_bill_success') }}", 'success');
-                        const splitItems = this.orderDetails.items.filter(item => this.selectedSplitItems.some(split => split.id === item.id));
-                        const printData = {
-                            order: {
-                                ...this.orderDetails,
-                                items: splitItems,
-                                total_amount: this.currentTotalUSD,
-                                received_amount: this.receivedAmount,
-                                payment_method: this.paymentMethod,
-                                change_amount: parseFloat(this.receivedAmount) - parseFloat(this.currentTotalUSD),
-                                invoice_number: data.invoice_number || this.orderDetails.invoice_number + '-SUB'
-                            },
-                            exchangeRate: this.exchangeRate
-                        };
-                        window.dispatchEvent(new CustomEvent('print-receipt', { detail: printData }));
+                        
+                        // ✅ បិទ Modal ឬបើក Order ដែលសល់ (Controller ព្រីនឲ្យរួចហើយ)
                         if(data.remaining_items_count > 0) this.openQuickCheckout(this.selectedTable);
                         else { this.isCheckoutModalOpen = false; this.fetchTables(); }
                     } else this.showToast(data.message, 'error');
@@ -500,21 +367,8 @@
 
             finishTransaction(data) {
                 this.isCheckoutModalOpen = false;
-                this.showToast("{{ __('messages.success') }}", 'success');
+                this.showToast("ការទូទាត់ប្រាក់ និងបោះពុម្ពជោគជ័យ!", 'success');
                 this.fetchTables();
-                const finalCheckOutTime = new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
-                const printData = {
-                    order: {
-                        ...this.orderDetails,
-                        total_amount: data.total_amount || this.orderDetails.total,
-                        received_amount: data.received_amount || this.receivedAmount,
-                        change_amount: data.change,
-                        invoice_number: data.invoice_number || this.orderDetails.invoice_number,
-                        formatted_check_out: finalCheckOutTime
-                    },
-                    exchangeRate: this.exchangeRate
-                };
-                window.dispatchEvent(new CustomEvent('print-receipt', { detail: printData }));
             },
 
             showToast(message, type = 'success') {
