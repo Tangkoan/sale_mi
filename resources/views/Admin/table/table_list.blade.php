@@ -1,6 +1,5 @@
 @extends('admin.dashboard')
 
-
 @section('title', __('messages.table_management'))
 
 @section('content')
@@ -116,6 +115,36 @@
             
             toggleSelectAll() {
                 this.selectedIds = this.selectAll ? this.tables.map(t => t.id) : [];
+            },
+
+            // ================= TOGGLE STATUS =================
+            // អនុគមន៍សម្រាប់ប្តូរ Status (Available <-> Busy)
+            async toggleStatus(id) {
+                const index = this.tables.findIndex(t => t.id === id);
+                if (index === -1) return;
+
+                // Optimistic UI Update (ប្ដូរលើអេក្រង់ភ្លាមៗកុំឱ្យចាំយូរ)
+                const originalStatus = this.tables[index].status;
+                this.tables[index].status = originalStatus === 'available' ? 'busy' : 'available';
+
+                try {
+                    const response = await fetch(`/admin/tables/${id}/toggle`, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') 
+                        }
+                    });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.message || 'Failed');
+                    
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: data.message } }));
+                } catch(e) { 
+                    console.error(e); 
+                    // បើ Error ប្ដូរទៅ Status ដើមវិញ
+                    this.tables[index].status = originalStatus;
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'មិនអាចប្ដូរស្ថានភាពបានទេ!' } }));
+                }
             },
 
             // ================= MODAL LOGIC =================

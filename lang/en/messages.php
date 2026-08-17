@@ -722,4 +722,28 @@ return [
     'confirm_bulk_delete' => 'Are you sure you want to delete selected items?',
 
     'no_addons_found' => 'No addons found.',
+    'table_management' => 'Table Management',
+    'table_name' => 'Table Name',
+    'status' => 'Status',
+    'created_at' => 'Created At',
+    'actions' => 'Actions',
+    'add_table' => 'Add Table',
+    'available' => 'Available',
+    'busy' => 'Busy',
+
+    'edit' => 'Edit',
+    'create' => 'Create',
+    'of' => 'of',
+    'table_name' => 'Table Name',
+    'status' => 'Status',
+    'available' => 'Available',
+    'busy' => 'Busy',
+    'skip_this_user' => 'Skip this', // ឬ 'skip_this_table'
+    'cancel' => 'Cancel',
+    'save' => 'Save',
+    'update' => 'Update',
+    'finish' => 'Finish',
+    'select_all' => 'Select All',
+    'items' => 'items',
+    'no_tables_found' => 'No tables found matching your search.',
 ];

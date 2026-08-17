@@ -25,13 +25,25 @@
                             <input type="checkbox" :value="item.id" x-model="selectedIds" class="rounded border-input-border text-primary focus:ring-primary h-4 w-4">
                         </td>
                         <td class="px-6 py-4 font-bold text-text-color" x-text="item.name" x-show="showCols.name"></td>
+                        
+                        {{-- ជួរឈរ ស្ថានភាព (Toggle Button & Text) --}}
                         <td class="px-6 py-4" x-show="showCols.status">
-                            <span class="px-3 py-1 rounded-full text-xs font-bold capitalize flex items-center w-fit gap-1"
-                                  :class="item.status === 'available' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'">
-                                <span class="w-2 h-2 rounded-full" :class="item.status === 'available' ? 'bg-green-600' : 'bg-red-600'"></span>
-                                <span x-text="item.status"></span>
-                            </span>
+                            <div class="flex items-center gap-2">
+                                @can('table-edit')
+                                <button @click="toggleStatus(item.id)" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none cursor-pointer" :class="item.status === 'available' ? 'bg-green-500' : 'bg-red-500'">
+                                    <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform" :class="item.status === 'available' ? 'translate-x-6' : 'translate-x-1'"></span>
+                                </button>
+                                @else
+                                <span class="w-3 h-3 rounded-full" :class="item.status === 'available' ? 'bg-green-500' : 'bg-red-500'"></span>
+                                @endcan
+                                
+                                {{-- បង្ហាញភាសាខ្មែរ/អង់គ្លេស --}}
+                                <span class="text-xs font-bold uppercase tracking-wider" 
+                                      :class="item.status === 'available' ? 'text-green-600' : 'text-red-600'" 
+                                      x-text="item.status === 'available' ? '{{ __('messages.available') }}' : '{{ __('messages.busy') }}'"></span>
+                            </div>
                         </td>
+
                         <td class="px-6 py-4 text-secondary text-sm" x-text="new Date(item.created_at).toLocaleDateString()" x-show="showCols.created_at"></td>
                         <td class="px-6 py-4 text-right">
                             <div class="flex justify-end gap-2 relative z-10">

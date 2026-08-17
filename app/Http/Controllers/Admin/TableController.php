@@ -129,4 +129,21 @@ class TableController extends Controller
             'message' => __('messages.bulk_delete_success', ['count' => count($request->ids)])
         ]);
     }
+
+    /**
+     * បន្ថែមថ្មី: សម្រាប់ប្តូរ Status (Available <-> Busy) ភ្លាមៗពីតារាង
+     */
+    public function toggleStatus($id)
+    {
+        // ប្រសិនបើអ្នកមានការឆែកសិទ្ធិ (Permission) អាចដាក់នៅទីនេះ
+        // if (!auth()->user()->can('table-edit')) { ... }
+
+        $table = Table::findOrFail($id);
+        
+        // ប្ដូរពី available ទៅ busy និង ពី busy ទៅ available
+        $table->status = ($table->status === 'available') ? 'busy' : 'available';
+        $table->save();
+
+        return response()->json(['status' => 'success', 'message' => __('messages.table_updated')]);
+    }
 }

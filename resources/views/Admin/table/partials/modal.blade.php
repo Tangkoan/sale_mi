@@ -33,12 +33,12 @@
                     <label class="cursor-pointer border border-input-border rounded-lg p-3 flex items-center justify-center gap-2 transition-all"
                             :class="form.status === 'available' ? 'bg-green-100 border-green-500 text-green-700' : 'hover:bg-page-bg'">
                         <input type="radio" x-model="form.status" value="available" class="hidden">
-                        <span class="w-2 h-2 rounded-full bg-green-500"></span> Available
+                        <span class="w-2 h-2 rounded-full bg-green-500"></span> {{ __('messages.available') }}
                     </label>
                     <label class="cursor-pointer border border-input-border rounded-lg p-3 flex items-center justify-center gap-2 transition-all"
                             :class="form.status === 'busy' ? 'bg-red-100 border-red-500 text-red-700' : 'hover:bg-page-bg'">
                         <input type="radio" x-model="form.status" value="busy" class="hidden">
-                        <span class="w-2 h-2 rounded-full bg-red-500"></span> Busy
+                        <span class="w-2 h-2 rounded-full bg-red-500"></span> {{ __('messages.busy') }}
                     </label>
                 </div>
                 <p x-show="errors.status" x-text="errors.status" class="text-red-500 text-xs mt-1"></p>
