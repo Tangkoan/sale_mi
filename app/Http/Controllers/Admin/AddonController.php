@@ -5,31 +5,28 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Addon;
-use App\Models\KitchenDestination; // ✅ Import Model
+use App\Models\KitchenDestination;
 use Illuminate\Support\Facades\Validator;
 
 class AddonController extends Controller
 {
     public function index()
     {
-        // ✅ យក Destinations ទាំងអស់ដើម្បីដាក់ក្នុង Dropdown ពេលបង្កើត Addon
-        $destinations = KitchenDestination::where('is_active', true)->select('id', 'name')->get();
+        $destinations = KitchenDestination::where('is_active', true)
+            ->where('name', '!=', 'អ្នកគិតលុយ')
+            ->select('id', 'name')
+            ->get();
         return view('admin.addon.addon_list', compact('destinations'));
     }
 
     public function fetchAddons(Request $request)
     {
-        // ✅ Eager Load Relationship ឈ្មោះ 'destination' (ត្រូវប្រាកដថា Model Addon មាន function destination())
         $query = Addon::with('destination'); 
-
-        // Sort តាម Active (Active នៅលើគេ)
-        $query->orderBy('is_active', 'desc');
 
         if ($request->keyword) {
             $query->where('name', 'like', '%' . $request->keyword . '%');
         }
 
-        // ✅ Filter តាម kitchen_destination_id (ជំនួស type)
         if ($request->kitchen_destination_id) {
             $query->where('kitchen_destination_id', $request->kitchen_destination_id);
         }
@@ -37,7 +34,6 @@ class AddonController extends Controller
         $sortBy  = $request->input('sort_by', 'created_at');
         $sortDir = $request->input('sort_dir', 'desc');
         
-        // ប្រសិនបើ Sort តាម destination, យើងតម្រៀបតាម ID ជំនួសសិន (Simple Sort)
         if ($sortBy === 'destination') {
             $query->orderBy('kitchen_destination_id', $sortDir);
         } else {
@@ -45,9 +41,7 @@ class AddonController extends Controller
         }
 
         $perPage = $request->input('per_page', 10);
-        $addons = ($perPage === 'all') 
-            ? $query->paginate(999999) 
-            : $query->paginate((int)$perPage);
+        $addons = ($perPage === 'all') ? $query->paginate(999999) : $query->paginate((int)$perPage);
 
         return response()->json($addons);
     }
@@ -57,7 +51,7 @@ class AddonController extends Controller
         $addon = Addon::findOrFail($id);
         $addon->is_active = !$addon->is_active;
         $addon->save();
-        return response()->json(['status' => 'success', 'message' => 'Addon status updated']);
+        return response()->json(['status' => 'success', 'message' => 'Status updated']);
     }
 
     public function store(Request $request)
@@ -65,12 +59,7 @@ class AddonController extends Controller
         $validator = Validator::make($request->all(), [
             'name'                   => 'required|string|max:255',
             'price'                  => 'required|numeric|min:0',
-            // ✅ Validate ID ពី Table kitchen_destinations
             'kitchen_destination_id' => 'required|exists:kitchen_destinations,id', 
-        ], [
-            'required' => __('messages.field_required'),
-            'numeric'  => __('messages.invalid_number'),
-            'exists'   => __('messages.invalid_data'),
         ]);
 
         if ($validator->fails()) {
@@ -80,13 +69,9 @@ class AddonController extends Controller
         $addon = Addon::create([
             'name'                   => $request->name,
             'price'                  => $request->price,
-            'kitchen_destination_id' => $request->kitchen_destination_id, // ✅ Save ID
+            'kitchen_destination_id' => $request->kitchen_destination_id,
             'is_active'              => true
         ]);
-
-        if(function_exists('activity')) {
-            activity()->causedBy(auth()->user())->performedOn($addon)->log('created addon');
-        }
 
         return response()->json(['status' => 'success', 'message' => __('messages.addon_created')]);
     }
@@ -98,7 +83,6 @@ class AddonController extends Controller
         $validator = Validator::make($request->all(), [
             'name'                   => 'required|string|max:255',
             'price'                  => 'required|numeric|min:0',
-            // ✅ Validate ID
             'kitchen_destination_id' => 'required|exists:kitchen_destinations,id',
         ]);
 
@@ -109,12 +93,8 @@ class AddonController extends Controller
         $addon->update([
             'name'                   => $request->name,
             'price'                  => $request->price,
-            'kitchen_destination_id' => $request->kitchen_destination_id, // ✅ Update ID
+            'kitchen_destination_id' => $request->kitchen_destination_id,
         ]);
-
-        if(function_exists('activity')) {
-            activity()->causedBy(auth()->user())->performedOn($addon)->log('updated addon');
-        }
 
         return response()->json(['status' => 'success', 'message' => __('messages.addon_updated')]);
     }
@@ -122,13 +102,43 @@ class AddonController extends Controller
     public function destroy($id)
     {
         $addon = Addon::findOrFail($id);
+
+        // ការពារការលុប: ឆែកមើលថាតើ Addon នេះកំពុងប្រើក្នុងមុខម្ហូប (Product) ដែរឬទេ
+        if ($addon->products()->exists()) {
+            return response()->json([
+                'status' => 'error', 
+                'message' => 'មិនអាចលុបបានទេ ព្រោះជម្រើសបន្ថែមនេះកំពុងត្រូវបានប្រើប្រាស់ជាមួយមុខម្ហូប។'
+            ], 400); 
+        }
+
         $addon->delete();
         return response()->json(['status' => 'success', 'message' => __('messages.addon_deleted')]);
     }
 
     public function bulkDelete(Request $request)
     {
-        Addon::whereIn('id', $request->ids)->delete();
-        return response()->json(['status' => 'success', 'message' => __('messages.bulk_delete_success', ['count' => count($request->ids)])]);
+        $addons = Addon::whereIn('id', $request->ids)->get();
+        $deletedCount = 0;
+        $failedCount = 0;
+
+        foreach ($addons as $addon) {
+            // ការពារការលុប: រំលង Addon ណាដែលកំពុងជាប់ជាមួយមុខម្ហូប
+            if ($addon->products()->exists()) {
+                $failedCount++;
+                continue; 
+            }
+            
+            $addon->delete();
+            $deletedCount++;
+        }
+
+        if ($failedCount > 0) {
+            return response()->json([
+                'status' => 'warning', 
+                'message' => "បានលុបចំនួន $deletedCount និងបដិសេធ $failedCount (ព្រោះកំពុងប្រើជាមួយមុខម្ហូប)។"
+            ]);
+        }
+
+        return response()->json(['status' => 'success', 'message' => __('messages.bulk_delete_success', ['count' => $deletedCount])]);
     }
 }

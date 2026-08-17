@@ -39,4 +39,5 @@ class OrderItem extends Model
     {
         return $this->hasMany(OrderItemAddon::class);
     }
+
 }

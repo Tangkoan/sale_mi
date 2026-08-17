@@ -22,6 +22,7 @@ class Product extends Model
     {
         return $this->belongsToMany(Addon::class, 'product_addon');
     }
+    
 
     // នៅក្នុង Model Product.php
     public function orderItems() {

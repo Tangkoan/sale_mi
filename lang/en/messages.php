@@ -721,4 +721,5 @@ return [
     'confirm_delete' => 'Are you sure you want to delete this item?',
     'confirm_bulk_delete' => 'Are you sure you want to delete selected items?',
 
+    'no_addons_found' => 'No addons found.',
 ];

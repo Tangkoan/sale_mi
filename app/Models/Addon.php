@@ -9,14 +9,13 @@ class Addon extends Model
 {
     use HasFactory;
 
-     protected $guarded = []; // អនុញ្ញាតអោយកែគ្រប់ field
+    protected $guarded = [];
 
-    // ទំនាក់ទំនង៖ Addon អាចប្រើជាមួយ Products ច្រើន
+    // ✅ ដក vc_ ចេញ សរសេរត្រឹម 'product_addon' បានហើយ ព្រោះ Laravel នឹងថែម Prefix អោយខ្លួនឯង
     public function products()
     {
         return $this->belongsToMany(Product::class, 'product_addon');
     }
-
 
     public function destination()
     {
