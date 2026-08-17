@@ -11,9 +11,9 @@
         
         <div class="flex-1 min-w-0">
             <div class="flex justify-between mb-1">
-                {{-- Product Name: ប្រើ text-sidebar-text --}}
+                {{-- Product Name: ប្រើ text-sidebar-text និងភាសា --}}
                 <h4 class="text-sm font-bold text-sidebar-text truncate w-32 group-hover:text-primary transition-colors">
-                    {{ $item->product->name ?? 'Unknown' }}
+                    {{ $item->product->name ?? __('messages.unknown_product') }}
                 </h4>
                 
                 {{-- Price: បានកែប្រែទៅជាលុយរៀល (៛) និងបិទកន្ទុយទសភាគ --}}
@@ -28,12 +28,17 @@
                     {{ $index == 0 ? 'bg-amber-400' : ($index == 1 ? 'bg-gray-400' : ($index == 2 ? 'bg-orange-400' : 'bg-blue-400')) }}" 
                     style="width: {{ $maxProductSales > 0 ? ($item->total_revenue / $maxProductSales) * 100 : 0 }}%"></div>
             </div>
-            <div class="text-[10px] text-gray-400 mt-1">{{ number_format($item->total_qty) }} units sold</div>
+            
+            {{-- ចំនួនលក់បាន: ប្រើភាសា --}}
+            <div class="text-[10px] text-gray-400 mt-1">
+                {{ number_format($item->total_qty) }} {{ __('messages.units_sold') }}
+            </div>
         </div>
     </div>
 @empty
+    {{-- អត់មានទិន្នន័យ: ប្រើភាសា --}}
     <div class="text-center py-10 text-gray-400">
         <i class="ri-inbox-line text-4xl opacity-30 mb-2 block"></i>
-        No data available
+        {{ __('messages.no_data_available') }}
     </div>
 @endforelse

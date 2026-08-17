@@ -746,4 +746,8 @@ return [
     'select_all' => 'Select All',
     'items' => 'items',
     'no_tables_found' => 'No tables found matching your search.',
+
+    'unknown_product' => 'Unknown',
+    'units_sold' => 'units sold',
+    'no_data_available' => 'No data available',
 ];

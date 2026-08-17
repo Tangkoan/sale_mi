@@ -749,4 +749,8 @@ return [
     'select_all' => 'ជ្រើសរើសទាំងអស់',
     'items' => 'តុ',
     'no_tables_found' => 'រកមិនឃើញតុដែលត្រូវគ្នានឹងការស្វែងរករបស់អ្នកទេ។',
+
+    'unknown_product' => 'មិនស្គាល់',
+    'units_sold' => 'បានលក់',
+    'no_data_available' => 'មិនមានទិន្នន័យ',
 ];
