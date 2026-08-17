@@ -15,32 +15,37 @@ class ProductController extends Controller
 {
     public function index()
     {
-        // ✅ កែ៖ Eager Load 'destination' របស់ Category ដើម្បីយកឈ្មោះ (Wok, Bar...)
-        // និង Select 'kitchen_destination_id' ដើម្បីផ្គូផ្គងជាមួយ Addon
-        $categories = Category::with('destination')
-            ->select('id', 'name', 'kitchen_destination_id') 
+        $categories = Category::with('destination')->select('id', 'name', 'kitchen_destination_id')->get();
+        $addons = Addon::select('id', 'name', 'price', 'kitchen_destination_id')->where('is_active', true)->get();
+        
+        // ✅ កែត្រង់នេះ៖ ថែម where('name', '!=', 'អ្នកគិតលុយ') ដើម្បីលាក់វាពី Dropdown
+        $destinations = DB::table('kitchen_destinations')
+            ->select('id', 'name')
+            ->where('name', '!=', 'អ្នកគិតលុយ') // ដកអ្នកគិតលុយចេញ
             ->get();
 
-        // ✅ កែ៖ Select 'kitchen_destination_id' របស់ Addon
-        $addons = Addon::select('id', 'name', 'price', 'kitchen_destination_id')
-            ->where('is_active', true)
-            ->get();
-
-        return view('admin.product.product_list', compact('categories', 'addons'));
+        return view('admin.product.product_list', compact('categories', 'addons', 'destinations'));
     }
 
     public function fetchProducts(Request $request)
     {
-        // ✅ Eager Load Relationship សម្រាប់បង្ហាញក្នុង Table
-        // category.destination: ដើម្បីបង្ហាញថា Product នេះនៅផ្នែកណា (តាម Category)
         $query = Product::with(['category.destination', 'addons']);
 
+        // 1. លក្ខខណ្ឌស្វែងរកតាមឈ្មោះ
         if ($request->keyword) {
             $query->where('name', 'like', '%' . $request->keyword . '%');
         }
 
+        // 2. លក្ខខណ្ឌ Filter តាមប្រភេទទំនិញ (Category)
         if ($request->category_id) {
             $query->where('category_id', $request->category_id);
+        }
+
+        // ✅ 3. ត្រូវថែមលក្ខខណ្ឌនេះ ដើម្បី Filter តាមផ្នែកផ្ទះបាយ (Kitchen Destination)
+        if ($request->destination_id) {
+            $query->whereHas('category', function($q) use ($request) {
+                $q->where('kitchen_destination_id', $request->destination_id);
+            });
         }
 
         $sortBy  = $request->input('sort_by', 'created_at');
@@ -141,37 +146,57 @@ class ProductController extends Controller
     public function destroy($id)
     {
         $product = Product::findOrFail($id);
+
+        // ✅ ការពារមិនអោយលុប បើធ្លាប់មានអតិថិជនកម្ម៉ង់ (មានទិន្នន័យក្នុង order_items)
+        if ($product->orderItems()->exists()) {
+            return response()->json([
+                'status' => 'error', 
+                'message' => 'មិនអាចលុបបានទេ! ផលិតផលនេះធ្លាប់មានប្រវត្តិការបញ្ជាទិញរួចហើយ។'
+            ], 400); // ប្រើ 400 Bad Request ដើម្បីឲ្យ Frontend ចាប់ Error នេះបាន
+        }
+
         if ($product->image && Storage::disk('public')->exists($product->image)) {
             Storage::disk('public')->delete($product->image);
         }
         $product->addons()->detach();
         $product->delete();
+        
         return response()->json(['status' => 'success', 'message' => __('messages.product_deleted')]);
     }
 
     public function bulkDelete(Request $request)
     {
         $products = Product::whereIn('id', $request->ids)->get();
+        $deletedCount = 0;
+        $failedCount = 0;
+
         foreach ($products as $product) {
+            // ✅ បើធ្លាប់កម្ម៉ង់ រំលងមិនលុបវាទេ
+            if ($product->orderItems()->exists()) {
+                $failedCount++;
+                continue; 
+            }
+
             if ($product->image && Storage::disk('public')->exists($product->image)) {
                 Storage::disk('public')->delete($product->image);
             }
             $product->addons()->detach();
             $product->delete();
+            
+            $deletedCount++;
         }
-        return response()->json(['status' => 'success', 'message' => __('messages.bulk_delete_success', ['count' => count($products)])]);
+
+        // ប្រាប់ User ពីលទ្ធផល
+        if ($failedCount > 0) {
+            return response()->json([
+                'status' => 'warning', 
+                'message' => "លុបបានជោគជ័យ $deletedCount, និងបដិសេធមិនអោយលុប $failedCount (ដោយសារធ្លាប់មានការកម្ម៉ង់ពីមុន)។"
+            ]);
+        }
+
+        return response()->json(['status' => 'success', 'message' => __('messages.bulk_delete_success', ['count' => $deletedCount])]);
     }
 
-    // public function toggleStatus($id)
-    // {
-    //     $product = Product::findOrFail($id);
-    //     $product->is_active = !$product->is_active;
-    //     $product->save();
-    //     return response()->json(['status' => 'success', 'message' => 'Status updated']);
-    // }
-
-
-    // ✅ កែប្រែ៖ បន្ថែម Permission Check
     public function toggleStatus($id)
     {
         if (!auth()->user()->can('product-edit-status')) {

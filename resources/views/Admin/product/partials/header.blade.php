@@ -4,27 +4,39 @@
         {{ __('messages.product_management') }}
     </h1>
     
-    <!-- <div class="hidden md:flex gap-2">
+    <div class="hidden md:flex gap-2">
         {{-- ✅ Add Permission: pos-kitchen --}}
-        @can('pos-kitchen')
+        <!-- @can('pos-kitchen')
         <a href="{{ url('/pos/kitchen') }}" target="_blank" class="font-bold py-2.5 px-4 rounded-xl flex items-center gap-2 border border-input-border bg-card-bg text-text-color hover:bg-input-bg shadow-sm">
             <i class="ri-fire-line text-orange-500 text-xl"></i> <span>Kitchen</span>
         </a>
-        @endcan
+        @endcan -->
 
         @can('product-create')
         <button @click="openModal('create')" class="btn-primary font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-primary/30 hover:opacity-90 flex items-center gap-2">
             <i class="ri-add-circle-line text-xl"></i><span>{{ __('messages.add_product') }}</span>
         </button>
         @endcan
-    </div> -->
+    </div>
 </div>
 
 <div class="flex flex-col md:flex-row gap-3 mb-4 sm:mb-6">
-    <div class="flex items-center gap-2 w-full md:w-auto flex-1">
+    <div class="flex flex-wrap md:flex-nowrap items-center gap-2 w-full flex-1">
         
+        {{-- ✅ ថ្មី: Filter តាមផ្នែក (ស៊ុប, ឆា, ភេសជ្ជៈ) --}}
+        <div class="w-[calc(50%-4px)] md:w-40 flex-grow-0">
+            <select x-model="filterDestination" @change="fetchProducts()" class="w-full px-2 py-2.5 rounded-xl border border-input-border bg-card-bg text-text-color text-xs sm:text-sm shadow-sm outline-none focus:ring-2 focus:ring-primary/20 truncate">
+                <option value="">ផ្នែកទាំងអស់</option>
+                @if(isset($destinations))
+                    @foreach($destinations as $dest)
+                        <option value="{{ $dest->id }}">{{ $dest->name }}</option>
+                    @endforeach
+                @endif
+            </select>
+        </div>
+
         {{-- Category Filter --}}
-        <div class="w-1/3 md:w-48">
+        <div class="w-[calc(50%-4px)] md:w-48 flex-grow-0">
             <select x-model="filterCategory" @change="fetchProducts()" class="w-full px-2 py-2.5 rounded-xl border border-input-border bg-card-bg text-text-color text-xs sm:text-sm shadow-sm outline-none focus:ring-2 focus:ring-primary/20 truncate">
                 <option value="">{{ __('messages.all_categories') }}</option>
                 @foreach($categories as $cat)
@@ -34,16 +46,16 @@
         </div>
 
         {{-- Search --}}
-        <div class="relative flex-1">
+        <div class="relative flex-1 w-full min-w-[200px]">
             <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-secondary"><i class="ri-search-line"></i></span>
             <input type="text" x-model="search" @keyup.debounce.500ms="fetchProducts()" class="w-full pl-8 pr-3 py-2.5 rounded-xl border border-input-border bg-card-bg text-text-color text-xs sm:text-sm shadow-sm outline-none focus:ring-2 focus:ring-primary/20" placeholder="{{ __('messages.search_placeholder') }}">
         </div>
 
         {{-- Column Button --}}
         <div class="relative shrink-0" x-data="{ openCol: false }">
-            <button @click="openCol = !openCol" @click.outside="openCol = false" class="h-[42px] px-3 bg-card-bg border border-input-border rounded-xl text-text-color hover:bg-input-bg transition text-sm font-medium shadow-sm flex items-center justify-center">
+            <button @click="openCol = !openCol" @click.outside="openCol = false" class="h-[42px] w-full md:w-auto px-3 bg-card-bg border border-input-border rounded-xl text-text-color hover:bg-input-bg transition text-sm font-medium shadow-sm flex items-center justify-center">
                 <i class="ri-layout-column-line text-lg"></i> 
-                <span class="hidden md:inline ml-2">{{ __('messages.columns') }}</span>
+                <span class="inline ml-2 md:inline">{{ __('messages.columns') }}</span>
             </button>
             <div x-show="openCol" class="absolute right-0 mt-2 w-48 bg-card-bg border border-border-color rounded-xl shadow-xl z-50 p-2" style="display: none;" x-transition>
                 <div class="space-y-1">

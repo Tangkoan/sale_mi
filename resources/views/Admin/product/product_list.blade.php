@@ -1,6 +1,5 @@
 @extends('admin.dashboard')
 
-
 @section('title', __('messages.product_management'))
 
 @section('content')
@@ -93,6 +92,7 @@
         }
     }
 
+    
     // ✅ Main Logic
     function productManagement() {
         return {
@@ -103,6 +103,7 @@
             
             search: '',
             filterCategory: '',
+            filterDestination: '',
             perPage: '10',
             currentPage: 1, 
             pagination: { last_page: 1, total: 0 }, 
@@ -179,6 +180,7 @@
                 const params = new URLSearchParams({
                     keyword: this.search,
                     category_id: this.filterCategory,
+                    destination_id: this.filterDestination,
                     per_page: this.perPage,
                     page: this.currentPage,
                     sort_by: this.sortBy,
@@ -319,14 +321,21 @@
                         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
                         body: body
                     });
+                    
                     const data = await response.json();
+                    
                     if(response.ok) {
                         this.selectedIds = [];
                         this.selectAll = false;
                         this.fetchProducts();
-                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: data.message } }));
+                        
+                        if (data.status === 'warning') {
+                            window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'warning', message: data.message } }));
+                        } else {
+                            window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: data.message } }));
+                        }
                     } else {
-                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: data.message } }));
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: data.message || 'Error deleting item!' } }));
                     }
                 } catch(e) { console.error(e); }
             },
