@@ -41,9 +41,9 @@
     </div>
 
     {{-- ================================================================================== --}}
-    {{--  ផ្នែកទី ២: MAIN CONTENT WRAPPER (ដាក់ Loading Overlay ក្នុងនេះ)                 --}}
+    {{--  ផ្នែកទី ២: MAIN CONTENT WRAPPER (ដាក់ Loading Overlay ក្នុងនេះ)                --}}
     {{-- ================================================================================== --}}
-    <div class="relative min-h-[400px]"> {{-- ថែម class relative នៅទីនេះ --}}
+    <div class="relative min-h-[400px]"> 
 
         {{-- Loading Overlay --}}
         <div id="loadingOverlay" class="absolute inset-0 bg-page-bg/90 z-50 hidden flex flex-col items-center justify-center rounded-3xl backdrop-blur-sm transition-all duration-300">
@@ -51,8 +51,8 @@
             <p class="text-sidebar-text font-bold text-lg animate-pulse">{{ __('messages.loading_data') }}</p>
         </div>
 
-        {{-- COLORFUL METRICS GRID --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        {{-- COLORFUL METRICS GRID (ប្តូរទៅជា grid-cols-3 ដោយសារសល់កាត ៣) --}}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
             
             {{-- Card 1: Revenue --}}
             <div class="relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-slate-800 to-black text-white shadow-custom group border border-white/10">
@@ -65,7 +65,6 @@
                         </span>
                     </div>
                     <p class="text-slate-300 text-xs font-bold uppercase tracking-widest mb-1">{{ __('messages.total_revenue') }}</p>
-                    {{-- ✅ ប្ដូរពី $ ទៅ ៛ និងដកកន្ទុយទសភាគ --}}
                     <h3 class="text-3xl font-black tracking-tight"><span id="totalSales">{{ number_format($totalSales, 0) }}</span> ៛</h3>
                 </div>
             </div>
@@ -86,7 +85,6 @@
                 <div class="relative z-10">
                     <div class="mb-4 p-2 w-fit bg-white/20 rounded-xl backdrop-blur-sm"><i class="ri-hand-coin-line text-xl"></i></div>
                     <p class="text-white/80 text-xs font-bold uppercase">{{ __('messages.cash_sales') }}</p>
-                    {{-- ✅ ប្ដូរពី $ ទៅ ៛ និងដកកន្ទុយទសភាគ --}}
                     <h3 class="text-2xl font-black mb-2"><span id="totalCash">{{ number_format($totalCash, 0) }}</span> ៛</h3>
                     <div class="w-full bg-black/10 rounded-full h-1">
                         <div id="cashBar" class="bg-white h-1 rounded-full transition-all duration-500" style="width: {{ $totalSales > 0 ? ($totalCash/$totalSales)*100 : 0 }}%"></div>
@@ -94,19 +92,6 @@
                 </div>
             </div>
 
-            {{-- Card 4: QR Payments --}}
-            <div class="relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-blue-400 to-cyan-500 text-white shadow-custom border border-white/10">
-                <div class="absolute bottom-0 right-0 opacity-20"><i class="ri-qr-scan-2-line text-8xl"></i></div>
-                <div class="relative z-10">
-                    <div class="mb-4 p-2 w-fit bg-white/20 rounded-xl backdrop-blur-sm"><i class="ri-qr-code-line text-xl"></i></div>
-                    <p class="text-white/80 text-xs font-bold uppercase">{{ __('messages.qr_payments') }}</p>
-                    {{-- ✅ ប្ដូរពី $ ទៅ ៛ និងដកកន្ទុយទសភាគ --}}
-                    <h3 class="text-2xl font-black mb-2"><span id="totalQR">{{ number_format($totalQR, 0) }}</span> ៛</h3>
-                    <div class="w-full bg-black/10 rounded-full h-1">
-                        <div id="qrBar" class="bg-white h-1 rounded-full transition-all duration-500" style="width: {{ $totalSales > 0 ? ($totalQR/$totalSales)*100 : 0 }}%"></div>
-                    </div>
-                </div>
-            </div>
         </div>
 
         {{-- ANALYTICS & CHARTS --}}
@@ -228,11 +213,10 @@
             document.getElementById('totalSales').innerText = data.totalSales;
             document.getElementById('totalOrders').innerText = data.totalOrders;
             document.getElementById('totalCash').innerText = data.totalCash;
-            document.getElementById('totalQR').innerText = data.totalQR;
+            // QR Code Element ត្រូវបានដកចេញ
             document.getElementById('comparisonText').innerText = data.comparisonText;
             document.getElementById('growthValue').innerText = data.growth;
             document.getElementById('cashBar').style.width = data.cashPercent + '%';
-            document.getElementById('qrBar').style.width = data.qrPercent + '%';
 
             initChart(data.chartLabels, data.chartData);
             document.getElementById('topProductsList').innerHTML = data.topProductsHtml;

@@ -4,7 +4,7 @@
     
     {{-- 1. Show Per Page --}}
     <div class="flex items-center gap-2">
-        <span class="text-sm text-secondary whitespace-nowrap">Show:</span>
+        <span class="text-sm text-secondary whitespace-nowrap">{{ __('messages.show') }}:</span>
         <select x-model="perPage" @change="gotoPage(1)" class="w-24 bg-page-bg border border-input-border text-text-color text-sm rounded-lg focus:ring-primary focus:border-primary block p-2 outline-none cursor-pointer">
             <option value="1">1</option> {{-- ឥឡូវដំណើរការស្រួលហើយ --}}
             <option value="10">10</option>

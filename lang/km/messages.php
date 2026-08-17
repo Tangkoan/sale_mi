@@ -677,5 +677,8 @@ return [
     'search_placeholder' => 'ស្វែងរក...',
     'add_addon'          => 'បន្ថែមសេវាកម្ម',
     'add'                => 'បន្ថែម',
+    'uncheck_all'        => 'មិនជ្រើសរើសទាំងអស់',
+    'search_placeholder_permission' => 'ស្វែងរកឈ្មោះ ឬ លេខសម្គាល់...',
+    'create' => 'បង្កើត',
 
 ];

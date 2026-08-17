@@ -675,5 +675,8 @@ return [
     'search_placeholder' => 'Search...',
     'add_addon'          => 'Add Addon',
     'add'                => 'Add',
+    'uncheck_all'        => 'Uncheck All',
+    'search_placeholder_permission' => 'Search Name or ID...',
+    'create'         => 'Create',
 
 ];
