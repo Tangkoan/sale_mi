@@ -8,7 +8,6 @@
                     </th>
                     <th class="px-6 py-4 font-bold">{{ __('messages.user') }}</th>
                     <th class="px-6 py-4 font-bold" x-show="showCols.role">{{ __('messages.role') }}</th>
-                    <th class="px-6 py-4 font-bold" x-show="showCols.email">{{ __('messages.email') }}</th>
                     <th class="px-6 py-4 font-bold" x-show="showCols.created_at">{{ __('messages.created_at') }}</th>
                     <th class="px-6 py-4 font-bold text-right">{{ __('messages.actions') }}</th>
                 </tr>
@@ -33,7 +32,6 @@
                             </template>
                         </td>
 
-                        <td class="px-6 py-4 text-secondary text-sm" x-show="showCols.email" x-text="user.email"></td>
                         <td class="px-6 py-4 text-secondary text-sm" x-show="showCols.created_at" x-text="new Date(user.created_at).toLocaleDateString()"></td>
                         
                         <td class="px-6 py-4 text-right">

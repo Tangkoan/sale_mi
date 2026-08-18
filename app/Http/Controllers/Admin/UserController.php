@@ -53,10 +53,7 @@ class UserController extends Controller
         }
 
         if ($request->keyword) {
-            $query->where(function($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->keyword . '%')
-                  ->orWhere('email', 'like', '%' . $request->keyword . '%');
-            });
+            $query->where('name', 'like', '%' . $request->keyword . '%');
         }
 
         $perPage = $request->input('per_page', 10);
@@ -73,23 +70,21 @@ class UserController extends Controller
         $allowedRoles = $this->getAllowedRoles()->pluck('name')->toArray();
 
         $validator = Validator::make($request->all(), [
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
+            'name'     => 'required|string|max:255|unique:users,name',
             'password' => 'required|min:8',
             'role'     => ['required', Rule::in($allowedRoles)]
         ], [
-            'email.unique' => __('messages.email_duplicate'),
+            'name.unique'  => __('messages.name_duplicate'),
             'role.in'      => __('messages.role_permission_denied'),
             'required'     => __('messages.field_required'),
             'min'          => __('messages.password_min'),
         ]);
 
         if ($validator->fails()) {
-            // Check ករណី Email ស្ទួន
-            if ($validator->errors()->has('email')) {
+            if ($validator->errors()->has('name')) {
                 return response()->json([
                     'status'  => 'error',
-                    'message' => __('messages.email_duplicate'),
+                    'message' => __('messages.name_duplicate'),
                     'errors'  => $validator->errors()
                 ], 422);
             }
@@ -103,13 +98,13 @@ class UserController extends Controller
         return DB::transaction(function () use ($request) {
             $user = User::create([
                 'name'     => $request->name,
-                'email'    => $request->email,
                 'password' => Hash::make($request->password),
             ]);
 
             // បើមានបញ្ចូល PIN គឺត្រូវ Hash វា
             if ($request->filled('pin')) {
-                $data['pin'] = Hash::make($request->pin);
+                $user->pin = Hash::make($request->pin);
+                $user->save();
             }
 
             $user->assignRole($request->role);
@@ -138,8 +133,7 @@ class UserController extends Controller
 
         // 1. Validation
         $request->validate([
-            'name'   => 'required|string|max:255',
-            'email'  => 'required|email|unique:users,email,' . $user->id, // unique តែអនុញ្ញាតសម្រាប់ ID ខ្លួនឯង
+            'name'   => 'required|string|max:255|unique:users,name,' . $user->id,
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048' // កំណត់ប្រភេទរូបភាព
         ]);
 
@@ -155,9 +149,8 @@ class UserController extends Controller
             $user->avatar = $path;
         }
 
-        // 3. Update ឈ្មោះ និង អ៊ីមែល
+        // 3. Update ឈ្មោះ
         $user->name = $request->name;
-        $user->email = $request->email;
         $user->save();
 
         // 4. Return ត្រឡប់ទៅវិញ
@@ -216,21 +209,19 @@ class UserController extends Controller
 
         // Validator
         $validator = Validator::make($request->all(), [
-            'name'  => 'required|string|max:255',
-            // unique:table,column,except_id
-            'email' => 'required|email|unique:users,email,' . $id, 
+            'name'  => 'required|string|max:255|unique:users,name,' . $id,
             'role'  => ['required', Rule::in($allowedRoles)]
         ], [
-            'email.unique' => __('messages.email_duplicate'),
+            'name.unique'  => __('messages.name_duplicate'),
             'role.in'      => __('messages.role_permission_denied'),
             'required'     => __('messages.field_required'),
         ]);
 
         if ($validator->fails()) {
-            if ($validator->errors()->has('email')) {
+            if ($validator->errors()->has('name')) {
                 return response()->json([
                     'status'  => 'error',
-                    'message' => __('messages.email_duplicate'),
+                    'message' => __('messages.name_duplicate'),
                     'errors'  => $validator->errors()
                 ], 422);
             }
@@ -245,7 +236,6 @@ class UserController extends Controller
         return DB::transaction(function () use ($request, $user) {
             $data = [
                 'name'  => $request->name,
-                'email' => $request->email,
             ];
 
             if ($request->password) {

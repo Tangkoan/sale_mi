@@ -1,4 +1,3 @@
-
 @extends('admin.dashboard')
 
 @section('content')
@@ -47,10 +46,9 @@
             selectedIds: [],
             selectAll: false,
 
-            // Column Config
+            // Column Config (Removed Email)
             showCols: JSON.parse(localStorage.getItem('user_table_cols')) || { 
                 role: true, 
-                email: true, 
                 created_at: true 
             },
 
@@ -58,7 +56,7 @@
             sequenceQueue: [],
             currentSeqIndex: 0,
 
-            form: { id: null, name: '', email: '', role: '', password: '', pin: '' },
+            form: { id: null, name: '', role: '', password: '', pin: '' },
             errors: {},
 
             init() { 
@@ -141,7 +139,6 @@
                 this.form = { 
                     id: user.id, 
                     name: user.name, 
-                    email: user.email, 
                     role: user.roles.length > 0 ? user.roles[0].name : '',
                     password: '', // Reset password field
                     pin: ''
@@ -158,7 +155,7 @@
                     this.loadUserToForm(item);
                 } else {
                     this.editMode = false;
-                    this.form = { id: null, name: '', email: '', role: '', password: '',pin: '' };
+                    this.form = { id: null, name: '', role: '', password: '',pin: '' };
                 }
             },
 

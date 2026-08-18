@@ -21,7 +21,6 @@
                     <x-avatar /> 
                     <div>
                         <h3 class="font-bold text-text-color text-base" x-text="user.name"></h3>
-                        <p class="text-xs text-secondary" x-show="showCols.email" x-text="user.email"></p>
                     </div>
                 </div>
                 

@@ -27,13 +27,6 @@
                 <p x-show="errors.name" x-text="errors.name" class="text-red-500 text-xs mt-1"></p>
             </div>
 
-            {{-- Email --}}
-            <div>
-                <label class="block text-sm font-bold text-text-color mb-1">{{ __('messages.email') }}</label>
-                <input type="email" x-model="form.email" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
-                <p x-show="errors.email" x-text="errors.email" class="text-red-500 text-xs mt-1"></p>
-            </div>
-
             {{-- Role --}}
             <div>
                 <label class="block text-sm font-bold text-text-color mb-1">{{ __('messages.assign_role') }}</label>
@@ -55,9 +48,10 @@
             <div>
                 <label class="block text-sm font-bold text-text-color mb-1" x-text="editMode ? '{{ __('messages.new_password_optional') }}' : '{{ __('messages.password') }}'"></label>
                 <input type="password" x-model="form.password" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
+                <p x-show="errors.password" x-text="errors.password" class="text-red-500 text-xs mt-1"></p>
             </div>
 
-            {{-- PIN Code (ថ្មី) --}}
+            {{-- PIN Code --}}
             <div>
                 <label class="block text-sm font-bold text-text-color mb-1" x-text="editMode ? 'PIN Code ថ្មី (មិនចាំបាច់បើមិនចង់ប្ដូរ)' : 'PIN Code សម្រាប់ Login លឿន'"></label>
                 <input type="password" x-model="form.pin" maxlength="4" inputmode="numeric" placeholder="ឧ. 1234" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none tracking-widest">
