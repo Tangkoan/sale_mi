@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="km">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Shop Login</title>
+    <title>ចូលប្រព័ន្ធហាង</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Nokora:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -39,7 +39,7 @@
             --input-border: 229 231 235;
         }
 
-        body { font-family: 'Plus Jakarta Sans', 'Nokora', sans-serif; }
+        body { font-family: 'Nokora', 'Plus Jakarta Sans', sans-serif; }
         
         .captcha-box {
             background-image: radial-gradient(rgb(var(--input-border)) 1px, transparent 1px);
@@ -103,7 +103,7 @@
                 @endif
             </div>
             
-            <h2 class="text-xl font-bold text-gray-900 tracking-tight">Welcome Back!</h2>
+            <h2 class="text-xl font-bold text-gray-900 tracking-tight">សូមស្វាគមន៍ត្រលប់មកវិញ!</h2>
         </div>
 
         <form id="loginForm" action="{{ route('login.submit') }}" method="POST" class="space-y-4">
@@ -112,12 +112,12 @@
             <input type="hidden" name="login_method" id="login_method" value="password">
 
             <div class="flex space-x-2 bg-input-bg p-1 rounded-xl mb-4 border border-input-border">
-                <button type="button" onclick="switchMethod('password')" id="btnPassMethod" class="flex-1 py-2 text-sm font-bold bg-card-bg shadow rounded-lg text-primary transition-all focus:outline-none">Password</button>
-                <button type="button" onclick="switchMethod('pin')" id="btnPinMethod" class="flex-1 py-2 text-sm font-bold text-gray-500 hover:text-primary transition-all focus:outline-none">PIN Code</button>
+                <button type="button" onclick="switchMethod('password')" id="btnPassMethod" class="flex-1 py-2 text-sm font-bold bg-card-bg shadow rounded-lg text-primary transition-all focus:outline-none font-khmer">លេខសម្ងាត់</button>
+                <button type="button" onclick="switchMethod('pin')" id="btnPinMethod" class="flex-1 py-2 text-sm font-bold text-gray-500 hover:text-primary transition-all focus:outline-none font-khmer">លេខកូដ PIN</button>
             </div>
 
             <div class="group" id="username_section">
-                <label class="block text-gray-500 text-[11px] font-bold mb-1 ml-3 uppercase tracking-wider">Username / Email</label>
+                <label class="block text-gray-500 text-[11px] font-bold mb-1 ml-3 tracking-wider font-khmer">ឈ្មោះគណនី / អ៊ីមែល</label>
                 <div class="relative transition-all duration-300 transform group-focus-within:-translate-y-0.5">
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <svg class="h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -125,16 +125,16 @@
                         </svg>
                     </div>
                     <input type="text" name="username" id="username"
-                        class="w-full pl-11 pr-4 py-3 bg-input-bg border border-input-border rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 focus:bg-card-bg transition-all text-gray-800 font-medium placeholder-gray-400" 
-                        placeholder="Enter username or email">
+                        class="w-full pl-11 pr-4 py-3 bg-input-bg border border-input-border rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 focus:bg-card-bg transition-all text-gray-800 font-medium placeholder-gray-400 font-khmer" 
+                        placeholder="បញ្ចូលឈ្មោះគណនី ឬអ៊ីមែល">
                 </div>
-                <p id="error-username" class="text-red-500 text-xs mt-1 ml-2 hidden font-medium flex items-center animate-pulse">
+                <p id="error-username" class="text-red-500 text-xs mt-1 ml-2 hidden font-medium flex items-center animate-pulse font-khmer">
                     <span></span>
                 </p>
             </div>
 
             <div class="group" id="password_section">
-                <label class="block text-gray-500 text-[11px] font-bold mb-1 ml-3 uppercase tracking-wider">Password</label>
+                <label class="block text-gray-500 text-[11px] font-bold mb-1 ml-3 tracking-wider font-khmer">លេខសម្ងាត់</label>
                 <div class="relative transition-all duration-300 transform group-focus-within:-translate-y-0.5">
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <svg class="h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -155,13 +155,13 @@
                         </svg>
                     </button>
                 </div>
-                <p id="error-password" class="text-red-500 text-xs mt-1 ml-2 hidden font-medium flex items-center animate-pulse">
+                <p id="error-password" class="text-red-500 text-xs mt-1 ml-2 hidden font-medium flex items-center animate-pulse font-khmer">
                     <span></span>
                 </p>
             </div>
 
             <div class="group hidden" id="pin_section">
-                <label class="block text-gray-500 text-[11px] font-bold mb-1 ml-3 uppercase tracking-wider">PIN Code</label>
+                <label class="block text-gray-500 text-[11px] font-bold mb-1 ml-3 tracking-wider font-khmer">លេខកូដ PIN</label>
                 <div class="relative transition-all duration-300 transform group-focus-within:-translate-y-0.5">
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <svg class="h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -172,19 +172,19 @@
                         class="w-full pl-11 pr-4 py-3 bg-input-bg border border-input-border rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 focus:bg-card-bg transition-all text-gray-800 font-bold placeholder-gray-400 tracking-[0.5em] text-center" 
                         placeholder="••••">
                 </div>
-                <p id="error-pin" class="text-red-500 text-xs mt-1 ml-2 hidden font-medium flex items-center animate-pulse">
+                <p id="error-pin" class="text-red-500 text-xs mt-1 ml-2 hidden font-medium flex items-center animate-pulse font-khmer">
                     <span></span>
                 </p>
             </div>
 
             <div class="pt-1" id="captcha_section">
                 <div class="flex justify-between items-end mb-2">
-                    <label class="block text-gray-500 text-[11px] font-bold ml-3 uppercase tracking-wider">Security Code</label>
-                    <button type="button" onclick="window.location.reload()" class="text-primary text-xs font-semibold hover:text-secondary flex items-center px-2 py-1 rounded-lg hover:bg-primary/10 transition-colors focus:outline-none">
+                    <label class="block text-gray-500 text-[11px] font-bold ml-3 tracking-wider font-khmer">កូដសុវត្ថិភាព</label>
+                    <button type="button" onclick="window.location.reload()" class="font-khmer text-primary text-xs font-semibold hover:text-secondary flex items-center px-2 py-1 rounded-lg hover:bg-primary/10 transition-colors focus:outline-none">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
-                        Change Code
+                        ប្ដូរកូដថ្មី
                     </button>
                 </div>
                 
@@ -196,13 +196,13 @@
                         class="w-2/3 px-4 py-3 bg-input-bg border border-input-border rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 focus:bg-card-bg transition-all text-center tracking-[0.3em] font-bold text-gray-800 placeholder-gray-300 uppercase" 
                         placeholder="XXXX">
                 </div>
-                <p id="error-captcha" class="text-red-500 text-xs mt-1 ml-2 hidden font-medium flex items-center animate-pulse">
+                <p id="error-captcha" class="text-red-500 text-xs mt-1 ml-2 hidden font-medium flex items-center animate-pulse font-khmer">
                     <span></span>
                 </p>
             </div>
 
-            <button type="submit" id="btnSubmit" class="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white font-bold py-3 rounded-xl shadow-lg shadow-primary/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-300 transform active:scale-[0.98] mt-4 text-base tracking-wide">
-                Sign In
+            <button type="submit" id="btnSubmit" class="font-khmer w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white font-bold py-3 rounded-xl shadow-lg shadow-primary/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-300 transform active:scale-[0.98] mt-4 text-base tracking-wide">
+                ចូលប្រព័ន្ធ
             </button>
         </form>
     </div>
@@ -295,7 +295,7 @@
             let originalBtnText = btnSubmit.innerHTML;
             
             // Loading State
-            btnSubmit.innerHTML = '<div class="flex items-center justify-center"><svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Verifying...</div>';
+            btnSubmit.innerHTML = '<div class="flex items-center justify-center font-khmer"><svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> កំពុងផ្ទៀងផ្ទាត់...</div>';
             btnSubmit.disabled = true;
             btnSubmit.classList.add('opacity-80', 'cursor-not-allowed');
             if(document.getElementById('login_method').value === 'pin') {
@@ -339,11 +339,11 @@
             .catch(error => {
                 console.error('Error:', error);
                 resetButton(originalBtnText);
-                alert("Connection error! Please try again.");
+                alert("មានបញ្ហាក្នុងការភ្ជាប់បណ្ដាញ! សូមព្យាយាមម្ដងទៀត។");
             });
 
             function resetButton(text) {
-                btnSubmit.innerHTML = 'Sign In';
+                btnSubmit.innerHTML = 'ចូលប្រព័ន្ធ';
                 btnSubmit.disabled = false;
                 btnSubmit.classList.remove('opacity-80', 'cursor-not-allowed');
                 pinInput.disabled = false;

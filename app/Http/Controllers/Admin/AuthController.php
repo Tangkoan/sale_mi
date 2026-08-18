@@ -42,7 +42,7 @@ class AuthController extends Controller
                 $seconds = RateLimiter::availableIn($throttleKey);
                 return response()->json([
                     'status' => 'error',
-                    'errors' => ['pin' => ["ឧបករណ៍នេះត្រូវបាន Block! សូមរង់ចាំ " . ceil($seconds/60) . " នាទី។"]]
+                    'errors' => ['pin' => ["ឧបករណ៍នេះត្រូវបានផ្អាកជាបណ្ដោះអាសន្ន! សូមរង់ចាំ " . ceil($seconds/60) . " នាទី។"]]
                 ], 429);
             }
 
@@ -96,7 +96,7 @@ class AuthController extends Controller
             if ($request->captcha !== session('captcha_code')) {
                 return response()->json([
                     'status' => 'error',
-                    'errors' => ['captcha' => ['Captcha ខុស! សូមព្យាយាមម្តងទៀត។']]
+                    'errors' => ['captcha' => ['កូដសុវត្ថិភាពមិនត្រឹមត្រូវ! សូមព្យាយាមម្តងទៀត។']]
                 ], 422);
             }
 
@@ -108,7 +108,7 @@ class AuthController extends Controller
             if (!$user) {
                 return response()->json([
                     'status' => 'error',
-                    'errors' => ['username' => ['រកមិនឃើញឈ្មោះគណនី ឬ Email នេះទេ']]
+                    'errors' => ['username' => ['រកមិនឃើញឈ្មោះគណនី ឬអ៊ីមែលនេះទេ!']]
                 ], 422);
             }
 
@@ -116,7 +116,7 @@ class AuthController extends Controller
             if (!Hash::check($request->password, $user->password)) {
                 return response()->json([
                     'status' => 'error',
-                    'errors' => ['password' => ['លេខសម្ងាត់មិនត្រឹមត្រូវ (Wrong Password)']]
+                    'errors' => ['password' => ['លេខសម្ងាត់មិនត្រឹមត្រូវ!']]
                 ], 422);
             }
 
