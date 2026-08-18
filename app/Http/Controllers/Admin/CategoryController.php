@@ -9,6 +9,7 @@ use App\Models\KitchenDestination; // ✅ Import Model ថ្មី
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use App\Models\Product; // ✅ បន្ថែមបន្ទាត់នេះ
 
 class CategoryController extends Controller
 {
@@ -164,27 +165,74 @@ class CategoryController extends Controller
     public function destroy($id)
     {
         $category = Category::findOrFail($id);
+
+        // ✅ ឆែកមើលថាតើ Category នេះមាន Product កំពុងប្រើឬអត់
+        $hasProducts = Product::where('category_id', $id)->exists();
+
+        if ($hasProducts) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'មិនអាចលុបបានទេ ព្រោះមានផលិតផលកំពុងប្រើប្រាស់ប្រភេទ (Category) នេះ!'
+            ], 400);
+        }
+
         if ($category->image && Storage::disk('public')->exists($category->image)) {
             Storage::disk('public')->delete($category->image);
         }
+        
         $category->delete();
+        
         if(function_exists('activity')) {
             activity()->causedBy(auth()->user())->performedOn($category)->log('deleted category');
         }
+        
         return response()->json(['status' => 'success', 'message' => __('messages.category_deleted')]);
     }
 
     public function bulkDelete(Request $request)
     {
         $categories = Category::whereIn('id', $request->ids)->get();
-        $count = 0;
+        $deletedCount = 0;
+        $skippedCount = 0; // ✅ រាប់ចំនួន Category ដែលមិនអាចលុបបាន
+
         foreach ($categories as $category) {
+            // ✅ ឆែកមើលថាតើ Category នេះមាន Product កំពុងប្រើឬអត់
+            $hasProducts = Product::where('category_id', $category->id)->exists();
+
+            if ($hasProducts) {
+                $skippedCount++;
+                continue; // រំលងមិនលុប Category នេះទេ
+            }
+
             if ($category->image && Storage::disk('public')->exists($category->image)) {
                 Storage::disk('public')->delete($category->image);
             }
+            
             $category->delete();
-            $count++;
+            $deletedCount++;
         }
-        return response()->json(['status' => 'success', 'message' => __('messages.bulk_delete_success', ['count' => $count])]);
+
+        // ប្រសិនបើជ្រើសរើសលុបច្រើន តែគ្មានមួយណាអាចលុបបានទាល់តែសោះ
+        if ($deletedCount === 0 && $skippedCount > 0) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'មិនអាចលុបទិន្នន័យដែលបានជ្រើសរើសបានទេ ព្រោះពួកវាមានជាប់ទិន្នន័យផលិតផល!'
+            ], 400);
+        }
+
+        // បង្កើតសារជោគជ័យ
+        $message = __('messages.bulk_delete_success', ['count' => $deletedCount]);
+        
+        // ប្រសិនបើមាន Category ខ្លះត្រូវបានលុប និងខ្លះទៀតមិនអាចលុបបាន
+        if ($skippedCount > 0) {
+            $message .= " (រំលង $skippedCount ព្រោះមានជាប់ទិន្នន័យផលិតផល)";
+        }
+
+        return response()->json([
+            'status' => 'success', 
+            'message' => $message
+        ]);
     }
+
+    
 }
