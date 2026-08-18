@@ -25,7 +25,7 @@
                 <div class="flex justify-between items-center">
                     <h3 class="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
                         <span class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-sm"><i class="ri-file-list-3-fill"></i></span>
-                        <span x-text="isSplitMode ? 'Select Items to Split' : 'Order Details'"></span>
+                        <span x-text="isSplitMode ? 'ជ្រើសរើសមុខម្ហូបដើម្បីបំបែក' : 'ព័ត៌មានលម្អិតបញ្ជាទិញ'"></span>
                     </h3>
                     <p class="text-xs text-gray-500 bg-input-bg px-2 py-1 rounded border border-bor-color" x-text="orderDetails.invoice_number"></p>
                 </div>
@@ -46,7 +46,7 @@
                         <button @click="toggleSplitMode()" 
                                 class="flex-1 py-2 rounded-lg text-xs font-bold transition-all border flex items-center justify-center gap-1 active:scale-95"
                                 :class="isSplitMode ? 'bg-red-50 text-red-600 border-red-100' : 'bg-input-bg text-gray-600 border-bor-color hover:bg-gray-200 dark:hover:bg-gray-700'">
-                            <i class="ri-scissors-cut-line"></i> <span x-text="isSplitMode ? 'Cancel' : 'Split'"></span>
+                            <i class="ri-scissors-cut-line"></i> <span x-text="isSplitMode ? 'បោះបង់' : 'បំបែក'"></span>
                         </button>
                     @endcan
                 </div>
@@ -65,7 +65,7 @@
                                             <input type="checkbox" @change="toggleSplitItem(item)" :checked="isItemSplitted(item.id)" class="w-5 h-5 rounded text-primary focus:ring-primary border-gray-300 cursor-pointer">
                                         </div>
                                         <div class="text-gray-800 dark:text-gray-200 text-base flex-1">
-                                            <div class="font-bold text-lg" x-text="item.product ? item.product.name : 'Item'"></div>
+                                            <div class="font-bold text-lg" x-text="item.product ? item.product.name : 'មុខម្ហូប'"></div>
                                             <template x-if="item.addons && item.addons.length > 0">
                                                 <div class="mt-2 space-y-1 border-t border-dashed border-bor-color pt-1">
                                                     <template x-for="(ad, index) in item.addons" :key="index">
@@ -132,11 +132,11 @@
                                 :class="paymentMethod === 'cash' ? 'bg-card-bg text-primary shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700'">
                             <i class="ri-money-dollar-circle-fill text-lg"></i> {{ __('messages.cash') }}
                         </button>
-                        <button @click="paymentMethod = 'qr'" 
+                        <!-- <button @click="paymentMethod = 'qr'" 
                                 class="flex-1 py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200"
                                 :class="paymentMethod === 'qr' ? 'bg-card-bg text-primary shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700'">
                             <i class="ri-qr-code-line text-lg"></i> {{ __('messages.khqr') }}
-                        </button>
+                        </button> -->
                     </div>
                 </div>
              </div>
@@ -145,7 +145,7 @@
                 <div class="flex gap-3">
                     <button @click="isCheckoutModalOpen = false" class="flex-1 py-3.5 rounded-xl border border-bor-color text-gray-700 dark:text-gray-300 font-bold text-sm hover:bg-input-bg">{{ __('messages.cancel') }}</button>
                     <button @click="confirmPayment()" :disabled="isProcessing" class="flex-[2] py-3.5 rounded-xl text-white font-bold text-sm shadow-lg flex justify-center items-center gap-2 bg-primary hover:bg-primary/90">
-                        <span x-text="isProcessing ? 'Processing...' : '{{ __('messages.confirm_print') }}'"></span>
+                        <span x-text="isProcessing ? 'កំពុងដំណើរការ...' : '{{ __('messages.confirm_print') }}'"></span>
                     </button>
                 </div>
             </div>
@@ -208,7 +208,7 @@
                 <button @click="isMoveModalOpen = false" class="flex-1 py-3 rounded-xl border border-bor-color text-gray-600 dark:text-gray-300 font-bold text-sm hover:bg-card-bg transition">{{ __('messages.cancel') }}</button>
                 <button @click="submitMoveTable()" :disabled="!selectedTargetTable || isProcessing" class="flex-[2] py-3 rounded-xl text-white font-bold text-sm shadow-lg flex justify-center items-center gap-2 transition-all" :class="!selectedTargetTable || isProcessing ? 'bg-gray-300 cursor-not-allowed' : 'bg-primary hover:bg-primary/90 active:scale-95'">
                     <span x-show="!isProcessing">{{ __('messages.confirm') }}</span>
-                    <span x-show="isProcessing"><i class="ri-loader-4-line animate-spin"></i> Processing...</span>
+                    <span x-show="isProcessing"><i class="ri-loader-4-line animate-spin"></i> កំពុងដំណើរការ...</span>
                 </button>
             </div>
         </div>
@@ -302,7 +302,7 @@
                         :class="selectedMergeTables.length === 0 || isProcessing ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary hover:bg-primary/90 active:scale-95'">
                     
                     <span x-show="!isProcessing">{{ __('messages.confirm') }} <span x-show="selectedMergeTables.length > 0" x-text="'(' + selectedMergeTables.length + ')'"></span></span>
-                    <span x-show="isProcessing"><i class="ri-loader-4-line animate-spin"></i> Processing...</span>
+                    <span x-show="isProcessing"><i class="ri-loader-4-line animate-spin"></i> កំពុងដំណើរការ...</span>
                 </button>
             </div>
         </div>
