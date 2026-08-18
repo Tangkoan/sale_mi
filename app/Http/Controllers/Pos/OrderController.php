@@ -126,7 +126,7 @@ class OrderController extends Controller
     {
         $itemsToPrint = OrderItem::with([
                 'product.category.kitchenDestination', 
-                'addons.addon',
+                'addons.addon.kitchenDestination', 
                 'order.table' 
             ])
             ->where('order_id', $orderId)
@@ -137,14 +137,47 @@ class OrderController extends Controller
 
         $kitchenBatches = [];
         foreach ($itemsToPrint as $item) {
-            $destination = $item->product?->category?->kitchenDestination;
-            if (!$destination || !$destination->is_active) { continue; }
-            
-            $batchKey = $destination->id;
-            if (!isset($kitchenBatches[$batchKey])) {
-                $kitchenBatches[$batchKey] = ['info' => $destination, 'items' => []];
+            // ឆែកមើលតើវាជាមុខម្ហូប 'Extra' (Standalone Addon) ដែរឬទេ?
+            $isWrapperProduct = stripos($item->product?->name, 'extra') !== false;
+
+            if ($isWrapperProduct && $item->addons->isNotEmpty()) {
+                // ប្រសិនបើជា Extra, យើងត្រូវទាញ Addon ធ្វើជា Main Product វិញ
+                foreach ($item->addons as $addon) {
+                    $destination = $addon->addon?->kitchenDestination;
+                    if (!$destination) {
+                        $destination = $item->product?->category?->kitchenDestination;
+                    }
+
+                    if (!$destination || !$destination->is_active) { continue; }
+                    
+                    $batchKey = $destination->id;
+                    if (!isset($kitchenBatches[$batchKey])) {
+                        $kitchenBatches[$batchKey] = ['info' => $destination, 'items' => []];
+                    }
+
+                    // បង្កើត Item ក្លែងក្លាយ ដើម្បីឲ្យចង្ក្រានចេញឈ្មោះ Addon ជាម្ហូបគោល
+                    $fakeItem = clone $item;
+                    $fakeItem->quantity = floatval($item->quantity) * floatval($addon->quantity ?? 1);
+                    
+                    $fakeProduct = clone $item->product;
+                    $fakeProduct->name = $addon->addon->name ?? $addon->name ?? 'Addon'; // ប្តូរឈ្មោះ Extra ទៅជាឈ្មោះ Addon
+                    
+                    $fakeItem->setRelation('product', $fakeProduct);
+                    $fakeItem->setRelation('addons', collect()); // លុប Addon List ចោល ព្រោះវាជា Main Product ហើយ
+                    
+                    $kitchenBatches[$batchKey]['items'][] = $fakeItem;
+                }
+            } else {
+                // ដំណើរការម្ហូបធម្មតា
+                $destination = $item->product?->category?->kitchenDestination;
+                if (!$destination || !$destination->is_active) { continue; }
+                
+                $batchKey = $destination->id;
+                if (!isset($kitchenBatches[$batchKey])) {
+                    $kitchenBatches[$batchKey] = ['info' => $destination, 'items' => []];
+                }
+                $kitchenBatches[$batchKey]['items'][] = $item;
             }
-            $kitchenBatches[$batchKey]['items'][] = $item;
         }
 
         foreach ($kitchenBatches as $batchKey => $batch) {
@@ -162,7 +195,7 @@ class OrderController extends Controller
 
                 \Spatie\Browsershot\Browsershot::html($html)
                     ->setChromePath($chromePath)
-                    ->windowSize(576, 100) // ✅ ដូរពី 512 ទៅ 576 សម្រាប់ក្រដាស 80mm
+                    ->windowSize(576, 100)
                     ->fullPage()           
                     ->save($imagePath);
 
@@ -176,14 +209,11 @@ class OrderController extends Controller
                 $printer->cut();
                 $printer->close();
 
-                if (file_exists($imagePath)) {
-                    unlink($imagePath);
-                }
+                if (file_exists($imagePath)) { unlink($imagePath); }
 
                 foreach ($items as $item) {
                     $item->update(['is_printed' => true]);
                 }
-
             } catch (\Exception $e) {
                 Log::error("❌ Print Error: " . $e->getMessage());
             }
@@ -573,80 +603,100 @@ class OrderController extends Controller
             $order = Order::with(['items.product', 'items.addons.addon', 'table', 'user'])->find($orderId);
             if (!$order) return;
 
-            // =========================================================
-            // 🌟 មុខងារថ្មី: បូកឈ្មោះម្ហូបដូចគ្នាចូលគ្នា (ទោះ Addon ខុសគ្នាក៏ដោយ) រួចបូក Addon សរុប
-            // =========================================================
             $groupedItems = [];
 
             foreach ($order->items as $item) {
-                // ១. ចាប់យកចំណាំ (Note) 
                 $noteKey = $item->note ? strtolower(trim($item->note)) : '';
                 
-                // ២. បង្កើត Key សម្គាល់តែឈ្មោះម្ហូប តម្លៃ និងចំណាំ (លែងខ្វល់រឿង Addon ខុសគ្នា)
-                $rowKey = $item->product_id . '_' . floatval($item->price) . '_' . $noteKey;
+                // ឆែកមើលតើវាជាមុខម្ហូប 'Extra' (Standalone Addon) ដែរឬទេ?
+                $isExtra = stripos($item->product?->name, 'extra') !== false;
 
-                if (array_key_exists($rowKey, $groupedItems)) {
-                    // ---- ក. បើមានមុខម្ហូបនេះរួចហើយ: បូកចំនួនមុខម្ហូប (Qty) ----
-                    $groupedItems[$rowKey]->quantity += $item->quantity;
+                if ($isExtra && $item->addons && $item->addons->isNotEmpty()) {
+                    // បើជា Extra (Standalone Addon) យើងទាញ Addon មកធ្វើជាម្ហូបគោល (Main Product) តែម្តង
+                    foreach ($item->addons as $addon) {
+                        $addonName = $addon->addon->name ?? $addon->name ?? 'Addon';
+                        $addonPrice = floatval($addon->price);
+                        $addonQty = floatval($item->quantity) * floatval($addon->quantity ?? 1);
 
-                    // ---- ខ. បូកបញ្ជូលចំនួន Addons ចូលគ្នានៅក្រោមម្ហូបតែមួយ ----
-                    if ($item->addons) {
-                        $existingAddons = $groupedItems[$rowKey]->addons;
-                        
-                        foreach ($item->addons as $incomingAddon) {
-                            $incomingId = $incomingAddon->addon_id ?? $incomingAddon->name ?? 'unknown';
-                            $found = false;
+                        // បង្កើត Row Key ថ្មីសម្រាប់ Addon ដើម្បីអាចបូកបញ្ចូលគ្នាបាន
+                        $rowKey = 'addon_standalone_' . ($addon->addon_id ?? $addonName) . '_' . $addonPrice . '_' . $noteKey;
 
-                            // ស្វែងរក Addon ថាមានតេអត់ ដើម្បីបូក Quantity
-                            foreach ($existingAddons as $exAddon) {
-                                $exId = $exAddon->addon_id ?? $exAddon->name ?? 'unknown';
-                                if ($exId == $incomingId) {
-                                    $currentQty = floatval($exAddon->quantity ?? 1);
-                                    $addQty = floatval($incomingAddon->quantity ?? 1);
-                                    
-                                    // ធ្វើការបូកបញ្ចូលចំនួន Addon (ឧទាហរណ៍ សាច់ក្រក១ បូក សាច់ក្រក១ ស្មើ ២)
-                                    $exAddon->quantity = $currentQty + $addQty;
-                                    $found = true;
-                                    break;
-                                }
-                            }
+                        if (array_key_exists($rowKey, $groupedItems)) {
+                            $groupedItems[$rowKey]->quantity += $addonQty;
+                        } else {
+                            $fakeItem = clone $item;
+                            $fakeItem->quantity = $addonQty;
+                            $fakeItem->price = $addonPrice;
+                            
+                            // បង្កើត Product ក្លែងក្លាយដើម្បីឲ្យ Invoice លោតឈ្មោះ Addon ជំនួស Extra
+                            $fakeProduct = clone $item->product;
+                            $fakeProduct->name = $addonName;
+                            $fakeItem->setRelation('product', $fakeProduct);
+                            
+                            // លុប Addon ចេញពី List ព្រោះយើងបានប្រែក្លាយវាទៅជា Main Product ហើយ
+                            $fakeItem->setRelation('addons', collect());
 
-                            // បើមិនទាន់មាន Addon នេះទេ គឺ Push បញ្ចូលបន្ថែមពីក្រោម
-                            if (!$found) {
-                                $existingAddons->push(clone $incomingAddon);
-                            }
+                            $groupedItems[$rowKey] = $fakeItem;
                         }
                     }
                 } else {
-                    // ---- គ. បើមិនទាន់មានម្ហូបនេះទេ: ចម្លងទុកជាជួរថ្មី (Clone) ----
-                    $clonedItem = clone $item;
-                    
-                    $clonedAddons = collect();
-                    if ($item->addons) {
-                        foreach ($item->addons as $addon) {
-                            $addonId = $addon->addon_id ?? $addon->name ?? 'unknown';
-                            
-                            $existing = $clonedAddons->first(function($a) use ($addonId) {
-                                $id = $a->addon_id ?? $a->name ?? 'unknown';
-                                return $id == $addonId;
-                            });
+                    // ដំណើរការធម្មតាសម្រាប់ម្ហូបទូទៅ
+                    $rowKey = $item->product_id . '_' . floatval($item->price) . '_' . $noteKey;
 
-                            if ($existing) {
-                                $existing->quantity = floatval($existing->quantity ?? 1) + floatval($addon->quantity ?? 1);
-                            } else {
-                                $clonedAddons->push(clone $addon);
+                    if (array_key_exists($rowKey, $groupedItems)) {
+                        $groupedItems[$rowKey]->quantity += $item->quantity;
+
+                        if ($item->addons) {
+                            $existingAddons = $groupedItems[$rowKey]->addons;
+                            
+                            foreach ($item->addons as $incomingAddon) {
+                                $incomingId = $incomingAddon->addon_id ?? $incomingAddon->name ?? 'unknown';
+                                $found = false;
+
+                                foreach ($existingAddons as $exAddon) {
+                                    $exId = $exAddon->addon_id ?? $exAddon->name ?? 'unknown';
+                                    if ($exId == $incomingId) {
+                                        $currentQty = floatval($exAddon->quantity ?? 1);
+                                        $addQty = floatval($incomingAddon->quantity ?? 1);
+                                        $exAddon->quantity = $currentQty + $addQty;
+                                        $found = true;
+                                        break;
+                                    }
+                                }
+
+                                if (!$found) {
+                                    $existingAddons->push(clone $incomingAddon);
+                                }
                             }
                         }
+                    } else {
+                        $clonedItem = clone $item;
+                        $clonedAddons = collect();
+                        
+                        if ($item->addons) {
+                            foreach ($item->addons as $addon) {
+                                $addonId = $addon->addon_id ?? $addon->name ?? 'unknown';
+                                
+                                $existing = $clonedAddons->first(function($a) use ($addonId) {
+                                    $id = $a->addon_id ?? $a->name ?? 'unknown';
+                                    return $id == $addonId;
+                                });
+
+                                if ($existing) {
+                                    $existing->quantity = floatval($existing->quantity ?? 1) + floatval($addon->quantity ?? 1);
+                                } else {
+                                    $clonedAddons->push(clone $addon);
+                                }
+                            }
+                        }
+                        $clonedItem->setRelation('addons', $clonedAddons);
+                        $groupedItems[$rowKey] = $clonedItem;
                     }
-                    $clonedItem->setRelation('addons', $clonedAddons);
-                    
-                    $groupedItems[$rowKey] = $clonedItem;
                 }
             }
 
-            // ៣. យកទិន្នន័យដែលបាន Group រួច ទៅជំនួស Items ចាស់ដើម្បីត្រៀម Print
+            // ជំនួស Items ចាស់ដោយ Items ដែលបានរៀបចំស្អាតរួច
             $order->setRelation('items', collect(array_values($groupedItems)));
-            // =========================================================
 
             $cashierDestination = KitchenDestination::where('name', 'like', '%អ្នកគិតលុយ%')->first();
             if (!$cashierDestination || empty($cashierDestination->printnode_id)) {
@@ -655,20 +705,16 @@ class OrderController extends Controller
             $ipAddress = $cashierDestination->printnode_id;
             $shop = ShopInfo::first();
 
-            // បង្កើត HTML ពីឯកសារ pos/invoice_receipt.blade.php
             $html = \Illuminate\Support\Facades\View::make('pos.invoice_receipt', compact('order', 'paymentDetails', 'shop'))->render();
-
             $imagePath = storage_path('app/invoice_' . uniqid() . '.png');
             $chromePath = env('CHROME_PATH', 'C:\Program Files\Google\Chrome\Application\chrome.exe');
 
-            // ថតរូបវិក្កយបត្រដោយ Browsershot
             \Spatie\Browsershot\Browsershot::html($html)
                 ->setChromePath($chromePath)
                 ->windowSize(576, 800)
                 ->fullPage()           
                 ->save($imagePath);
 
-            // បញ្ជូនទៅកាន់ Network Printer (IP)
             $connector = new NetworkPrintConnector($ipAddress, 9100, 3);
             $printer = new Printer($connector);
 
@@ -678,17 +724,13 @@ class OrderController extends Controller
             $printer->feed(2);
             $printer->cut();
 
-            if (file_exists($imagePath)) {
-                unlink($imagePath);
-            }
+            if (file_exists($imagePath)) { unlink($imagePath); }
 
         } catch (\Throwable $e) {
             Log::error("❌ Invoice Print Error: " . $e->getMessage());
         } finally {
             if ($printer !== null) {
-                try {
-                    $printer->close();
-                } catch (\Throwable $t) {}
+                try { $printer->close(); } catch (\Throwable $t) {}
             }
         }
     }
