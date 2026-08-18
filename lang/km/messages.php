@@ -753,4 +753,16 @@ return [
     'unknown_product' => 'មិនស្គាល់',
     'units_sold' => 'បានលក់',
     'no_data_available' => 'មិនមានទិន្នន័យ',
+
+    'your_cart' => 'កន្ត្រកទំនិញរបស់អ្នក',
+    'subtotal' => 'សរុបរង',
+    'cart_empty' => 'មិនមានទំនិញទេ',
+    'total_amount' => 'សរុបទឹកប្រាក់',
+    'processing' => 'កំពុងដំណើរការ...',
+    'confirm_order' => 'បញ្ជាក់ការបញ្ជាទិញ',
+    'unit_price' => 'តម្លៃរាយ',
+    'addons' => 'ជម្រើសបន្ថែម',
+    'note' => 'ចំណាំ',
+    'special_instructions' => 'ការណែនាំពិសេស...',
+    'add_to_order' => 'បញ្ជាក់ចូលកន្ត្រក',
 ];

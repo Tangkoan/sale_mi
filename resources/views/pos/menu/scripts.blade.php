@@ -147,13 +147,14 @@
 
             init() {
                 this.startPolling();
+                this.startPrintQueueChecker(); // ហៅ Function អោយឆែកការព្រីន (Print Auto-Retry)
                 window.addEventListener('pos-category-changed', (e) => { this.activeCategory = e.detail; });
                 window.addEventListener('pos-search-changed', (e) => { this.search = e.detail; });
                 window.addEventListener('pos-toggle-addon-mode', (e) => { this.viewMode = e.detail ? 'addon' : 'menu'; });
                 window.addEventListener('pos-open-quick-addon', () => { this.openQuickAddon(); });
             },
 
-            // --- បន្ថែម Function សម្រាប់ Format លុយរៀល ---
+            // --- Format លុយរៀល ---
             formatNumber(num) {
                 return new Intl.NumberFormat('km-KH').format(num);
             },
@@ -177,6 +178,7 @@
                     }
                     return items.map(addon => ({
                         id: addon.id, name: addon.name, price: addon.price,
+                        kitchen_destination_id: addon.kitchen_destination_id, // យក Kitchen ID មកទុក
                         image: null, category_id: 'addon', is_active: true, type: 'addon_item' 
                     }));
                 }
@@ -216,6 +218,8 @@
                     qty: 1,
                     note: '',
                     is_addon_item: true, 
+                    // បញ្ចូល Kitchen Destination ID ដើម្បីអោយដឹងថា Addon នេះជារបស់ផ្នែកណា (ឆា, ស៊ុប, ភេសជ្ជៈ)
+                    kitchen_destination_id: addonItem.kitchen_destination_id || null, 
                     addons: [{
                         id: addonItem.id,
                         name: addonItem.name,
@@ -225,7 +229,7 @@
                     total_price_calculated: parseFloat(addonItem.price) 
                 };
                 this.cart.push(cartItem);
-                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: "{{ __('messages.added_prefix') }}" + addonItem.name } }));
+                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: "{{ __('messages.added_prefix') }} " + addonItem.name } }));
             },
 
             openProductModal(product) {
@@ -382,7 +386,9 @@
                         price: item.base_price, 
                         note: item.note, 
                         addons: item.addons, 
-                        is_addon: item.is_addon_item
+                        is_addon: item.is_addon_item,
+                        // បញ្ជូន Kitchen Destination ID ទៅអោយ Backend ធ្វើការព្រីនបានត្រូវផ្នែក
+                        kitchen_destination_id: item.kitchen_destination_id || null
                     }))
                 };
 
@@ -403,6 +409,8 @@
                         window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: "{{ __('messages.order_sent') }}" } }));
                         this.cart = []; 
                         this.isCartOpen = false; 
+                        
+                        // បញ្ជូនអ្នកប្រើប្រាស់ទៅទំព័រដើមវិញភ្លាមៗ ខណៈពេលដែលការព្រីនដើរតាមក្រោយ (Queue)
                         window.location.href = "{{ route('pos.tables') }}";
                     } else {
                         let msg = data.message || "{{ __('messages.validation_error') }}";
@@ -413,7 +421,7 @@
                     }
                 } catch (e) { 
                     console.error(e); 
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "{{ __('messages.system_error_prefix') }}" + e.message } })); 
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "{{ __('messages.system_error_prefix') }} " + e.message } })); 
                 } finally { 
                     this.isSubmitting = false; 
                 }
@@ -433,6 +441,30 @@
                         }
                     } catch (e) { console.error("Polling error", e); }
                 }, 5000);
+            },
+
+            // មុខងារថ្មី សម្រាប់ឆែក និងបញ្ជា Queue ព្រីនរៀងរាល់ ១០ វិនាទី
+            startPrintQueueChecker() {
+                setInterval(async () => {
+                    try {
+                        const response = await fetch("{{ route('pos.run.queue') }}", {
+                            method: 'POST',
+                            headers: {
+                                "Content-Type": "application/json",
+                                "Accept": "application/json",
+                                // ⚠️ សំខាន់ណាស់: ត្រូវប្រាកដថាអ្នកមាន meta tag csrf-token នៅលើ Header នៃ HTML របស់អ្នក (ឧទាហរណ៍ក្នុង layouts/blank.blade.php)
+                                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            }
+                        });
+
+                        const data = await response.json();
+                        // យកកូដ console.log នេះចេញវិញបាន បើអ្នកតេស្តឃើញថាវាដើរហើយ
+                        console.log("Queue Check Response:", data); 
+
+                    } catch (e) { 
+                        console.error("Print Queue Check Error:", e); 
+                    }
+                }, 10000); // 10000ms = 10 វិនាទី
             }
         }
     }

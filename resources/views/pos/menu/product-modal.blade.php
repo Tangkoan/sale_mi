@@ -51,7 +51,7 @@
                 
                 {{-- Price --}}
                 <div class="flex flex-col pl-2">
-                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Unit Price</span>
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{{ __('messages.unit_price') }}</span>
                     {{-- កែពី $ ទៅ ៛ --}}
                     <span class="text-3xl font-black text-primary" x-text="formatNumber(tempItem.base_price) + ' ៛'"></span>
                 </div>
@@ -81,7 +81,7 @@
             {{-- Addons List --}}
             <div x-show="availableAddons.length > 0">
                 <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-1">
-                    <i class="ri-puzzle-2-line"></i> Add-ons
+                    <i class="ri-puzzle-2-line"></i> {{ __('messages.addons') }}
                 </h3>
                 <div class="grid gap-2 max-h-40 overflow-y-auto custom-scrollbar pr-1">
                     <template x-for="addon in availableAddons" :key="addon.id">
@@ -113,12 +113,12 @@
 
             {{-- Note Section --}}
             <div>
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Note</h3>
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">{{ __('messages.note') }}</h3>
                 <div class="relative">
                     <textarea x-model="tempItem.note" 
                               rows="2" 
                               class="w-full pl-4 pr-10 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white border-none focus:ring-2 focus:ring-primary/20 transition-all text-sm resize-none shadow-sm" 
-                              placeholder="Special instructions..."></textarea>
+                              :placeholder="'{{ __('messages.special_instructions') }}'"></textarea>
                     <i class="ri-edit-2-line absolute right-3 top-3 text-gray-400"></i>
                 </div>
             </div>
@@ -130,7 +130,7 @@
                     class="w-full bg-primary hover:bg-primary-600 text-white h-14 rounded-2xl font-bold text-base shadow-xl shadow-primary/30 transform transition-all active:scale-[0.98] flex items-center justify-between px-2 p-1 group">
                 
                 <div class="flex items-center gap-3 pl-4">
-                    <span class="uppercase tracking-wider font-extrabold text-sm">Add to Order</span>
+                    <span class="uppercase tracking-wider font-extrabold text-sm">{{ __('messages.add_to_order') }}</span>
                 </div>
 
                 <div class="flex items-center bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2 h-10 mr-1 min-w-[80px] justify-center group-hover:bg-white group-hover:text-primary transition-colors">
