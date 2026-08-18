@@ -48,8 +48,6 @@ use Illuminate\Support\Facades\Session;
 // End Route កំណត់ភាសា
 
 
-// ត្រូវប្រាកដថាវានៅក្នុង Middleware Group ដែលត្រឹមត្រូវ (ឧ. auth បើអ្នកមាន)
-Route::post('/pos/run-queue', [App\Http\Controllers\Pos\PosController::class, 'runQueue'])->name('pos.run.queue');
 
 
 /*

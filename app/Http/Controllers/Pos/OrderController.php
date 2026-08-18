@@ -19,9 +19,14 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\View;
 
-// Import ឯកសារ Job ដែលយើងទើបតែបង្កើត
-use App\Jobs\PrintKitchenJob;
-use App\Jobs\PrintInvoiceJob;
+// Library សម្រាប់ Print
+use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
+use Mike42\Escpos\Printer;
+use Mike42\Escpos\EscposImage;
+use Illuminate\Support\Facades\File;
+
+// Library សម្រាប់ថតរូបវិក្កយបត្រ
+use Spatie\Browsershot\Browsershot; 
 
 class OrderController extends Controller
 {
@@ -92,10 +97,14 @@ class OrderController extends Controller
                 
                 $this->recalculateOrderTotal($order->id);
 
-                // ============================================================
-                // 🔥 ហៅ Job សម្រាប់ព្រីនទៅផ្ទះបាយ (Kitchen) ជំនួសការហៅផ្ទាល់
-                // ============================================================
-                PrintKitchenJob::dispatch($order->id);
+                ob_start();
+                try {
+                    $this->printOrderToKitchen($order->id);
+                } catch (\Exception $printError) {
+                    Log::error("🖨️ Printing Error: " . $printError->getMessage());
+                }
+                ob_end_clean();
+                if (ob_get_level() > 0) { ob_clean(); }
 
                 return response()->json([
                     'status' => 'success',
@@ -104,12 +113,81 @@ class OrderController extends Controller
                 ]);
 
             } catch (\Exception $e) {
+                if (ob_get_level() > 0) { ob_clean(); }
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Server Error: ' . $e->getMessage()
                 ], 500);
             }
         });
+    }
+
+    private function printOrderToKitchen($orderId)
+    {
+        $itemsToPrint = OrderItem::with([
+                'product.category.kitchenDestination', 
+                'addons.addon',
+                'order.table' 
+            ])
+            ->where('order_id', $orderId)
+            ->where('is_printed', false)
+            ->get();
+
+        if ($itemsToPrint->isEmpty()) { return; }
+
+        $kitchenBatches = [];
+        foreach ($itemsToPrint as $item) {
+            $destination = $item->product?->category?->kitchenDestination;
+            if (!$destination || !$destination->is_active) { continue; }
+            
+            $batchKey = $destination->id;
+            if (!isset($kitchenBatches[$batchKey])) {
+                $kitchenBatches[$batchKey] = ['info' => $destination, 'items' => []];
+            }
+            $kitchenBatches[$batchKey]['items'][] = $item;
+        }
+
+        foreach ($kitchenBatches as $batchKey => $batch) {
+            $printerInfo = $batch['info'];
+            $items       = $batch['items'];
+            $ipAddress   = $printerInfo->printnode_id; 
+
+            try {
+                $firstItem = $items[0];
+                $tableName = $firstItem->order->table->name ?? ('Table: ' . $firstItem->order->table_id);
+
+                $html = \Illuminate\Support\Facades\View::make('pos.kitchen_receipt', compact('printerInfo', 'items', 'tableName'))->render();
+                $imagePath = storage_path('app/kitchen_receipt_' . uniqid() . '.png');
+                $chromePath = env('CHROME_PATH', 'C:\Program Files\Google\Chrome\Application\chrome.exe');
+
+                \Spatie\Browsershot\Browsershot::html($html)
+                    ->setChromePath($chromePath)
+                    ->windowSize(576, 100) // ✅ ដូរពី 512 ទៅ 576 សម្រាប់ក្រដាស 80mm
+                    ->fullPage()           
+                    ->save($imagePath);
+
+                $connector = new NetworkPrintConnector($ipAddress, 9100, 3);
+                $printer = new Printer($connector);
+
+                $image = EscposImage::load($imagePath, false);
+                $printer->bitImageColumnFormat($image);
+                
+                $printer->feed(1);
+                $printer->cut();
+                $printer->close();
+
+                if (file_exists($imagePath)) {
+                    unlink($imagePath);
+                }
+
+                foreach ($items as $item) {
+                    $item->update(['is_printed' => true]);
+                }
+
+            } catch (\Exception $e) {
+                Log::error("❌ Print Error: " . $e->getMessage());
+            }
+        }
     }
 
     public function updateItem(Request $request)
@@ -380,16 +458,18 @@ class OrderController extends Controller
                 Table::where('id', $mainOrder->table_id)->update(['status' => 'available']);
             }
 
-            // ============================================================
-            // 🔥 ហៅ Job សម្រាប់ព្រីនវិក្កយបត្រ (Invoice)
-            // ============================================================
+            // ✅ បញ្ជាឲ្យ Print វិក្កយបត្រទៅម៉ាស៊ីនអ្នកគិតលុយតាម Network
             $paymentDetails = [
                 'received_amount' => $request->received_amount,
                 'payment_method'  => $request->payment_method,
                 'change_amount'   => $change,
             ];
 
-            PrintInvoiceJob::dispatch($mainOrder->id, $paymentDetails);
+            try {
+                $this->printInvoiceToNetwork($mainOrder->id, $paymentDetails);
+            } catch (\Exception $printError) {
+                Log::error("🖨️ Invoice Printing Error: " . $printError->getMessage());
+            }
 
             return response()->json([
                 'status'   => 'success',
@@ -460,16 +540,18 @@ class OrderController extends Controller
                 Table::where('id', $originalOrder->table_id)->update(['status' => 'available']);
             }
 
-            // ============================================================
-            // 🔥 ហៅ Job សម្រាប់ព្រីនវិក្កយបត្របំបែក (Split Invoice)
-            // ============================================================
+            // ✅ បញ្ជាឲ្យ Print វិក្កយបត្របំបែកទៅម៉ាស៊ីនអ្នកគិតលុយតាម Network
             $paymentDetails = [
                 'received_amount' => $request->received_amount,
                 'payment_method'  => $request->payment_method,
                 'change_amount'   => $change,
             ];
 
-            PrintInvoiceJob::dispatch($splitOrder->id, $paymentDetails);
+            try {
+                $this->printInvoiceToNetwork($splitOrder->id, $paymentDetails);
+            } catch (\Exception $printError) {
+                Log::error("🖨️ Split Invoice Printing Error: " . $printError->getMessage());
+            }
 
             return response()->json([
                 'status' => 'success',
@@ -479,5 +561,135 @@ class OrderController extends Controller
                 'change' => $change
             ]);
         });
+    }
+
+    /**
+     * 🔥 FUNCTION: បោះវិក្កយបត្រទៅ Network Printer 
+     */
+    private function printInvoiceToNetwork($orderId, $paymentDetails)
+    {
+        $printer = null;
+        try {
+            $order = Order::with(['items.product', 'items.addons.addon', 'table', 'user'])->find($orderId);
+            if (!$order) return;
+
+            // =========================================================
+            // 🌟 មុខងារថ្មី: បូកឈ្មោះម្ហូបដូចគ្នាចូលគ្នា (ទោះ Addon ខុសគ្នាក៏ដោយ) រួចបូក Addon សរុប
+            // =========================================================
+            $groupedItems = [];
+
+            foreach ($order->items as $item) {
+                // ១. ចាប់យកចំណាំ (Note) 
+                $noteKey = $item->note ? strtolower(trim($item->note)) : '';
+                
+                // ២. បង្កើត Key សម្គាល់តែឈ្មោះម្ហូប តម្លៃ និងចំណាំ (លែងខ្វល់រឿង Addon ខុសគ្នា)
+                $rowKey = $item->product_id . '_' . floatval($item->price) . '_' . $noteKey;
+
+                if (array_key_exists($rowKey, $groupedItems)) {
+                    // ---- ក. បើមានមុខម្ហូបនេះរួចហើយ: បូកចំនួនមុខម្ហូប (Qty) ----
+                    $groupedItems[$rowKey]->quantity += $item->quantity;
+
+                    // ---- ខ. បូកបញ្ជូលចំនួន Addons ចូលគ្នានៅក្រោមម្ហូបតែមួយ ----
+                    if ($item->addons) {
+                        $existingAddons = $groupedItems[$rowKey]->addons;
+                        
+                        foreach ($item->addons as $incomingAddon) {
+                            $incomingId = $incomingAddon->addon_id ?? $incomingAddon->name ?? 'unknown';
+                            $found = false;
+
+                            // ស្វែងរក Addon ថាមានតេអត់ ដើម្បីបូក Quantity
+                            foreach ($existingAddons as $exAddon) {
+                                $exId = $exAddon->addon_id ?? $exAddon->name ?? 'unknown';
+                                if ($exId == $incomingId) {
+                                    $currentQty = floatval($exAddon->quantity ?? 1);
+                                    $addQty = floatval($incomingAddon->quantity ?? 1);
+                                    
+                                    // ធ្វើការបូកបញ្ចូលចំនួន Addon (ឧទាហរណ៍ សាច់ក្រក១ បូក សាច់ក្រក១ ស្មើ ២)
+                                    $exAddon->quantity = $currentQty + $addQty;
+                                    $found = true;
+                                    break;
+                                }
+                            }
+
+                            // បើមិនទាន់មាន Addon នេះទេ គឺ Push បញ្ចូលបន្ថែមពីក្រោម
+                            if (!$found) {
+                                $existingAddons->push(clone $incomingAddon);
+                            }
+                        }
+                    }
+                } else {
+                    // ---- គ. បើមិនទាន់មានម្ហូបនេះទេ: ចម្លងទុកជាជួរថ្មី (Clone) ----
+                    $clonedItem = clone $item;
+                    
+                    $clonedAddons = collect();
+                    if ($item->addons) {
+                        foreach ($item->addons as $addon) {
+                            $addonId = $addon->addon_id ?? $addon->name ?? 'unknown';
+                            
+                            $existing = $clonedAddons->first(function($a) use ($addonId) {
+                                $id = $a->addon_id ?? $a->name ?? 'unknown';
+                                return $id == $addonId;
+                            });
+
+                            if ($existing) {
+                                $existing->quantity = floatval($existing->quantity ?? 1) + floatval($addon->quantity ?? 1);
+                            } else {
+                                $clonedAddons->push(clone $addon);
+                            }
+                        }
+                    }
+                    $clonedItem->setRelation('addons', $clonedAddons);
+                    
+                    $groupedItems[$rowKey] = $clonedItem;
+                }
+            }
+
+            // ៣. យកទិន្នន័យដែលបាន Group រួច ទៅជំនួស Items ចាស់ដើម្បីត្រៀម Print
+            $order->setRelation('items', collect(array_values($groupedItems)));
+            // =========================================================
+
+            $cashierDestination = KitchenDestination::where('name', 'like', '%អ្នកគិតលុយ%')->first();
+            if (!$cashierDestination || empty($cashierDestination->printnode_id)) {
+                throw new \Exception("រកមិនឃើញ IP សម្រាប់ម៉ាស៊ីនអ្នកគិតលុយទេ!");
+            }
+            $ipAddress = $cashierDestination->printnode_id;
+            $shop = ShopInfo::first();
+
+            // បង្កើត HTML ពីឯកសារ pos/invoice_receipt.blade.php
+            $html = \Illuminate\Support\Facades\View::make('pos.invoice_receipt', compact('order', 'paymentDetails', 'shop'))->render();
+
+            $imagePath = storage_path('app/invoice_' . uniqid() . '.png');
+            $chromePath = env('CHROME_PATH', 'C:\Program Files\Google\Chrome\Application\chrome.exe');
+
+            // ថតរូបវិក្កយបត្រដោយ Browsershot
+            \Spatie\Browsershot\Browsershot::html($html)
+                ->setChromePath($chromePath)
+                ->windowSize(576, 800)
+                ->fullPage()           
+                ->save($imagePath);
+
+            // បញ្ជូនទៅកាន់ Network Printer (IP)
+            $connector = new NetworkPrintConnector($ipAddress, 9100, 3);
+            $printer = new Printer($connector);
+
+            $image = EscposImage::load($imagePath, false);
+            $printer->bitImageColumnFormat($image);
+            
+            $printer->feed(2);
+            $printer->cut();
+
+            if (file_exists($imagePath)) {
+                unlink($imagePath);
+            }
+
+        } catch (\Throwable $e) {
+            Log::error("❌ Invoice Print Error: " . $e->getMessage());
+        } finally {
+            if ($printer !== null) {
+                try {
+                    $printer->close();
+                } catch (\Throwable $t) {}
+            }
+        }
     }
 }

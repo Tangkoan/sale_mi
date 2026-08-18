@@ -10,7 +10,6 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Addon;
 use App\Models\ShopInfo;
-use Illuminate\Support\Facades\Artisan; // 👈 ត្រូវបន្ថែម Class នេះ
 
 class PosController extends Controller
 {
@@ -104,25 +103,5 @@ class PosController extends Controller
     {
         $addons = Addon::select('id', 'is_active', 'price')->get();
         return response()->json($addons);
-    }
-
-
-    // =================================================================
-    // 🔥 មុខងារថ្មី៖ សម្រាប់បញ្ជាឲ្យ Laravel Queue ដំណើរការព្រីនវិក្កយបត្រដែលជាប់គាំង
-    // =================================================================
-    public function runQueue()
-    {
-        try {
-            // ការប្រើ --once គឺវាគ្រាន់តែទាញយក ១ សន្លឹកពីកន្ទុយមកព្រីន រួចឈប់ភ្លាម។ 
-            // វាស័ក្តិសមបំផុតសម្រាប់ការហៅរៀងរាល់ 10 វិនាទីតាមរយៈ JavaScript។
-            \Illuminate\Support\Facades\Artisan::call('queue:work', [
-                '--once' => true,
-            ]);
-
-            return response()->json(['status' => 'success', 'message' => 'Queue checked.']);
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('❌ Queue Checker Error: ' . $e->getMessage());
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
-        }
     }
 }
