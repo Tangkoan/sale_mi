@@ -6,13 +6,13 @@
         <div class="flex items-center gap-2 sm:gap-3">
             <div class="bg-white text-gray-900 w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center font-black text-base sm:text-lg shadow-sm" x-text="cartTotalQty"></div>
             <div class="flex flex-col items-start">
-                <span class="text-[10px] sm:text-xs text-gray-300 uppercase tracking-wider font-semibold">Total</span>
+                <span class="text-[10px] sm:text-xs text-gray-300 uppercase tracking-wider font-semibold">{{ __('messages.total') }}</span>
                 {{-- កែពី $ ទៅ ៛ --}}
                 <span class="font-bold text-lg sm:text-xl" x-text="formatNumber(cartTotalPrice) + ' ៛'"></span>
             </div>
         </div>
         <div class="flex items-center gap-1 sm:gap-2 pr-1 sm:pr-2">
-            <span class="font-bold text-xs sm:text-sm">View Cart</span>
+            <span class="font-bold text-xs sm:text-sm">{{ __('messages.view_cart') }}</span>
             <i class="ri-arrow-right-line bg-white/20 rounded-full p-1 transition-transform group-hover:translate-x-1 text-xs sm:text-base"></i>
         </div>
     </button>

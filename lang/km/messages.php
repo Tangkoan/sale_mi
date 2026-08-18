@@ -753,4 +753,22 @@ return [
     'unknown_product' => 'មិនស្គាល់',
     'units_sold' => 'បានលក់',
     'no_data_available' => 'មិនមានទិន្នន័យ',
+
+    'menu_management' => 'គ្រប់គ្រងម៉ឺនុយ',
+    'unit_price' => 'តម្លៃរាយ',
+    'addons' => 'បន្ថែម',
+    'note' => 'ចំណាំ',
+    'special_instructions' => 'បញ្ជាក់បន្ថែម (ឧទាហរណ៍៖ មិនផ្អែម...)',
+    'add_to_order' => 'បញ្ចូលទៅកន្ត្រក',
+
+    'your_cart' => 'កន្ត្រករបស់អ្នក',
+    'clear' => 'សម្អាត',
+    'subtotal' => 'សរុបរង',
+    'cart_is_empty' => 'មិនមានទំនិញក្នុងកន្ត្រកទេ',
+    'total_amount' => 'សរុបទឹកប្រាក់',
+    'processing' => 'កំពុងដំណើរការ...',
+    'confirm_order' => 'បញ្ជាក់ការបញ្ជាទិញ',
+
+    'total' => 'សរុប',
+    'view_cart' => 'មើលកន្ត្រក',
 ];

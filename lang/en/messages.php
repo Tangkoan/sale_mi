@@ -750,4 +750,22 @@ return [
     'unknown_product' => 'Unknown',
     'units_sold' => 'units sold',
     'no_data_available' => 'No data available',
+
+    'menu_management' => 'Menu Management',
+    'unit_price' => 'Unit Price',
+    'addons' => 'Add-ons',
+    'note' => 'Note',
+    'special_instructions' => 'Special instructions...',
+    'add_to_order' => 'Add to Order',
+
+    'your_cart' => 'Your Cart',
+    'clear' => 'Clear',
+    'subtotal' => 'Subtotal',
+    'cart_is_empty' => 'Cart is empty',
+    'total_amount' => 'Total Amount',
+    'processing' => 'Processing...',
+    'confirm_order' => 'Confirm Order',
+
+    'total' => 'Total',
+    'view_cart' => 'View Cart',
 ];

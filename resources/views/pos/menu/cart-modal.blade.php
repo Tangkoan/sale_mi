@@ -14,8 +14,8 @@
         
         {{-- Header --}}
         <div class="px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center border-b border-gray-100 dark:border-gray-700">
-            <h2 class="text-xl sm:text-2xl font-black text-gray-800 dark:text-white">Your Cart</h2>
-            <button @click="cart = []; isCartOpen = false" class="text-red-500 font-bold bg-red-50 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm hover:bg-red-100 transition">Clear</button>
+            <h2 class="text-xl sm:text-2xl font-black text-gray-800 dark:text-white">{{ __('messages.your_cart') }}</h2>
+            <button @click="cart = []; isCartOpen = false" class="text-red-500 font-bold bg-red-50 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm hover:bg-red-100 transition">{{ __('messages.clear') }}</button>
         </div>
 
         {{-- Cart Items List --}}
@@ -91,7 +91,7 @@
 
                     {{-- Subtotal for this Row --}}
                     <div class="flex justify-end border-t border-gray-100 dark:border-gray-700 pt-2 mt-1">
-                        <span class="text-xs text-gray-500 mr-2">Subtotal:</span>
+                        <span class="text-xs text-gray-500 mr-2">{{ __('messages.subtotal') }}:</span>
                         {{-- កែពី $ ទៅ ៛ --}}
                         <span class="text-sm font-black text-gray-900 dark:text-white" x-text="formatNumber(item.total_price_calculated) + ' ៛'"></span>
                     </div>
@@ -102,14 +102,14 @@
             {{-- Empty State --}}
             <div x-show="cart.length === 0" class="h-32 sm:h-40 flex flex-col items-center justify-center text-gray-400 opacity-60">
                 <i class="ri-shopping-cart-2-line text-4xl sm:text-5xl mb-2 sm:mb-3"></i>
-                <p class="text-xs sm:text-sm font-medium">Cart is empty</p>
+                <p class="text-xs sm:text-sm font-medium">{{ __('messages.cart_is_empty') }}</p>
             </div>
         </div>
 
         {{-- Footer Total & Button --}}
         <div class="p-4 sm:p-6 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 pb-6 sm:pb-8 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] z-20">
             <div class="flex justify-between items-center mb-4 sm:mb-6">
-                <span class="text-gray-500 font-bold text-base sm:text-lg">Total Amount</span>
+                <span class="text-gray-500 font-bold text-base sm:text-lg">{{ __('messages.total_amount') }}</span>
                 {{-- កែពី $ ទៅ ៛ --}}
                 <span class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white" x-text="formatNumber(cartTotalPrice) + ' ៛'"></span>
             </div>
@@ -118,7 +118,7 @@
                     :disabled="isSubmitting || cart.length === 0" 
                     class="w-full bg-gray-900 dark:bg-primary text-white py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-lg sm:text-xl shadow-lg flex justify-center items-center gap-2 sm:gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
                 <i x-show="isSubmitting" class="ri-loader-4-line animate-spin text-xl sm:text-2xl"></i>
-                <span x-text="isSubmitting ? 'Processing...' : 'Confirm Order'"></span>
+                <span x-text="isSubmitting ? '{{ __('messages.processing') }}' : '{{ __('messages.confirm_order') }}'"></span>
             </button>
         </div>
     </div>
