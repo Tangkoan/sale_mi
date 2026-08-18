@@ -99,10 +99,10 @@
                 <span>លេខតុ៖</span> 
                 <span class="font-bold text-[26px]">{{ $order->table->name ?? 'ទូទៅ' }}</span>
             </div>
-            <div class="flex justify-between items-end">
+            <!-- <div class="flex justify-between items-end">
                 <span>អ្នកគិតលុយ៖</span> 
                 <span class="font-bold">{{ $order->user->name ?? (auth()->user()->name ?? 'បុគ្គលិក') }}</span>
-            </div>
+            </div> -->
         </div>
 
         <div class="solid-line"></div>

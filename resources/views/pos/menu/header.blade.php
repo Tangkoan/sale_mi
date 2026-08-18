@@ -39,12 +39,7 @@
                         <i class="ri-apps-2-line text-lg"></i> <span>{{ __('messages.addon') }}</span>
                     </button>
 
-                    <!-- {{-- Kitchen --}}
-                    @can('pos-kitchen')
-                        <a href="{{ route('pos.kitchen.view') }}" target="_blank" class="w-9 h-9 rounded-full bg-orange-50 text-orange-600 hover:bg-orange-100 dark:bg-orange-900/20 dark:text-orange-400 border border-orange-100 dark:border-orange-800 flex items-center justify-center">
-                            <i class="ri-fire-line text-lg"></i>
-                        </a>
-                    @endcan -->
+                    
 
                     {{-- SEARCH INPUT (REPLACED BUTTON) --}}
                     <div class="relative w-48 lg:w-64 transition-all">
@@ -139,11 +134,6 @@
                     <span>{{ __('messages.addon') }}</span>
                 </button>
 
-                 {{-- Kitchen View --}}
-                 <a href="{{ route('pos.kitchen.view') }}" target="_blank" 
-                    class="flex items-center justify-center w-10 h-9 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 dark:bg-orange-900/20 dark:text-orange-400 border border-orange-100 dark:border-orange-800">
-                     <i class="ri-fire-line text-lg"></i>
-                 </a>
             </div>
 
             {{-- Group Right (Search Input for Mobile) --}}
