@@ -14,8 +14,21 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        // ✅ យក Destinations ទាំងអស់មកប្រើក្នុង Dropdown
-        $destinations = KitchenDestination::select('id', 'name')->get();
+        // យក Destinations ទាំងអស់មកប្រើក្នុង Dropdown ប៉ុន្តែ "មិនយក" អ្នកគិតលុយ (Cashier) ទេ
+        
+        // ជម្រើសទី១៖ ប្រសិនបើឈ្មោះក្នុង DB ដាក់ថា 'Cashier' ឬ 'អ្នកគិតលុយ' ចំៗ
+        $destinations = KitchenDestination::select('id', 'name')
+            ->where('name', 'NOT LIKE', '%Cashier%') 
+            ->where('name', 'NOT LIKE', '%អ្នកគិតលុយ%')
+            ->get();
+
+        /* 
+        // ជម្រើសទី២៖ ប្រសិនបើអ្នកស្គាល់ ID របស់អ្នកគិតលុយ (ឧទាហរណ៍ ID = 1 គឺ Cashier)
+        $destinations = KitchenDestination::select('id', 'name')
+            ->where('id', '!=', 1) 
+            ->get();
+        */
+
         return view('admin.category.category_list', compact('destinations'));
     }
 
