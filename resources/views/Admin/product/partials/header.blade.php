@@ -79,11 +79,11 @@
     {{-- Mobile Action Buttons --}}
     <div class="flex gap-2 md:hidden">
         {{-- ✅ Add Permission: pos-kitchen --}}
-        @can('pos-kitchen')
+        <!-- @can('pos-kitchen')
         <a href="{{ url('/pos/kitchen') }}" target="_blank" class="flex-1 font-bold py-2.5 px-4 rounded-xl flex justify-center items-center gap-2 border border-input-border bg-card-bg text-text-color hover:bg-input-bg shadow-sm">
             <i class="ri-fire-line text-orange-500 text-lg"></i>
         </a>
-        @endcan
+        @endcan -->
 
         @can('product-create')
         <button @click="openModal('create')" class="flex-[3] bg-primary text-white font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-primary/30 hover:opacity-90 flex justify-center items-center gap-2">
