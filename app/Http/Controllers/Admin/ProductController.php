@@ -27,6 +27,52 @@ class ProductController extends Controller
         return view('admin.product.product_list', compact('categories', 'addons', 'destinations'));
     }
 
+    // Function សម្រាប់ Duplicate Product
+    public function duplicate($id)
+    {
+        try {
+            return DB::transaction(function () use ($id) {
+                // 1. រក Product ចាស់និង Addons របស់វា
+                $product = Product::with('addons')->findOrFail($id);
+                
+                // 2. ចំលងទិន្នន័យ (Replicate នឹងចំលងទិន្នន័យទាំងអស់ លើកលែងតែ ID និង Created_at)
+                $newProduct = $product->replicate();
+                $newProduct->name = $product->name . ' (Copy)'; // ថែមពាក្យ (Copy)
+                $newProduct->is_active = false; // លាក់សិនពេល Duplicate រួច ការពារក្រែងចង់ប្ដូររូប ឬកែតម្លៃ មុនពេលបង្ហាញ
+                $newProduct->created_at = now();
+                
+                // 3. ចំលង File រូបភាព
+                if ($product->image && Storage::disk('public')->exists($product->image)) {
+                    $extension = pathinfo($product->image, PATHINFO_EXTENSION);
+                    $newImageName = 'products/dup_' . time() . '_' . uniqid() . '.' . $extension;
+                    
+                    // Copy File ទៅជា File ថ្មី
+                    Storage::disk('public')->copy($product->image, $newImageName);
+                    
+                    // ផ្ដល់ឈ្មោះរូបភាពថ្មីទៅឲ្យ Product ថ្មី
+                    $newProduct->image = $newImageName;
+                }
+                
+                // 4. Save Product ថ្មីចូល Database
+                $newProduct->save();
+                
+                // 5. ចំលង Addons (Relations)
+                if ($product->addons->isNotEmpty()) {
+                    $newProduct->addons()->sync($product->addons->pluck('id'));
+                }
+                
+                // Log activity បើមានប្រើ
+                if(function_exists('activity')) {
+                    activity()->causedBy(auth()->user())->performedOn($newProduct)->log('duplicated product');
+                }
+                
+                return response()->json(['status' => 'success', 'message' => 'ផលិតផលត្រូវបាន Duplicate ដោយជោគជ័យ!']);
+            });
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => 'មានបញ្ហាក្នុងការ Duplicate: ' . $e->getMessage()], 500);
+        }
+    }
+
     public function fetchProducts(Request $request)
     {
         $query = Product::with(['category.destination', 'addons']);

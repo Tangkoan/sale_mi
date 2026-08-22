@@ -57,9 +57,15 @@
                         </td>
                         <td class="px-6 py-4 text-right">
                             <div class="flex justify-end gap-2">
+                                <!-- ប៊ូតុង Duplicate ថ្មី -->
+                                @can('product-create')
+                                <button @click="duplicateProduct(item.id)" class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-green-50 text-green-600 hover:bg-green-100" title="{{ __('messages.duplicate') ?? 'Duplicate' }}"><i class="ri-file-copy-line"></i></button>
+                                @endcan
+
                                 @can('product-edit')
                                 <button @click="openModal('edit', item)" class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100" title="{{ __('messages.edit') }}"><i class="ri-pencil-line"></i></button>
                                 @endcan
+
                                 @can('product-delete')
                                 <button @click="confirmDelete(item.id)" class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-red-50 text-red-600 hover:bg-red-100" title="{{ __('messages.delete') }}"><i class="ri-delete-bin-line"></i></button>
                                 @endcan

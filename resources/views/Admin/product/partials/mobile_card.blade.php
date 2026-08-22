@@ -30,9 +30,15 @@
                 </div>
                 
                 <div class="flex gap-2">
+                    {{-- 🌟 ប៊ូតុង Duplicate 🌟 --}}
+                    @can('product-create')
+                    <button @click="duplicateProduct(item.id)" class="h-8 w-8 rounded-full flex items-center justify-center bg-green-50 text-green-600 border border-green-100 hover:bg-green-100 active:scale-95 transition-transform shadow-sm" title="{{ __('messages.duplicate') ?? 'Duplicate' }}"><i class="ri-file-copy-line"></i></button>
+                    @endcan
+
                     @can('product-edit')
                     <button @click="openModal('edit', item)" class="h-8 w-8 rounded-full flex items-center justify-center bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100 active:scale-95 transition-transform shadow-sm"><i class="ri-pencil-fill"></i></button>
                     @endcan
+
                     @can('product-delete')
                     <button @click="confirmDelete(item.id)" class="h-8 w-8 rounded-full flex items-center justify-center bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 active:scale-95 transition-transform shadow-sm"><i class="ri-delete-bin-line"></i></button>
                     @endcan

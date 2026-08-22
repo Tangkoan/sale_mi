@@ -363,6 +363,9 @@ Route::middleware('auth')->group(function () {
             Route::get('/products', 'index')->name('products.index')->middleware('permission:product-list');
             Route::get('/products/fetch', 'fetchProducts')->name('products.fetch')->middleware('permission:product-list');
             
+            // ✅ កែត្រង់នេះ៖ ប្ដូរពី Route::get ទៅ Route::post និងប្ដូរ Middleware
+            Route::post('/products/{id}/duplicate', 'duplicate')->name('products.duplicate')->middleware('permission:product-create');
+            
             Route::post('/products', 'store')->name('products.store')->middleware('permission:product-create');
             Route::post('/products/bulk-delete', 'bulkDelete')->name('products.bulk_delete')->middleware('permission:product-delete');
             
@@ -373,7 +376,6 @@ Route::middleware('auth')->group(function () {
             // Toggle Status (Optional: បិទ/បើក Stock)
             Route::post('/products/{id}/toggle', 'toggleStatus')->name('products.toggle')->middleware('permission:product-edit-status');
         });
-
 
         // ======================
         // Destinations CRUD
