@@ -13,6 +13,8 @@ use App\Models\Table;
 use App\Models\Product;
 use App\Models\ShopInfo;
 use App\Models\KitchenDestination;
+use App\Jobs\PrintKitchenJob;
+use App\Jobs\PrintInvoiceJob;
 
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Log;
@@ -97,14 +99,8 @@ class OrderController extends Controller
                 
                 $this->recalculateOrderTotal($order->id);
 
-                ob_start();
-                try {
-                    $this->printOrderToKitchen($order->id);
-                } catch (\Exception $printError) {
-                    Log::error("🖨️ Printing Error: " . $printError->getMessage());
-                }
-                ob_end_clean();
-                if (ob_get_level() > 0) { ob_clean(); }
+                // ✅ បញ្ជាឲ្យ Job ធ្វើការ Print ទៅចុងភៅនៅ Background ជំនួសការ Print ផ្ទាល់
+                PrintKitchenJob::dispatch($order->id);
 
                 return response()->json([
                     'status' => 'success',
@@ -113,7 +109,6 @@ class OrderController extends Controller
                 ]);
 
             } catch (\Exception $e) {
-                if (ob_get_level() > 0) { ob_clean(); }
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Server Error: ' . $e->getMessage()
@@ -488,18 +483,14 @@ class OrderController extends Controller
                 Table::where('id', $mainOrder->table_id)->update(['status' => 'available']);
             }
 
-            // ✅ បញ្ជាឲ្យ Print វិក្កយបត្រទៅម៉ាស៊ីនអ្នកគិតលុយតាម Network
             $paymentDetails = [
                 'received_amount' => $request->received_amount,
                 'payment_method'  => $request->payment_method,
                 'change_amount'   => $change,
             ];
 
-            try {
-                $this->printInvoiceToNetwork($mainOrder->id, $paymentDetails);
-            } catch (\Exception $printError) {
-                Log::error("🖨️ Invoice Printing Error: " . $printError->getMessage());
-            }
+            // ✅ បញ្ជាឲ្យ Job ធ្វើការ Print វិក្កយបត្រ (Invoice) នៅ Background
+            PrintInvoiceJob::dispatch($mainOrder->id, $paymentDetails);
 
             return response()->json([
                 'status'   => 'success',
@@ -570,18 +561,14 @@ class OrderController extends Controller
                 Table::where('id', $originalOrder->table_id)->update(['status' => 'available']);
             }
 
-            // ✅ បញ្ជាឲ្យ Print វិក្កយបត្របំបែកទៅម៉ាស៊ីនអ្នកគិតលុយតាម Network
             $paymentDetails = [
                 'received_amount' => $request->received_amount,
                 'payment_method'  => $request->payment_method,
                 'change_amount'   => $change,
             ];
 
-            try {
-                $this->printInvoiceToNetwork($splitOrder->id, $paymentDetails);
-            } catch (\Exception $printError) {
-                Log::error("🖨️ Split Invoice Printing Error: " . $printError->getMessage());
-            }
+            // ✅ បញ្ជាឲ្យ Job ធ្វើការ Print វិក្កយបត្របំបែក (Split Invoice) នៅ Background
+            PrintInvoiceJob::dispatch($splitOrder->id, $paymentDetails);
 
             return response()->json([
                 'status' => 'success',
