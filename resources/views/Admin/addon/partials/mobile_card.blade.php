@@ -69,6 +69,11 @@
 
                     {{-- Buttons --}}
                     <div class="flex gap-2 relative z-30">
+                        {{-- 🌟 ប៊ូតុង Duplicate --}}
+                        @can('addon-create')
+                        <button type="button" @click="duplicateAddon(item.id)" class="h-8 w-8 rounded-full flex items-center justify-center bg-green-50 text-green-600 border border-green-100 hover:bg-green-100 active:scale-95 transition-transform cursor-pointer" title="{{ __('messages.duplicate') ?? 'Duplicate' }}"><i class="ri-file-copy-line"></i></button>
+                        @endcan
+
                         @can('addon-edit')
                         <button type="button" @click="openModal('edit', item)" class="h-8 w-8 rounded-full flex items-center justify-center bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100 active:scale-95 transition-transform cursor-pointer"><i class="ri-pencil-fill"></i></button>
                         @endcan

@@ -211,6 +211,43 @@
                 finally { this.isLoading = false; }
             },
 
+            // 🌟 [បន្ថែមថ្មី] Function សម្រាប់ Duplicate 🌟
+            async duplicateAddon(id) {
+                if(confirm("តើអ្នកពិតជាចង់ Duplicate ជម្រើសបន្ថែមនេះមែនទេ?")) {
+                    this.isLoading = true;
+                    try {
+                        const response = await fetch(`/admin/addons/${id}/duplicate`, {
+                            method: 'POST',
+                            headers: { 
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') 
+                            }
+                        });
+                        
+                        const contentType = response.headers.get("content-type");
+                        if (contentType && contentType.indexOf("application/json") !== -1) {
+                            const data = await response.json();
+                            
+                            if(response.ok) {
+                                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: data.message } }));
+                                this.fetchAddons();
+                            } else {
+                                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: data.message || 'មានបញ្ហាក្នុងការ Duplicate!' } }));
+                            }
+                        } else {
+                            console.error("Server មិនបានបញ្ជូនទិន្នន័យជា JSON មកទេ។ Status: " + response.status);
+                            window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'បញ្ហា Route ឬ Backend Error! (ឆែកមើលក្នុង Console/F12)' } }));
+                        }
+                    } catch(e) { 
+                        console.error("កំហុស JavaScript:", e); 
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'មានបញ្ហាក្នុងការភ្ជាប់ទៅកាន់ Server!' } }));
+                    } finally {
+                        this.isLoading = false;
+                    }
+                }
+            },
+
             // ================= SEQUENCE & DELETE =================
             startSequentialEdit() {
                 const selectedIdsString = this.selectedIds.map(id => String(id));

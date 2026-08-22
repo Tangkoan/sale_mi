@@ -103,7 +103,6 @@ class AddonController extends Controller
     {
         $addon = Addon::findOrFail($id);
 
-        // ការពារការលុប: ឆែកមើលថាតើ Addon នេះកំពុងប្រើក្នុងមុខម្ហូប (Product) ដែរឬទេ
         if ($addon->products()->exists()) {
             return response()->json([
                 'status' => 'error', 
@@ -122,7 +121,6 @@ class AddonController extends Controller
         $failedCount = 0;
 
         foreach ($addons as $addon) {
-            // ការពារការលុប: រំលង Addon ណាដែលកំពុងជាប់ជាមួយមុខម្ហូប
             if ($addon->products()->exists()) {
                 $failedCount++;
                 continue; 
@@ -140,5 +138,24 @@ class AddonController extends Controller
         }
 
         return response()->json(['status' => 'success', 'message' => __('messages.bulk_delete_success', ['count' => $deletedCount])]);
+    }
+
+    // 🌟 [បន្ថែមថ្មី] Function សម្រាប់ Duplicate 🌟
+    public function duplicate($id)
+    {
+        try {
+            $addon = Addon::findOrFail($id);
+            
+            $newAddon = $addon->replicate();
+            $newAddon->name = $addon->name . ' (Copy)'; // បន្ថែមពាក្យ (Copy)
+            $newAddon->is_active = false; // លាក់សិន ការពារកុំឲ្យលោតចូល Menu ភ្លាមៗ
+            $newAddon->created_at = now();
+            
+            $newAddon->save();
+            
+            return response()->json(['status' => 'success', 'message' => 'ជម្រើសបន្ថែមត្រូវបាន Duplicate ដោយជោគជ័យ!']);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => 'មានបញ្ហាក្នុងការ Duplicate: ' . $e->getMessage()], 500);
+        }
     }
 }

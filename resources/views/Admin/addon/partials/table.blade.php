@@ -56,6 +56,12 @@
                         </td>
                         <td class="px-6 py-4 text-right">
                             <div class="flex justify-end gap-2 relative z-10">
+                                
+                                {{-- 🌟 ប៊ូតុង Duplicate --}}
+                                @can('addon-create')
+                                <button type="button" @click="duplicateAddon(item.id)" class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-green-50 text-green-600 hover:bg-green-100 cursor-pointer" title="{{ __('messages.duplicate') ?? 'Duplicate' }}"><i class="ri-file-copy-line"></i></button>
+                                @endcan
+
                                 @can('addon-edit')
                                 <button type="button" @click="openModal('edit', item)" class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100 cursor-pointer" title="{{ __('messages.edit') }}"><i class="ri-pencil-line"></i></button>
                                 @endcan

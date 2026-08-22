@@ -346,6 +346,10 @@ Route::middleware('auth')->group(function () {
             Route::get('/addons', 'index')->name('addons.index')->middleware('permission:addon-list');
             Route::get('/addons/fetch', 'fetchAddons')->name('addons.fetch')->middleware('permission:addon-list');
             Route::post('/addons', 'store')->name('addons.store')->middleware('permission:addon-create');
+
+            Route::post('/addons/{id}/duplicate','duplicate')
+                ->name('addons.duplicate')
+                ->middleware('permission:addon-create');
             
             // Bulk Delete (ដាក់ពីលើ {id})
             Route::post('/addons/bulk-delete', 'bulkDelete')->name('addons.bulk_delete')->middleware('permission:addon-delete');
