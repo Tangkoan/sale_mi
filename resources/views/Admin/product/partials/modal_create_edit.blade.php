@@ -30,7 +30,15 @@
                 <div class="relative" x-data="categoryDropdown()" @click.outside="closeDropdown()">
                     <label class="block text-sm font-bold text-text-color mb-1">{{ __('messages.category') }}</label>
                     <div class="relative">
-                        <input type="text" x-model="searchQuery" @focus="openDropdown()" @input.debounce.300ms="fetchCategories(1)" placeholder="{{ __('messages.select_search_cat') }}" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" autocomplete="off">
+                        <!-- ✅ កែត្រង់ @input.debounce នេះឯង -->
+                        <input type="text" 
+                            x-model="searchQuery" 
+                            @focus="openDropdown()" 
+                            @input.debounce.300ms="handleSearch()" 
+                            placeholder="{{ __('messages.select_search_cat') }}" 
+                            class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" 
+                            autocomplete="off">
+                            
                         <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-secondary">
                             <i class="ri-arrow-down-s-line transition-transform duration-200" :class="isOpen ? 'rotate-180' : ''"></i>
                         </div>

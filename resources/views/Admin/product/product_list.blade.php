@@ -29,68 +29,114 @@
 
 <script>
     // ✅ Component: Category Dropdown 
-    function categoryDropdown() {
-        return {
-            isOpen: false,
-            searchQuery: '',
-            categoriesList: [],
-            page: 1,
-            hasMorePages: false,
-            isLoading: false,
+        function categoryDropdown() {
+            return {
+                isOpen: false,
+                searchQuery: '',
+                categoriesList: [],
+                page: 1,
+                hasMorePages: false,
+                isLoading: false,
+                isSelecting: false, // ✅ Flag សម្រាប់ការពារកុំឲ្យលោត Search ពេលយើងគ្រាន់តែចុចរើសឈ្មោះ
 
-            init() {
-                this.$watch('form.category_id', (value) => {
-                    if (value && this.categoriesList.length > 0) {
-                        const selected = this.categoriesList.find(c => c.id == value);
-                        if (selected) this.searchQuery = selected.name;
-                    } else if (!value) {
-                        this.searchQuery = '';
-                    }
-                });
-                this.fetchCategories(1);
-            },
+                init() {
+                    this.$watch('form.category_id', (value) => {
+                        if (value) {
+                            // ពេល Edit: ស្វែងរកក្នុងបញ្ជីបច្ចុប្បន្ន
+                            let selected = this.categoriesList.find(c => c.id == value);
+                            
+                            if (selected) {
+                                this.setSearchText(selected.name);
+                            } else {
+                                // បើ Category នោះនៅទំព័រទី2+ (រកមិនឃើញក្នុងបញ្ជី 10 ដំបូង) -> ទាញពីទិន្នន័យ Product ដែលមានស្រាប់
+                                // @ts-ignore - ហៅទិន្នន័យពី Main logic (productManagement)
+                                const product = this.products?.find(p => p.category_id == value);
+                                if (product && product.category) {
+                                    this.categoriesList.push(product.category); // បញ្ចូលវាទៅក្នុងបញ្ជីបណ្ដោះអាសន្ន
+                                    this.setSearchText(product.category.name);
+                                }
+                            }
+                        } else {
+                            this.setSearchText('');
+                        }
+                    });
+                    this.fetchCategories(1);
+                },
 
-            openDropdown() {
-                this.isOpen = true;
-                if (this.categoriesList.length === 0) this.fetchCategories(1);
-            },
+                // Function សម្រាប់បញ្ចៀសការហៅ API ដោយអចេតនា
+                setSearchText(text) {
+                    this.isSelecting = true;
+                    this.searchQuery = text;
+                    setTimeout(() => { this.isSelecting = false; }, 300);
+                },
 
-            closeDropdown() {
-                this.isOpen = false;
-                if (this.form.category_id) {
-                    const selected = this.categoriesList.find(c => c.id == this.form.category_id);
-                    if (selected) this.searchQuery = selected.name; 
-                } else {
-                    this.searchQuery = '';
-                }
-            },
+                openDropdown() {
+                    this.isOpen = true;
+                    if (this.categoriesList.length === 0) this.fetchCategories(1);
+                },
 
-            async fetchCategories(page = 1) {
-                this.isLoading = true;
-                this.page = page;
-                let url = `{{ route('admin.categories.fetch') }}?page=${page}&per_page=10`;
-                if (this.searchQuery) url += `&keyword=${this.searchQuery}`;
-                try {
-                    const response = await fetch(url);
-                    const data = await response.json();
-                    if (page === 1) {
-                        this.categoriesList = data.data;
+                closeDropdown() {
+                    this.isOpen = false;
+                    // បើ User វាយអក្សរលេង តែមិនបានចុចរើស ឲ្យវាលោតមកឈ្មោះ Category ដើមវិញពេលបិទ
+                    if (this.form.category_id) {
+                        const selected = this.categoriesList.find(c => c.id == this.form.category_id);
+                        if (selected && this.searchQuery !== selected.name) {
+                            this.setSearchText(selected.name);
+                        }
                     } else {
-                        this.categoriesList = [...this.categoriesList, ...data.data];
+                        this.setSearchText('');
                     }
-                    this.hasMorePages = data.next_page_url !== null;
-                } catch (error) { console.error("Error fetching categories:", error); } finally { this.isLoading = false; }
-            },
+                },
 
-            loadMore() { if (!this.isLoading && this.hasMorePages) this.fetchCategories(this.page + 1); },
+                // ✅ Function ថ្មីសម្រាប់ Live Search តែម្ដង
+                handleSearch() {
+                    if (this.isSelecting) return; // បើជាការ Update UI ធម្មតា មិនបាច់ Search ទេ
+                    this.fetchCategories(1);
+                },
 
-            selectCategory(category) {
-                this.form.category_id = category.id;
-                this.searchQuery = category.name;
-                this.isOpen = false;
+                async fetchCategories(page = 1) {
+                    this.isLoading = true;
+                    this.page = page;
+                    
+                    // ✅ ចាប់យកទិន្នន័យម្ដង 10 (Pagination)
+                    let url = `{{ route('admin.categories.fetch') }}?page=${page}&per_page=10`;
+                    
+                    if (this.searchQuery && !this.isSelecting) {
+                        url += `&keyword=${encodeURIComponent(this.searchQuery)}`;
+                    }
+
+                    try {
+                        const response = await fetch(url);
+                        const data = await response.json();
+                        
+                        if (page === 1) {
+                            this.categoriesList = data.data; // បើទំព័រទី 1 ជំនួសទិន្នន័យចាស់
+                        } else {
+                            this.categoriesList = [...this.categoriesList, ...data.data]; // ✅ បើទំព័រទី 2+ គឺបន្ថែមទិន្នន័យបន្ត (Load More)
+                        }
+                        
+                        // កំណត់ថាត្រូវមានប៊ូតុង Load More ទៀតឬអត់
+                        this.hasMorePages = data.next_page_url !== null; 
+                    } catch (error) { 
+                        console.error("Error fetching categories:", error); 
+                    } finally { 
+                        this.isLoading = false; 
+                    }
+                },
+
+                loadMore() { 
+                    if (!this.isLoading && this.hasMorePages) {
+                        this.fetchCategories(this.page + 1); 
+                    }
+                },
+
+                selectCategory(category) {
+                    this.form.category_id = category.id;
+                    this.setSearchText(category.name);
+                    this.isOpen = false;
+                }
             }
         }
-    }
 
     
     // ✅ Main Logic
