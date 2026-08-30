@@ -9,8 +9,6 @@
         {{-- ========================================================= --}}
         {{-- ផ្នែកទី ១: ខាងឆ្វេង (Title & Back Button)                --}}
         {{-- ========================================================= --}}
-        {{-- Mobile: w-full & justify-between (ដើម្បីដាក់ Status នៅចុងម្ខាងទៀត) --}}
-        {{-- Desktop: w-auto & justify-start --}}
         <div class="flex justify-between md:justify-start items-center w-full md:w-auto">
             
             {{-- A. BACK BUTTON & TITLE --}}
@@ -42,7 +40,6 @@
             </div>
 
             {{-- 🔥 B. MOBILE STATUS (បង្ហាញតែលើ Mobile នៅជួរទី ១ ខាងស្តាំ) --}}
-            {{-- Logic: Class 'md:hidden' --}}
             <div class="flex md:hidden items-center gap-2 bg-gray-50/50 dark:bg-gray-800/50 p-1 rounded-full border border-gray-100 dark:border-gray-700/50">
                 {{-- Available --}}
                 <div class="flex items-center gap-1 px-2 py-1 rounded-full bg-white dark:bg-gray-700 shadow-sm border border-gray-100 dark:border-gray-600">
@@ -64,12 +61,9 @@
         {{-- ========================================================= --}}
         {{-- ផ្នែកទី ២: ខាងស្តាំ (Tools & Desktop Status)              --}}
         {{-- ========================================================= --}}
-        {{-- Mobile: w-full & justify-end --}}
-        {{-- Desktop: w-auto & flex-row --}}
         <div class="flex items-center justify-end gap-3 w-full md:w-auto">
 
             {{-- 🔥 C. DESKTOP STATUS (បង្ហាញតែលើ Desktop នៅជួរជាមួយ Tools) --}}
-            {{-- Logic: Class 'hidden md:flex' --}}
             <div class="hidden md:flex items-center gap-2 bg-gray-50/50 dark:bg-gray-800/50 p-1 rounded-full border border-gray-100 dark:border-gray-700/50">
                 <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-gray-700 shadow-sm border border-gray-100 dark:border-gray-600">
                     <span class="relative flex h-2 w-2">
@@ -87,7 +81,7 @@
             {{-- Divider --}}
             <div class="hidden md:block h-5 w-px bg-gray-300 dark:bg-gray-600"></div>
             
-            {{-- D. TOOLBAR BUTTONS (Exchange, Lang, Theme, User) --}}
+            {{-- D. TOOLBAR BUTTONS (Product, Exchange, Lang, Theme, User) --}}
             <div class="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-gray-800/80 p-1.5 rounded-2xl border border-gray-100 dark:border-gray-700 w-full md:w-auto justify-between md:justify-end">
                 
                 {{-- Label (Mobile Only) --}}
@@ -105,6 +99,19 @@
                                 </span>
                         </button>
                     @endcan -->
+                    
+                    {{-- ✅ ប៊ូតុង Product List --}}
+                    @can('product-list')
+                        <a href="{{ route('admin.products.index') }}" 
+                           class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 flex items-center justify-center shadow-sm text-gray-700 dark:text-gray-200 hover:text-primary dark:hover:text-primary transition-colors group"
+                           title="{{ __('sidebar.product_list') }}">
+                            <!-- <i class="ri-price-tag-3-line text-lg group-hover:scale-110 transition-transform duration-300"></i> -->
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016c.896 0 1.7-.393 2.25-1.015a3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19A1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72M6.75 18h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .414.336.75.75.75Z" />
+                                </svg>
+
+                        </a>
+                    @endcan
 
                     {{-- 2. Language Switcher --}}
                     <div x-data="{ languageOpen: false }" class="relative">
