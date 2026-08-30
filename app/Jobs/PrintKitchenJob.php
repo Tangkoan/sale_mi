@@ -26,7 +26,7 @@ class PrintKitchenJob implements ShouldQueue
     public $orderId;
     
     // បើ Print មិនចេញ ឲ្យព្យាយាមម្ដងទៀត ៥ ដង
-    public $tries = 5; 
+    // public $tries = 5; 
     
     // សម្រាក ៣០ វិនាទី មុននឹងព្យាយាម Print ម្ដងទៀត
     public $backoff = 30; 
@@ -34,6 +34,13 @@ class PrintKitchenJob implements ShouldQueue
     public function __construct($orderId)
     {
         $this->orderId = $orderId;
+    }
+
+    // បន្ថែមអនុគមន៍នេះ ដើម្បីកំណត់ពេលផុតកំណត់
+    public function retryUntil()
+    {
+        // ព្យាយាមព្រីនរហូតដល់ ១០ នាទី ក្រោយពេលអតិថិជនកម្ម៉ង់
+        return now()->addMinutes(10); 
     }
 
     public function handle()
