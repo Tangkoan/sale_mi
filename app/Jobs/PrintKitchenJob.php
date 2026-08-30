@@ -17,6 +17,7 @@ use Spatie\Browsershot\Browsershot;
 use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
 use Mike42\Escpos\Printer;
 use Mike42\Escpos\EscposImage;
+use Exception;
 
 class PrintKitchenJob implements ShouldQueue
 {
@@ -27,7 +28,7 @@ class PrintKitchenJob implements ShouldQueue
     // បើ Print មិនចេញ ឲ្យព្យាយាមម្ដងទៀត ៥ ដង
     public $tries = 5; 
     
-    // សម្រាក ៣០ វិនាទី មុននឹងព្យាយាម Print ម្ដងទៀត (ទុកពេលឲ្យគេដាក់ក្រដាស)
+    // សម្រាក ៣០ វិនាទី មុននឹងព្យាយាម Print ម្ដងទៀត
     public $backoff = 30; 
 
     public function __construct($orderId)
@@ -43,7 +44,7 @@ class PrintKitchenJob implements ShouldQueue
                 'order.table' 
             ])
             ->where('order_id', $this->orderId)
-            ->where('is_printed', false)
+            ->where('is_printed', false) // ទាញយកតែអាហារដែលមិនទាន់ព្រីន
             ->get();
 
         if ($itemsToPrint->isEmpty()) { return; }
@@ -89,6 +90,9 @@ class PrintKitchenJob implements ShouldQueue
             }
         }
 
+        // អថេរសម្រាប់កត់ចំណាំថា តើមាន Printer ណាមួយ Error ដែរឬទេ?
+        $hasError = false;
+
         foreach ($kitchenBatches as $batchKey => $batch) {
             $printerInfo = $batch['info'];
             $items       = $batch['items'];
@@ -120,14 +124,27 @@ class PrintKitchenJob implements ShouldQueue
 
                 if (file_exists($imagePath)) { unlink($imagePath); }
 
+                // ប្រសិនបើព្រីនជោគជ័យ ទើប Update is_printed = true
                 foreach ($items as $item) {
                     $item->update(['is_printed' => true]);
                 }
-            } catch (\Exception $e) {
-                Log::error("❌ Print Error (Kitchen): " . $e->getMessage());
-                // ចំណុចសំខាន់៖ បោះ Error បន្តដើម្បីឲ្យ Laravel យកវាទៅ Retry ម្ដងទៀត
-                throw $e; 
+                
+            } catch (Exception $e) {
+                // កត់ត្រា Error ទុក
+                Log::error("❌ Print Error (Kitchen IP: {$ipAddress}): " . $e->getMessage());
+                
+                // កំណត់ថាមាន Error តែមិនទាន់បញ្ឈប់ការងារទេ (មិនប្រើ throw ទីនេះទេ)
+                $hasError = true;
+                
+                // បន្តទៅកាន់ Printer បន្ទាប់ទៀត (រំលងអាមួយដែលខូចនេះសិន)
+                continue; 
             }
+        }
+
+        // បន្ទាប់ពី Loop ព្រីនគ្រប់ Printer អស់ហើយ បើមាន Printer ណាខូច យើងទើបបោះ Error
+        // ដើម្បីឱ្យ Laravel យក Job នេះទៅ Retry ម្ដងទៀត (វានឹងទាញយកតែទំនិញដែលមិនទាន់ព្រីន មកព្រីនម្ដងទៀត)
+        if ($hasError) {
+            throw new Exception("មាន Printer ផ្ទះបាយខ្លះមានបញ្ហាមិនអាចព្រីនចេញ។ ប្រព័ន្ធនឹងព្យាយាមព្រីនសារជាថ្មីដោយស្វ័យប្រវត្តិ។");
         }
     }
 }

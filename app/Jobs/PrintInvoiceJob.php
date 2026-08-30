@@ -18,6 +18,8 @@ use Spatie\Browsershot\Browsershot;
 use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
 use Mike42\Escpos\Printer;
 use Mike42\Escpos\EscposImage;
+use Exception;
+use Throwable;
 
 class PrintInvoiceJob implements ShouldQueue
 {
@@ -131,12 +133,11 @@ class PrintInvoiceJob implements ShouldQueue
 
             $cashierDestination = KitchenDestination::where('name', 'like', '%អ្នកគិតលុយ%')->first();
             if (!$cashierDestination || empty($cashierDestination->printnode_id)) {
-                throw new \Exception("រកមិនឃើញ IP សម្រាប់ម៉ាស៊ីនអ្នកគិតលុយទេ!");
+                throw new Exception("រកមិនឃើញ IP សម្រាប់ម៉ាស៊ីនអ្នកគិតលុយទេ!");
             }
             $ipAddress = $cashierDestination->printnode_id;
             $shop = ShopInfo::first();
 
-            // ត្រូវទាញយក $paymentDetails ពី $this សិន
             $paymentDetails = $this->paymentDetails;
 
             $html = View::make('pos.invoice_receipt', compact('order', 'paymentDetails', 'shop'))->render();
@@ -161,12 +162,12 @@ class PrintInvoiceJob implements ShouldQueue
 
             if (file_exists($imagePath)) { unlink($imagePath); }
 
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error("❌ Invoice Print Error: " . $e->getMessage());
             throw $e; // បោះ Error បន្តដើម្បីឲ្យ Retry ឡើងវិញ
         } finally {
             if ($printer !== null) {
-                try { $printer->close(); } catch (\Throwable $t) {}
+                try { $printer->close(); } catch (Throwable $t) {}
             }
         }
     }
