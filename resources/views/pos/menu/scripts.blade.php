@@ -116,9 +116,9 @@
      */
     function posMenu() {
         return {
-            products: @json($products ?? []),
+            products: [], // ចាប់ផ្តើមដោយ Array ទទេ ដើម្បីកុំឱ្យ HTML ទំព័រដើមធ្ងន់
             categories: @json($categories ?? []),
-            addons: @json($addons ?? []),
+            addons: [],
             
             activeCategory: null, 
             search: '',
@@ -129,15 +129,34 @@
             isProductModalOpen: false,
             isSubmitting: false,
             isPolling: false,
+            isLoadingData: true, // សញ្ញាបង្ហាញពេលកំពុងទាញទិន្នន័យពីក្រោយខ្នង
             
             tempItem: { id: null, name: '', image: null, base_price: 0, qty: 1, note: '', selectedAddons: [], category_id: null },
 
             init() {
+                this.loadMenuData(); // ហៅទាញទិន្នន័យម្ហូបតាម AJAX ភ្លាមៗពេលចូលដល់
                 this.startPolling();
                 window.addEventListener('pos-category-changed', (e) => { this.activeCategory = e.detail; });
                 window.addEventListener('pos-search-changed', (e) => { this.search = e.detail; });
                 window.addEventListener('pos-toggle-addon-mode', (e) => { this.viewMode = e.detail ? 'addon' : 'menu'; });
                 window.addEventListener('pos-open-quick-addon', () => { this.openQuickAddon(); });
+            },
+
+            // 🔥 Function ថ្មី៖ លួចទាញទិន្នន័យពីក្រោយខ្នង (Background Fetch)
+            async loadMenuData() {
+                this.isLoadingData = true;
+                try {
+                    const response = await fetch("{{ route('pos.fetch-menu-data') }}");
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.products = data.products;
+                        this.addons = data.addons;
+                    }
+                } catch (error) {
+                    console.error("Error loading menu data:", error);
+                } finally {
+                    this.isLoadingData = false;
+                }
             },
 
             formatNumber(num) {
@@ -418,25 +437,17 @@
                 }
             },
 
-            // =========================================================
-            // 🔥 កន្លែងកែប្រែថ្មី (POLLING LOGIC ដើរលឿនជាងមុន)
-            // =========================================================
+            // --- POLLING LOGIC ---
             startPolling() {
                 this.isPolling = true;
-                // ដូរពី ៥វិនាទី (5000) ទៅ ១៥វិនាទី (15000) ដើម្បីកាត់បន្ថយសម្ពាធលើ Browser និង Server
                 setInterval(async () => {
                     try {
                         const response = await fetch("{{ route('pos.products.status') }}");
                         if (response.ok) {
                             const data = await response.json();
-                            
-                            // ១. បំប្លែង Data ទៅជា Object មួយ (Dictionary) ដើម្បីរកតម្លៃលឿន O(1)
                             const updateMap = {};
-                            data.forEach(up => {
-                                updateMap[up.id] = up;
-                            });
+                            data.forEach(up => { updateMap[up.id] = up; });
 
-                            // ២. Update តែតម្លៃណាដែលផ្លាស់ប្ដូរពិតប្រាកដ ដើម្បីកុំឲ្យ UI លោត Re-render ផ្ដេសផ្ដាស
                             this.products.forEach(p => {
                                 const up = updateMap[p.id];
                                 if (up) {
@@ -448,7 +459,7 @@
                             });
                         }
                     } catch (e) { console.error("Polling error", e); }
-                }, 15000); // 15000 = ១៥វិនាទី
+                }, 15000);
             }
         }
     }

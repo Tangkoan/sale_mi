@@ -35,22 +35,27 @@ class PosController extends Controller
     public function menu($table_id)
     {
         $table = Table::findOrFail($table_id);
+        $categories = Category::select('id', 'name', 'kitchen_destination_id')->orderBy('id', 'asc')->get();
         
-        // ១. 🔥 កែត្រង់នេះ៖ ដកពាក្យ with('products') ចេញ!
-        // ប្រើត្រឹម Category::all() ឬ Category::get() បានហើយ
-        // វានឹងកាត់បន្ថយទំហំទិន្នន័យ (Payload) ជាង ៥០% និងធ្វើឲ្យ Load លឿនជាងមុនខ្លាំង
-        $categories = Category::orderBy('id', 'asc')->get();
+        $currentOrder = Order::where('table_id', $table_id)->where('status', 'pending')->first();
 
-        // ២. ទុកនៅដដែល
-        $products = Product::with(['category', 'addons'])->get();
-        
-        $addons = Addon::all();
+        // មិនបាច់បញ្ជូន products និង addons ទៅទៀតទេ ទុកឲ្យទំព័រស្រាលបំផុត!
+        return view('pos.menu', compact('table', 'categories', 'currentOrder'));
+    }
 
-        $currentOrder = Order::where('table_id', $table_id)
-                             ->where('status', 'pending')
-                             ->first();
+    // Function ថ្មីសម្រាប់ឲ្យ Javascript ហៅទាញទិន្នន័យពីក្រោយខ្នង
+    public function fetchMenuData()
+    {
+        $products = Product::select('id', 'name', 'price', 'image', 'category_id', 'is_active', 'type')
+                           ->with(['addons'])
+                           ->get();
+                           
+        $addons = Addon::select('id', 'name', 'price', 'is_active', 'kitchen_destination_id')->get();
 
-        return view('pos.menu', compact('table', 'categories', 'products', 'addons', 'currentOrder'));
+        return response()->json([
+            'products' => $products,
+            'addons' => $addons
+        ]);
     }
 
     public function getOrderDetails($table_id)
