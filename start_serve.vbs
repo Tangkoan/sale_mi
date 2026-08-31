@@ -1,3 +1,10 @@
 Set WshShell = CreateObject("WScript.Shell")
-' បើក Laravel Server (Port 8000) លាក់ផ្ទាំង (0)
+
+' ១. បើក WampServer64 (វានឹងលោតផ្ទាំង Yes/No ទាមទារសិទ្ធិ Administrator សូមចុច Yes)
+WshShell.Run """C:\wamp64\wampmanager.exe""", 1, False
+
+' ២. រង់ចាំ ១៥ វិនាទី (ដើម្បីទុកពេលឱ្យអ្នកចុច Yes និងរង់ចាំឱ្យ Icon Wamp ប្រែជាពណ៌បៃតង)
+WScript.Sleep 15000
+
+' ៣. បើក Laravel Server (Port 8000) លាក់ផ្ទាំង (0)
 WshShell.Run "cmd.exe /c cd /d C:\wamp64\www\sale_mi\sale_mi && C:\wamp64\bin\php\php8.4.15\php.exe artisan serve --host=0.0.0.0 --port=8000", 0, False
