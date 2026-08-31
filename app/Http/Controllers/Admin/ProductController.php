@@ -118,8 +118,8 @@ class ProductController extends Controller
             'name'        => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'price'       => 'required|numeric|min:0',
-            // កែ max ទៅជា 10240 (10MB) ដើម្បីអនុញ្ញាតអោយទាញរូបធំមក Resize បាន
-            'image'       => 'nullable|image|max:10240', 
+            // លុប max: ចេញ អនុញ្ញាតអោយ Upload រូបប៉ុណ្ណាក៏បានចូលមកដល់កូដ
+            'image'       => 'nullable|image', 
             'addons'      => 'nullable|array',
             'addons.*'    => 'exists:addons,id',
         ]);
@@ -140,7 +140,7 @@ class ProductController extends Controller
                 $file = $request->file('image');
                 $fileSize = $file->getSize();
 
-                // បើទំហំរូបភាពធំជាង 5MB (5242880 bytes) ធ្វើការ Resize
+                // បើទំហំរូបភាពធំជាង 5MB (5242880 bytes) ធ្វើការ Resize ទោះធំប៉ុណ្ណាក៏ដោយ
                 if ($fileSize > 5242880) {
                     $manager = new ImageManager(new Driver());
                     $image = $manager->read($file->getRealPath());
@@ -180,8 +180,8 @@ class ProductController extends Controller
             'name'        => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'price'       => 'required|numeric|min:0',
-            // កែ max ទៅជា 10240 (10MB) ដើម្បីអនុញ្ញាតអោយទាញរូបធំមក Resize បាន
-            'image'       => 'nullable|image|max:10240', 
+            // លុប max: ចេញ អនុញ្ញាតអោយ Upload រូបប៉ុណ្ណាក៏បានចូលមកដល់កូដ
+            'image'       => 'nullable|image', 
             'addons'      => 'nullable|array',
         ]);
 
@@ -203,7 +203,7 @@ class ProductController extends Controller
                 $file = $request->file('image');
                 $fileSize = $file->getSize();
 
-                // បើទំហំរូបភាពធំជាង 5MB (5242880 bytes) ធ្វើការ Resize
+                // បើទំហំរូបភាពធំជាង 5MB (5242880 bytes) ធ្វើការ Resize ទោះធំប៉ុណ្ណាក៏ដោយ
                 if ($fileSize > 5242880) {
                     $manager = new ImageManager(new Driver());
                     $image = $manager->read($file->getRealPath());
