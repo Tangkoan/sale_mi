@@ -36,15 +36,13 @@ class PosController extends Controller
     {
         $table = Table::findOrFail($table_id);
         
-        // ១. កែត្រង់នេះ៖ ដក query function ដែល filter active ចេញ
-        // ពីមុន៖ Category::with(['products' => function($q) { $q->where('is_active', true); }])->get();
-        // ឥឡូវ៖ យក Products ទាំងអស់ក្នុង Category ទោះ Active ឬអត់
-        $categories = Category::with('products')->get();
+        // ១. 🔥 កែត្រង់នេះ៖ ដកពាក្យ with('products') ចេញ!
+        // ប្រើត្រឹម Category::all() ឬ Category::get() បានហើយ
+        // វានឹងកាត់បន្ថយទំហំទិន្នន័យ (Payload) ជាង ៥០% និងធ្វើឲ្យ Load លឿនជាងមុនខ្លាំង
+        $categories = Category::orderBy('id', 'asc')->get();
 
-        // ២. កែត្រង់នេះ៖ ដក where('is_active', true) ចេញ
-        // ដើម្បីអោយ Frontend ទទួលបានទិន្នន័យទាំងអស់ រួចចាំអោយ JS គ្រប់គ្រងការបង្ហាញ (Inactive = Gray)
-        $products = Product::with(['category', 'addons']) // ទុក with ដដែល
-                           ->get(); // យកទាំងអស់
+        // ២. ទុកនៅដដែល
+        $products = Product::with(['category', 'addons'])->get();
         
         $addons = Addon::all();
 

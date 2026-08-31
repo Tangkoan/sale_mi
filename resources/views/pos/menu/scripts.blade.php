@@ -120,7 +120,7 @@
             categories: @json($categories ?? []),
             addons: @json($addons ?? []),
             
-            activeCategory: null, // លំនាំដើម null សម្រាប់បង្ហាញ Category Grid
+            activeCategory: null, 
             search: '',
             viewMode: 'menu', 
             
@@ -187,7 +187,6 @@
                     }));
                 }
 
-                // បើអត់មាន Search ហើយអត់ទាន់រើស Category ទេ (បង្ហាញទំព័រ Category ដើម)
                 if (!this.search && this.activeCategory === null) {
                     return [];
                 }
@@ -419,21 +418,37 @@
                 }
             },
 
-            // --- POLLING LOGIC ---
+            // =========================================================
+            // 🔥 កន្លែងកែប្រែថ្មី (POLLING LOGIC ដើរលឿនជាងមុន)
+            // =========================================================
             startPolling() {
                 this.isPolling = true;
+                // ដូរពី ៥វិនាទី (5000) ទៅ ១៥វិនាទី (15000) ដើម្បីកាត់បន្ថយសម្ពាធលើ Browser និង Server
                 setInterval(async () => {
                     try {
                         const response = await fetch("{{ route('pos.products.status') }}");
                         if (response.ok) {
                             const data = await response.json();
+                            
+                            // ១. បំប្លែង Data ទៅជា Object មួយ (Dictionary) ដើម្បីរកតម្លៃលឿន O(1)
+                            const updateMap = {};
                             data.forEach(up => {
-                                const p = this.products.find(x => x.id == up.id);
-                                if(p) { p.is_active = up.is_active; p.price = up.price; }
+                                updateMap[up.id] = up;
+                            });
+
+                            // ២. Update តែតម្លៃណាដែលផ្លាស់ប្ដូរពិតប្រាកដ ដើម្បីកុំឲ្យ UI លោត Re-render ផ្ដេសផ្ដាស
+                            this.products.forEach(p => {
+                                const up = updateMap[p.id];
+                                if (up) {
+                                    if (p.is_active != up.is_active || parseFloat(p.price) != parseFloat(up.price)) {
+                                        p.is_active = up.is_active;
+                                        p.price = up.price;
+                                    }
+                                }
                             });
                         }
                     } catch (e) { console.error("Polling error", e); }
-                }, 5000);
+                }, 15000); // 15000 = ១៥វិនាទី
             }
         }
     }
