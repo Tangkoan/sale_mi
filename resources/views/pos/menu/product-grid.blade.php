@@ -17,9 +17,6 @@
         </div>
 
         {{-- Category Grid --}}
-        <!-- <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4"> -->
-        {{-- Category Grid --}}
-            {{-- Category Grid --}}
         <div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
             <template x-for="cat in categories" :key="cat.id">
                 <button @click="selectCategory(cat.id)" 
@@ -51,51 +48,65 @@
             </button>
             <div class="flex-1">
                 <h2 class="text-lg font-black text-gray-800 dark:text-white leading-tight" x-text="currentCategoryName"></h2>
-                <p class="text-xs text-primary font-bold" x-text="filteredProducts.length + ' មុខ'"></p>
+                {{-- ប្តូរអក្សរទៅជាកំពុងស្វែងរកពេល Loading --}}
+                <p class="text-xs text-primary font-bold" x-text="isLoading ? 'កំពុងស្វែងរក...' : filteredProducts.length + ' មុខ'"></p>
             </div>
         </div>
 
-        {{-- Products Grid --}}
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
-            <template x-for="product in filteredProducts" :key="product.id">
-                
-                {{-- Product Card --}}
-                <div @click="product.type === 'addon_item' ? addStandaloneAddon(product) : (product.is_active ? openProductModal(product) : null)" 
-                     class="group bg-white dark:bg-gray-800 rounded-2xl p-2.5 shadow-sm border border-gray-100 dark:border-gray-700 transition-all relative overflow-hidden"
-                     :class="product.is_active ? 'hover:shadow-xl cursor-pointer hover:-translate-y-1 active:scale-[0.97]' : 'cursor-not-allowed bg-gray-50 dark:bg-gray-900'">
+        {{-- វិលៗ Loading State (បង្ហាញតែពេល isLoading = true) --}}
+        <div x-show="isLoading" class="flex flex-col items-center justify-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
+            <svg class="animate-spin h-10 w-10 text-primary mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="text-gray-500 dark:text-gray-400 font-bold">កំពុងទាញទិន្នន័យ...</span>
+        </div>
+
+        {{-- Products Grid & Empty State (បង្ហាញតែពេល isLoading = false) --}}
+        <div x-show="!isLoading" style="display: none;">
+            
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+                <template x-for="product in filteredProducts" :key="product.id">
                     
-                    {{-- Image --}}
-                    <div class="aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 relative mb-3">
-                        <div x-show="!product.is_active" class="absolute inset-0 z-20 flex items-center justify-center bg-white/60 dark:bg-gray-900/60 backdrop-blur-[2px]">
-                             <div class="bg-red-500 text-white text-xs font-black px-2 py-1 rounded shadow-lg transform -rotate-12 border border-white">{{ __('messages.out_of_stock') }}</div>
-                        </div>
-                        <template x-if="product.image">
-                            <img :src="'/storage/' + product.image" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" :class="!product.is_active ? 'grayscale opacity-60' : ''">
-                        </template>
-                        <template x-if="!product.image">
-                            <div class="w-full h-full flex items-center justify-center text-gray-300 dark:text-gray-600"><i class="ri-image-line text-3xl"></i></div>
-                        </template>
+                    {{-- Product Card --}}
+                    <div @click="product.type === 'addon_item' ? addStandaloneAddon(product) : (product.is_active ? openProductModal(product) : null)" 
+                         class="group bg-white dark:bg-gray-800 rounded-2xl p-2.5 shadow-sm border border-gray-100 dark:border-gray-700 transition-all relative overflow-hidden"
+                         :class="product.is_active ? 'hover:shadow-xl cursor-pointer hover:-translate-y-1 active:scale-[0.97]' : 'cursor-not-allowed bg-gray-50 dark:bg-gray-900'">
                         
-                        {{-- Add Icon --}}
-                        <div x-show="product.is_active" class="absolute bottom-2 right-2 bg-primary/95 backdrop-blur-sm rounded-lg w-8 h-8 flex items-center justify-center shadow-lg text-white opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
-                            <i class="ri-add-line font-bold text-lg"></i>
+                        {{-- Image --}}
+                        <div class="aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 relative mb-3">
+                            <div x-show="!product.is_active" class="absolute inset-0 z-20 flex items-center justify-center bg-white/60 dark:bg-gray-900/60 backdrop-blur-[2px]">
+                                 <div class="bg-red-500 text-white text-xs font-black px-2 py-1 rounded shadow-lg transform -rotate-12 border border-white">{{ __('messages.out_of_stock') }}</div>
+                            </div>
+                            <template x-if="product.image">
+                                <img :src="'/storage/' + product.image" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" :class="!product.is_active ? 'grayscale opacity-60' : ''">
+                            </template>
+                            <template x-if="!product.image">
+                                <div class="w-full h-full flex items-center justify-center text-gray-300 dark:text-gray-600"><i class="ri-image-line text-3xl"></i></div>
+                            </template>
+                            
+                            {{-- Add Icon --}}
+                            <div x-show="product.is_active" class="absolute bottom-2 right-2 bg-primary/95 backdrop-blur-sm rounded-lg w-8 h-8 flex items-center justify-center shadow-lg text-white opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+                                <i class="ri-add-line font-bold text-lg"></i>
+                            </div>
+                        </div>
+
+                        {{-- Text Info --}}
+                        <div class="px-1">
+                            <h3 class="font-bold text-sm leading-snug line-clamp-2 min-h-[2.5em]" :class="product.is_active ? 'text-gray-800 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'" x-text="product.name"></h3>
+                            <div class="mt-2 text-primary font-black text-base" x-text="formatNumber(product.price) + ' ៛'"></div>
                         </div>
                     </div>
+                </template>
 
-                    {{-- Text Info --}}
-                    <div class="px-1">
-                        <h3 class="font-bold text-sm leading-snug line-clamp-2 min-h-[2.5em]" :class="product.is_active ? 'text-gray-800 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'" x-text="product.name"></h3>
-                        <div class="mt-2 text-primary font-black text-base" x-text="formatNumber(product.price) + ' ៛'"></div>
-                    </div>
+                {{-- Empty State (លោតចេញតែពេលទាញទិន្នន័យរួចរាល់ ហើយគ្មាន Product) --}}
+                <div x-show="filteredProducts.length === 0" class="col-span-full py-16 text-center text-gray-400 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
+                    <i class="ri-search-eye-line text-4xl mb-2"></i>
+                    <p class="font-bold text-lg">មិនមានទិន្នន័យ</p>
+                    <p class="text-sm mt-1">សូមសាកល្បងស្វែងរកឈ្មោះផ្សេង</p>
                 </div>
-            </template>
-
-            {{-- Empty State --}}
-            <div x-show="filteredProducts.length === 0" class="col-span-full py-16 text-center text-gray-400 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
-                <i class="ri-search-eye-line text-4xl mb-2"></i>
-                <p class="font-bold text-lg">មិនមានទិន្នន័យ</p>
-                <p class="text-sm mt-1">សូមសាកល្បងស្វែងរកឈ្មោះផ្សេង</p>
             </div>
+
         </div>
     </div>
 </div>
