@@ -116,9 +116,9 @@
      */
     function posMenu() {
         return {
-            products: @json($products ?? []),
-            categories: @json($categories ?? []),
-            addons: @json($addons ?? []),
+            products: [],
+            categories: @json($categories ?? []), // Categories នៅរក្សាដដែលព្រោះយើងនៅតែបញ្ជូនវាពី Controller
+            addons: [],
             
             activeCategory: null, 
             search: '',
@@ -129,15 +129,36 @@
             isProductModalOpen: false,
             isSubmitting: false,
             isPolling: false,
+            isLoading: true, // បន្ថែម State Loading មួយដើម្បីដឹងថាកំពុងទាញទិន្នន័យ
             
             tempItem: { id: null, name: '', image: null, base_price: 0, qty: 1, note: '', selectedAddons: [], category_id: null },
 
             init() {
+                // ២. ហៅ function ទាញទិន្នន័យនៅពេលបើក POS ភ្លាម
+                this.fetchMenuData(); 
+                
                 this.startPolling();
                 window.addEventListener('pos-category-changed', (e) => { this.activeCategory = e.detail; });
                 window.addEventListener('pos-search-changed', (e) => { this.search = e.detail; });
                 window.addEventListener('pos-toggle-addon-mode', (e) => { this.viewMode = e.detail ? 'addon' : 'menu'; });
                 window.addEventListener('pos-open-quick-addon', () => { this.openQuickAddon(); });
+            },
+
+            // ៣. បង្កើត Function ថ្មីសម្រាប់ទាញ Products និង Addons ពី Backend
+            async fetchMenuData() {
+                this.isLoading = true;
+                try {
+                    const response = await fetch("{{ route('pos.menu.data') }}"); // ប្រើ Route ដែលបានបង្កើតនៅជំហានទី១
+                    const data = await response.json();
+                    
+                    this.products = data.products || [];
+                    this.addons = data.addons || [];
+                } catch (error) {
+                    console.error("Failed to fetch menu data:", error);
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'មិនអាចទាញយកបញ្ជីផលិតផលបានទេ!' } }));
+                } finally {
+                    this.isLoading = false;
+                }
             },
 
             formatNumber(num) {
@@ -187,6 +208,7 @@
                     }));
                 }
 
+                // បើអត់មាន Search ហើយអត់ទាន់រើស Category ទេ (បង្ហាញទំព័រ Category ដើម)
                 if (!this.search && this.activeCategory === null) {
                     return [];
                 }
@@ -418,37 +440,21 @@
                 }
             },
 
-            // =========================================================
-            // 🔥 កន្លែងកែប្រែថ្មី (POLLING LOGIC ដើរលឿនជាងមុន)
-            // =========================================================
+            // --- POLLING LOGIC ---
             startPolling() {
                 this.isPolling = true;
-                // ដូរពី ៥វិនាទី (5000) ទៅ ១៥វិនាទី (15000) ដើម្បីកាត់បន្ថយសម្ពាធលើ Browser និង Server
                 setInterval(async () => {
                     try {
                         const response = await fetch("{{ route('pos.products.status') }}");
                         if (response.ok) {
                             const data = await response.json();
-                            
-                            // ១. បំប្លែង Data ទៅជា Object មួយ (Dictionary) ដើម្បីរកតម្លៃលឿន O(1)
-                            const updateMap = {};
                             data.forEach(up => {
-                                updateMap[up.id] = up;
-                            });
-
-                            // ២. Update តែតម្លៃណាដែលផ្លាស់ប្ដូរពិតប្រាកដ ដើម្បីកុំឲ្យ UI លោត Re-render ផ្ដេសផ្ដាស
-                            this.products.forEach(p => {
-                                const up = updateMap[p.id];
-                                if (up) {
-                                    if (p.is_active != up.is_active || parseFloat(p.price) != parseFloat(up.price)) {
-                                        p.is_active = up.is_active;
-                                        p.price = up.price;
-                                    }
-                                }
+                                const p = this.products.find(x => x.id == up.id);
+                                if(p) { p.is_active = up.is_active; p.price = up.price; }
                             });
                         }
                     } catch (e) { console.error("Polling error", e); }
-                }, 15000); // 15000 = ១៥វិនាទី
+                }, 5000);
             }
         }
     }

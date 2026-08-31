@@ -46,7 +46,7 @@ class PosController extends Controller
     // Function ថ្មីសម្រាប់ឲ្យ Javascript ហៅទាញទិន្នន័យពីក្រោយខ្នង
     public function fetchMenuData()
     {
-        $products = Product::select('id', 'name', 'price', 'image', 'category_id', 'is_active', 'type')
+        $products = Product::select('id', 'name', 'price', 'image', 'category_id', 'is_active', 'station_type')
                            ->with(['addons'])
                            ->get();
                            

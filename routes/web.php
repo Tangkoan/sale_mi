@@ -87,7 +87,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('admin.dashboard')->middleware('permission:view_dashboard');
 
-    Route::get('/pos/fetch-menu-data', [App\Http\Controllers\Pos\PosController::class, 'fetchMenuData'])->name('pos.fetch-menu-data');
+    Route::get('/pos/menu-data', [App\Http\Controllers\Pos\PosController::class, 'fetchMenuData'])->name('pos.menu.data');
 
     // Logout
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
