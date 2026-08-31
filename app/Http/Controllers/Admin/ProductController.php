@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
+
 class ProductController extends Controller
 {
     public function index()
@@ -115,7 +118,8 @@ class ProductController extends Controller
             'name'        => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'price'       => 'required|numeric|min:0',
-            'image'       => 'nullable|image|max:2048',
+            // កែ max ទៅជា 10240 (10MB) ដើម្បីអនុញ្ញាតអោយទាញរូបធំមក Resize បាន
+            'image'       => 'nullable|image|max:10240', 
             'addons'      => 'nullable|array',
             'addons.*'    => 'exists:addons,id',
         ]);
@@ -133,7 +137,25 @@ class ProductController extends Controller
             ];
 
             if ($request->hasFile('image')) {
-                $data['image'] = $request->file('image')->store('products', 'public');
+                $file = $request->file('image');
+                $fileSize = $file->getSize();
+
+                // បើទំហំរូបភាពធំជាង 5MB (5242880 bytes) ធ្វើការ Resize
+                if ($fileSize > 5242880) {
+                    $manager = new ImageManager(new Driver());
+                    $image = $manager->read($file->getRealPath());
+                    
+                    // បង្រួម Width មកត្រឹម 1024px ដោយរក្សា Aspect Ratio
+                    $image->scaleDown(width: 1024);
+                    
+                    $imageName = 'products/resized_' . time() . '_' . uniqid() . '.jpg';
+                    Storage::disk('public')->put($imageName, (string) $image->toJpeg(80));
+                    
+                    $data['image'] = $imageName;
+                } else {
+                    // បើមិនលើសពី 5MB ទេ Save តាមធម្មតា
+                    $data['image'] = $file->store('products', 'public');
+                }
             }
 
             $product = Product::create($data);
@@ -158,7 +180,8 @@ class ProductController extends Controller
             'name'        => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'price'       => 'required|numeric|min:0',
-            'image'       => 'nullable|image|max:2048',
+            // កែ max ទៅជា 10240 (10MB) ដើម្បីអនុញ្ញាតអោយទាញរូបធំមក Resize បាន
+            'image'       => 'nullable|image|max:10240', 
             'addons'      => 'nullable|array',
         ]);
 
@@ -172,10 +195,30 @@ class ProductController extends Controller
             $product->price       = $request->price;
 
             if ($request->hasFile('image')) {
+                // លុបរូបចាស់ចោលសិន
                 if ($product->image && Storage::disk('public')->exists($product->image)) {
                     Storage::disk('public')->delete($product->image);
                 }
-                $product->image = $request->file('image')->store('products', 'public');
+
+                $file = $request->file('image');
+                $fileSize = $file->getSize();
+
+                // បើទំហំរូបភាពធំជាង 5MB (5242880 bytes) ធ្វើការ Resize
+                if ($fileSize > 5242880) {
+                    $manager = new ImageManager(new Driver());
+                    $image = $manager->read($file->getRealPath());
+                    
+                    // បង្រួម Width មកត្រឹម 1024px ដោយរក្សា Aspect Ratio
+                    $image->scaleDown(width: 1024);
+                    
+                    $imageName = 'products/resized_' . time() . '_' . uniqid() . '.jpg';
+                    Storage::disk('public')->put($imageName, (string) $image->toJpeg(80));
+                    
+                    $product->image = $imageName;
+                } else {
+                    // បើមិនលើសពី 5MB ទេ Save តាមធម្មតា
+                    $product->image = $file->store('products', 'public');
+                }
             }
 
             $product->save();
