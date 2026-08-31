@@ -351,6 +351,10 @@ class OrderController extends Controller
                 if (!$mainOrder) throw new \Exception("តុបច្ចុប្បន្នគ្មាន Order ដើម្បីបញ្ចូលទេ");
                 if (!$targetOrder) throw new \Exception("តុដែលត្រូវបញ្ចូល (Target) គ្មាន Order ទេ");
 
+                // ១. ទាញយកឈ្មោះតុទាំងពីរ ដើម្បីយកមកតភ្ជាប់គ្នា
+                $mainTable = Table::find($request->main_table_id);
+                $targetTable = Table::find($request->target_table_id);
+
                 foreach ($targetOrder->items as $item) {
                     $item->update(['order_id' => $mainOrder->id]);
                 }
@@ -358,6 +362,12 @@ class OrderController extends Controller
                 $targetOrder->delete();
                 Table::where('id', $request->target_table_id)->update(['status' => 'available']);
                 $newTotal = $this->recalculateOrderTotal($mainOrder->id);
+
+                // ២. 🔥 កូដបន្ថែមថ្មី៖ តភ្ជាប់ឈ្មោះតុ ហើយ Save ចូល Order
+                // ឆែកមើលថាតើ Order នេះធ្លាប់ Merge ពីមុនមកឬអត់ (បើធ្លាប់ យកឈ្មោះចាស់មកបន្ត បើមិនធ្លាប់ យកឈ្មោះតុ Main)
+                $currentMergedNames = $mainOrder->merged_table_names ?: $mainTable->name;
+                $mainOrder->merged_table_names = $currentMergedNames . ' & ' . $targetTable->name;
+                $mainOrder->save();
 
                 return response()->json([
                     'status' => 'success', 
