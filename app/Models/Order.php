@@ -17,7 +17,8 @@ class Order extends Model
         'total_amount',
         'check_in_time',
         'check_out_time',
-        'payment_method'
+        'payment_method',
+        'merged_table_names'
     ];
 
     // ទំនាក់ទំនង៖ Order មានមុខម្ហូបច្រើន (Items)

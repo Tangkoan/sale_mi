@@ -424,7 +424,7 @@ class OrderController extends Controller
         ]);
 
         return DB::transaction(function () use ($request) {
-            $mainOrder = Order::findOrFail($request->order_id);
+            $mainOrder = Order::with('table')->findOrFail($request->order_id);
 
             if ($mainOrder->status == 'completed') {
                 return response()->json(['status' => 'error', 'message' => 'Order is already paid!'], 400);
@@ -461,16 +461,38 @@ class OrderController extends Controller
                 }
             }
 
+            // =========================================================
+            // 🔥 កូដថ្មីបន្ថែមនៅទីនេះ សម្រាប់ចាប់យកឈ្មោះតុដែលបាន Merge
+            // =========================================================
             $otherOrderIds = array_unique(array_diff($affectedOrderIds, [$mainOrder->id]));
+            $mergedTablesList = []; 
+
             foreach ($otherOrderIds as $oldOrderId) {
-                $oldOrder = Order::find($oldOrderId);
-                if ($oldOrder && $oldOrder->items()->count() == 0) {
-                    if ($oldOrder->table_id) {
-                        Table::where('id', $oldOrder->table_id)->update(['status' => 'available']);
+                $oldOrder = Order::with('table')->find($oldOrderId);
+                if ($oldOrder) {
+                    // ទាញយកឈ្មោះតុចាស់ដែលត្រូវប៉ះពាល់យកមកកត់ត្រា
+                    if ($oldOrder->table) {
+                        $mergedTablesList[] = $oldOrder->table->name;
                     }
-                    $oldOrder->delete();
+
+                    // លុប Order ចាស់ចោលប្រសិនបើអស់ម្ហូប
+                    if ($oldOrder->items()->count() == 0) {
+                        if ($oldOrder->table_id) {
+                            Table::where('id', $oldOrder->table_id)->update(['status' => 'available']);
+                        }
+                        $oldOrder->delete();
+                    }
                 }
             }
+
+            // តភ្ជាប់ឈ្មោះតុទាំងអស់ចូលគ្នា (ឧទាហរណ៍៖ A-3 & T-01)
+            $mergedNames = null;
+            if (count($mergedTablesList) > 0) {
+                $mainTableName = $mainOrder->table ? $mainOrder->table->name : 'ទូទៅ';
+                $allTables = array_merge([$mainTableName], $mergedTablesList);
+                $mergedNames = implode(' & ', array_unique($allTables)); // លុបឈ្មោះស្ទួនចេញ រួចភ្ជាប់គ្នា
+            }
+            // =========================================================
 
             $totalAmount = $this->recalculateOrderTotal($mainOrder->id);
             $change = $request->received_amount - $totalAmount;
@@ -480,13 +502,14 @@ class OrderController extends Controller
             }
 
             $mainOrder->update([
-                'status'          => 'completed',
-                'total_amount'    => $totalAmount,
-                'payment_method'  => $request->payment_method,
-                'received_amount' => $request->received_amount,
-                'change_amount'   => $change,
-                'paid_at'         => now(),
-                'check_out_time'  => now(), 
+                'status'             => 'completed',
+                'total_amount'       => $totalAmount,
+                'payment_method'     => $request->payment_method,
+                'received_amount'    => $request->received_amount,
+                'change_amount'      => $change,
+                'paid_at'            => now(),
+                'check_out_time'     => now(), 
+                'merged_table_names' => $mergedNames // 🔥 Save ឈ្មោះតុដែលជាប់គ្នាចូល Database
             ]);
 
             if ($mainOrder->table_id) {
@@ -499,7 +522,7 @@ class OrderController extends Controller
                 'change_amount'   => $change,
             ];
 
-            // ✅ បញ្ជាឲ្យ Job ធ្វើការ Print វិក្កយបត្រ (Invoice) នៅ Background
+            // បញ្ជាឲ្យ Job ធ្វើការ Print វិក្កយបត្រ (Invoice) នៅ Background
             PrintInvoiceJob::dispatch($mainOrder->id, $paymentDetails);
 
             return response()->json([
