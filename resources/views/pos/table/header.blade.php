@@ -1,20 +1,16 @@
 <div class="px-4 py-3 sm:px-6 bg-white/80 dark:bg-gray-900/90 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 z-30 shrink-0 sticky top-0 shadow-sm transition-all duration-300">
     
-    {{-- 🔥 MAIN CONTAINER: 
-         - Mobile: flex-col (២ ជួរ)
-         - Desktop: flex-row (១ ជួរ - ដូចចាស់) 
-    --}}
-    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
+    {{-- 🔥 MAIN CONTAINER: ប្តូរមកប្រើ flex-col ដើម្បិបំបែកជា ២ ជួរលើក្រោម --}}
+    <div class="flex flex-col gap-3 sm:gap-4">
         
         {{-- ========================================================= --}}
-        {{-- ផ្នែកទី ១: ខាងឆ្វេង (Title & Back Button)                --}}
+        {{-- ជួរទី ១: ខាងឆ្វេង (Title) នឹង ខាងស្តាំ (Tools)                  --}}
         {{-- ========================================================= --}}
-        <div class="flex justify-between md:justify-start items-center w-full md:w-auto">
+        <div class="flex flex-wrap md:flex-nowrap justify-between items-center gap-3 w-full">
             
-            {{-- A. BACK BUTTON & TITLE --}}
-            <div class="flex items-center gap-3 sm:gap-4">
+            {{-- A. ផ្នែកខាងឆ្វេង: BACK BUTTON & TITLE --}}
+            <div class="flex items-center gap-3 sm:gap-4 shrink-0">
                 
-                {{-- Back Button (Logic: បង្ហាញតែអ្នកមាន Permission) --}}
                 @can('view_dashboard')
                     <a href="{{ route('admin.dashboard') }}" 
                        class="group relative flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-primary hover:text-white transition-all duration-300 shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
@@ -25,7 +21,6 @@
                     <div class="h-6 w-px bg-gray-300 dark:bg-gray-700 hidden sm:block"></div>
                 @endcan
 
-                {{-- Title & Subtitle --}}
                 <div class="flex flex-col">
                     <h1 class="text-lg sm:text-xl font-black text-gray-800 dark:text-white flex items-center gap-2 tracking-tight leading-none">
                         <span class="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-emerald-600 text-white shadow-md shadow-primary/30">
@@ -37,83 +32,52 @@
                         {{ __('messages.please_select_table_to_order') }}
                     </p>
                 </div>
-            </div>
-
-            {{-- 🔥 B. MOBILE STATUS (បង្ហាញតែលើ Mobile នៅជួរទី ១ ខាងស្តាំ) --}}
-            <div class="flex md:hidden items-center gap-2 bg-gray-50/50 dark:bg-gray-800/50 p-1 rounded-full border border-gray-100 dark:border-gray-700/50">
-                {{-- Available --}}
-                <div class="flex items-center gap-1 px-2 py-1 rounded-full bg-white dark:bg-gray-700 shadow-sm border border-gray-100 dark:border-gray-600">
-                    <span class="relative flex h-1.5 w-1.5">
-                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-                    </span>
-                    <span class="text-[9px] font-bold text-gray-700 dark:text-gray-200 uppercase">{{ __('messages.available') }}</span>
-                </div>
-                {{-- Busy --}}
-                <div class="flex items-center gap-1 px-2 py-1 opacity-60">
-                    <span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
-                    <span class="text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase">{{ __('messages.busy') }}</span>
-                </div>
-            </div>
-
-        </div>
-
-        {{-- ========================================================= --}}
-        {{-- ផ្នែកទី ២: ខាងស្តាំ (Tools & Desktop Status)              --}}
-        {{-- ========================================================= --}}
-        <div class="flex items-center justify-end gap-3 w-full md:w-auto">
-
-            {{-- 🔥 C. DESKTOP STATUS (បង្ហាញតែលើ Desktop នៅជួរជាមួយ Tools) --}}
-            <div class="hidden md:flex items-center gap-2 bg-gray-50/50 dark:bg-gray-800/50 p-1 rounded-full border border-gray-100 dark:border-gray-700/50">
-                <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-gray-700 shadow-sm border border-gray-100 dark:border-gray-600">
-                    <span class="relative flex h-2 w-2">
-                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                    </span>
-                    <span class="text-[10px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wide">{{ __('messages.available') }}</span>
-                </div>
-                <div class="flex items-center gap-1.5 px-3 py-1 opacity-60">
-                    <span class="h-2 w-2 rounded-full bg-rose-500"></span>
-                    <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{{ __('messages.busy') }}</span>
-                </div>
-            </div>
-
-            {{-- Divider --}}
-            <div class="hidden md:block h-5 w-px bg-gray-300 dark:bg-gray-600"></div>
-            
-            {{-- D. TOOLBAR BUTTONS (Product, Exchange, Lang, Theme, User) --}}
-            <div class="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-gray-800/80 p-1.5 rounded-2xl border border-gray-100 dark:border-gray-700 w-full md:w-auto justify-between md:justify-end">
                 
-                {{-- Label (Mobile Only) --}}
-                <span class="text-[10px] font-bold text-gray-400 uppercase px-2 md:hidden">{{ __('messages.menu') }}</span>
+                {{-- MOBILE STATUS (បង្ហាញតែលើ Mobile) --}}
+                <div class="flex md:hidden items-center gap-2 bg-gray-50/50 dark:bg-gray-800/50 p-1 rounded-full border border-gray-100 dark:border-gray-700/50 ml-2">
+                    <div class="flex items-center gap-1 px-2 py-1 rounded-full bg-white dark:bg-gray-700 shadow-sm border border-gray-100 dark:border-gray-600">
+                        <span class="relative flex h-1.5 w-1.5">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
 
-                <div class="flex items-center gap-2 sm:gap-3">
+            {{-- B. ផ្នែកខាងស្តាំ: TOOLS & DESKTOP STATUS --}}
+            <div class="flex items-center justify-end gap-2 sm:gap-3 w-full md:w-auto shrink-0">
+
+                {{-- DESKTOP STATUS --}}
+                <div class="hidden md:flex items-center gap-2 bg-gray-50/50 dark:bg-gray-800/50 p-1 rounded-full border border-gray-100 dark:border-gray-700/50">
+                    <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-gray-700 shadow-sm border border-gray-100 dark:border-gray-600">
+                        <span class="relative flex h-2 w-2">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        <span class="text-[10px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wide">{{ __('messages.available') }}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 px-3 py-1 opacity-60">
+                        <span class="h-2 w-2 rounded-full bg-rose-500"></span>
+                        <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{{ __('messages.busy') }}</span>
+                    </div>
+                </div>
+
+                <div class="hidden lg:block h-5 w-px bg-gray-300 dark:bg-gray-600"></div>
+                
+                {{-- TOOLBAR BUTTONS --}}
+                <div class="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-gray-800/80 p-1.5 rounded-2xl border border-gray-100 dark:border-gray-700 ml-auto md:ml-0">
                     
-                    <!-- {{-- 1. Exchange Rate --}}
-                    @can('pos-exchange-rate')
-                        <button @click="openExchangeModal()" class="flex items-center justify-center w-10 h-9 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800 relative">
-                                <i class="ri-exchange-dollar-line text-lg"></i>
-                                <span class="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                                </span>
-                        </button>
-                    @endcan -->
-                    
-                    {{-- ✅ ប៊ូតុង Product List --}}
                     @can('product-list')
                         <a href="{{ route('admin.products.index') }}" 
                            class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 flex items-center justify-center shadow-sm text-gray-700 dark:text-gray-200 hover:text-primary dark:hover:text-primary transition-colors group"
                            title="{{ __('sidebar.product_list') }}">
-                            <!-- <i class="ri-price-tag-3-line text-lg group-hover:scale-110 transition-transform duration-300"></i> -->
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5 sm:size-6 group-hover:scale-110 transition-transform duration-300">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016c.896 0 1.7-.393 2.25-1.015a3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19A1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72M6.75 18h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .414.336.75.75.75Z" />
-                                </svg>
-
+                            </svg>
                         </a>
                     @endcan
 
-                    {{-- 2. Language Switcher --}}
+                    {{-- Language Switcher --}}
                     <div x-data="{ languageOpen: false }" class="relative">
                         <button @click="languageOpen = !languageOpen" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 flex items-center justify-center shadow-sm">
                             @if(App::getLocale() == 'km')
@@ -136,7 +100,7 @@
                         </div>
                     </div>
 
-                    {{-- 3. Theme Toggle --}}
+                    {{-- Theme Toggle --}}
                     <button x-data="{ 
                                     darkMode: localStorage.getItem('theme_mode') === 'dark',
                                     toggle() {
@@ -155,7 +119,7 @@
 
                     <div class="h-6 w-px bg-gray-300 dark:bg-gray-600 mx-1"></div>
 
-                    {{-- 4. User Profile --}}
+                    {{-- User Profile --}}
                     <div x-data="{ open: false }" class="relative">
                         <button @click="open = !open" @click.away="open = false" 
                                 class="flex items-center gap-2 bg-white dark:bg-gray-700 pl-1 pr-2 py-1 rounded-full border border-gray-200 dark:border-gray-600 hover:border-primary/50 transition-all shadow-sm">
@@ -167,7 +131,6 @@
                             <i class="ri-arrow-down-s-line text-xs text-gray-400"></i>
                         </button>
 
-                        {{-- Profile Dropdown --}}
                         <div x-show="open" x-cloak
                              x-transition:enter="transition ease-out duration-100"
                              x-transition:enter-start="transform opacity-0 scale-95 translate-y-2"
@@ -197,10 +160,30 @@
             </div>
         </div>
 
+        {{-- ========================================================= --}}
+        {{-- ជួរទី ២: ក្រោមគេ (SEARCH BOX) ពេញទំហំ និងស្អាតជាងមុន          --}}
+        {{-- ========================================================= --}}
+        <div class="w-full md:max-w-3xl mx-auto">
+            <div class="relative group">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <i class="ri-search-2-line text-gray-400 group-focus-within:text-primary transition-colors text-lg"></i>
+                </div>
+                <input type="text"
+                       id="searchTableInput"
+                       x-model="searchQuery"
+                       class="w-full pl-12 pr-12 py-2.5 sm:py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 hover:bg-white dark:bg-gray-800/80 dark:hover:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary focus:bg-white transition-all placeholder-gray-400 dark:placeholder-gray-500 shadow-sm hover:shadow-md focus:shadow-md"
+                       placeholder="ស្វែងរកតុ...">
+                
+                <button x-cloak x-show="searchQuery" @click="searchQuery = ''" class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-red-500 transition-colors">
+                    <i class="ri-close-circle-fill text-xl"></i>
+                </button>
+            </div>
+        </div>
+
     </div>
 </div>
 
-{{-- MODAL: Exchange Rate --}}
+{{-- MODAL: Exchange Rate (រក្សាទុកដូចដើម) --}}
 <div x-show="isExchangeModalOpen" 
      class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" 
      x-cloak 

@@ -38,6 +38,9 @@
     // ==========================================
     function posTables() {
         return {
+            // 🔥 បន្ថែមអថេរសម្រាប់ទទួលពាក្យ Search ពី Header
+            searchQuery: '', 
+
             tables: [],
             isLoading: false,
             interval: null,
@@ -65,6 +68,17 @@
             confirmEmpty: false, 
             
             orderDetails: { id: null, table_id: null, items: [], total: 0, invoice_number: '', shop: null },
+
+            // 🔥 បន្ថែម Getter នេះដើម្បី Filter តុពេលយើងវាយអក្សរ Search
+            get filteredTables() {
+                if (this.searchQuery.trim() === '') {
+                    return this.tables;
+                }
+                let query = this.searchQuery.toLowerCase();
+                return this.tables.filter(table => {
+                    return table.name.toLowerCase().includes(query);
+                });
+            },
 
             init() {
                 this.fetchTables();

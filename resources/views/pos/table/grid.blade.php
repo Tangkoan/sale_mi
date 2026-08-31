@@ -1,6 +1,6 @@
 <div class="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar" x-show="tables.length > 0" x-cloak>
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
-        <template x-for="table in tables" :key="table.id">
+        <template x-for="table in filteredTables" :key="table.id">
             <div class="relative group">
                 
                 {{-- Table Card --}}
