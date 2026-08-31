@@ -1,6 +1,5 @@
 @extends('layouts.blank')
 
-
 @section('title', __('messages.menu_management'))
 
 @section('content')
@@ -9,7 +8,7 @@
     {{-- 1. HEADER --}}
     @include('pos.menu.header')
 
-    {{-- 2. PRODUCT GRID --}}
+    {{-- 2. PRODUCT GRID (រួមបញ្ចូលទាំង Category Grid ផងដែរ) --}}
     @include('pos.menu.product-grid')
 
     {{-- 3. FLOATING CART BUTTON --}}

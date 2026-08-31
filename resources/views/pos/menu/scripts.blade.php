@@ -7,7 +7,7 @@
     function headerController() {
         return {
             search: '',
-            activeCategory: 'all',
+            activeCategory: null, 
             isAddonMode: false,
             
             isExchangeModalOpen: false,
@@ -24,24 +24,15 @@
                 });
             },
 
-            setCategory(id) {
-                this.activeCategory = id;
-                window.dispatchEvent(new CustomEvent('pos-category-changed', { detail: id }));
-            },
-
             toggleAddonMode() {
                 this.isAddonMode = !this.isAddonMode;
                 window.dispatchEvent(new CustomEvent('pos-toggle-addon-mode', { detail: this.isAddonMode }));
                 
                 if (!this.isAddonMode) {
                     this.search = '';
-                    this.activeCategory = 'all';
-                    window.dispatchEvent(new CustomEvent('pos-category-changed', { detail: 'all' }));
+                    this.activeCategory = null;
+                    window.dispatchEvent(new CustomEvent('pos-category-changed', { detail: null }));
                 }
-            },
-
-            openQuickAddon() {
-                window.dispatchEvent(new CustomEvent('pos-open-quick-addon'));
             },
 
             async loadSystemRate() {
@@ -114,10 +105,6 @@
                 } finally {
                     this.isFetchingRate = false;
                 }
-            },
-
-            formatNumber(num) {
-                return new Intl.NumberFormat('en-US').format(num);
             }
         }
     }
@@ -133,7 +120,7 @@
             categories: @json($categories ?? []),
             addons: @json($addons ?? []),
             
-            activeCategory: 'all',
+            activeCategory: null, // លំនាំដើម null សម្រាប់បង្ហាញ Category Grid
             search: '',
             viewMode: 'menu', 
             
@@ -153,9 +140,28 @@
                 window.addEventListener('pos-open-quick-addon', () => { this.openQuickAddon(); });
             },
 
-            // --- បន្ថែម Function សម្រាប់ Format លុយរៀល ---
             formatNumber(num) {
                 return new Intl.NumberFormat('km-KH').format(num);
+            },
+
+            // --- CATEGORY UX LOGIC ---
+            selectCategory(id) {
+                this.activeCategory = id;
+                this.search = ''; 
+            },
+
+            backToCategories() {
+                this.activeCategory = null;
+                this.search = '';
+            },
+
+            get currentCategoryName() {
+                if (this.search !== '') return 'លទ្ធផលស្វែងរក: ' + this.search;
+                if (this.activeCategory !== null) {
+                    let cat = this.categories.find(c => c.id == this.activeCategory);
+                    return cat ? cat.name : '';
+                }
+                return '';
             },
 
             // --- FILTER LOGIC ---
@@ -167,7 +173,7 @@
                     if (this.search) {
                         items = items.filter(a => a.name.toLowerCase().includes(this.search.toLowerCase()));
                     }
-                    if (this.activeCategory !== 'all') {
+                    if (this.activeCategory !== null && this.activeCategory !== 'all') {
                         const selectedCat = this.categories.find(c => c.id == this.activeCategory);
                         if (selectedCat && selectedCat.kitchen_destination_id) {
                             items = items.filter(a => a.kitchen_destination_id == selectedCat.kitchen_destination_id);
@@ -181,15 +187,23 @@
                     }));
                 }
 
-                items = this.products;
-                if (this.activeCategory !== 'all') items = items.filter(p => p.category_id == this.activeCategory);
-                if (this.search) items = items.filter(p => p.name.toLowerCase().includes(this.search.toLowerCase()));
-                items = items.filter(p => !p.name.toLowerCase().includes('extra'));
+                // បើអត់មាន Search ហើយអត់ទាន់រើស Category ទេ (បង្ហាញទំព័រ Category ដើម)
+                if (!this.search && this.activeCategory === null) {
+                    return [];
+                }
 
-                return items;
+                items = this.products;
+                
+                if (this.search) {
+                    items = items.filter(p => p.name.toLowerCase().includes(this.search.toLowerCase()));
+                } else if (this.activeCategory !== null) {
+                    items = items.filter(p => p.category_id == this.activeCategory);
+                }
+
+                return items.filter(p => !p.name.toLowerCase().includes('extra'));
             },
 
-            // --- Helpers ---
+            // --- ADDON & MODAL LOGIC ---
             get availableAddons() {
                 if (this.tempItem.type === 'addon_item') return [];
                 if (!this.tempItem.id) return [];
@@ -202,9 +216,7 @@
             addStandaloneAddon(addonItem) {
                 let wrapperProduct = this.products.find(p => p.name.toLowerCase().includes('extra'));
                 if (!wrapperProduct) {
-                    window.dispatchEvent(new CustomEvent('notify', { 
-                        detail: { type: 'error', message: "{{ __('messages.system_error_extra') }}" } 
-                    }));
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "{{ __('messages.system_error_extra') }}" } }));
                     return;
                 }
 
@@ -216,12 +228,7 @@
                     qty: 1,
                     note: '',
                     is_addon_item: true, 
-                    addons: [{
-                        id: addonItem.id,
-                        name: addonItem.name,
-                        price: parseFloat(addonItem.price),
-                        qty: 1
-                    }],
+                    addons: [{ id: addonItem.id, name: addonItem.name, price: parseFloat(addonItem.price), qty: 1 }],
                     total_price_calculated: parseFloat(addonItem.price) 
                 };
                 this.cart.push(cartItem);
@@ -243,9 +250,7 @@
             openQuickAddon() {
                 let extraProduct = this.products.find(p => p.name.toLowerCase().includes('extra'));
                 if (!extraProduct) {
-                    window.dispatchEvent(new CustomEvent('notify', { 
-                        detail: { type: 'error', message: "{{ __('messages.system_config_error_extra') }}" } 
-                    }));
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "{{ __('messages.system_config_error_extra') }}" } }));
                     return;
                 }
                 this.tempItem = {
@@ -274,7 +279,7 @@
                 return main + ads;
             },
 
-            // --- MAIN CART LOGIC ---
+            // --- CART LOGIC ---
             addToCart() {
                 try {
                     const finalAddons = this.tempItem.selectedAddons.map(ad => ({
@@ -336,12 +341,10 @@
                 let addon = item.addons[addonIndex];
                 
                 addon.qty += change;
-
                 if (addon.qty <= 0) {
                     this.removeAddonFromCart(cartIndex, addonIndex);
                     return; 
                 }
-
                 this.recalculateCartItemTotal(cartIndex);
             },
 
@@ -356,9 +359,7 @@
                 let addonsTotal = 0;
 
                 if (item.addons && item.addons.length > 0) {
-                    item.addons.forEach(ad => {
-                        addonsTotal += (parseFloat(ad.price) * parseInt(ad.qty));
-                    });
+                    item.addons.forEach(ad => { addonsTotal += (parseFloat(ad.price) * parseInt(ad.qty)); });
                 }
                 item.total_price_calculated = baseTotal + addonsTotal;
             },
@@ -369,6 +370,7 @@
                 return this.cart.reduce((sum, item) => sum + (item.total_price_calculated || 0), 0);
             },
 
+            // --- SUBMIT ORDER LOGIC ---
             async submitOrder() {
                 if (this.cart.length === 0) return;
                 this.isSubmitting = true;
@@ -406,9 +408,7 @@
                         window.location.href = "{{ route('pos.tables') }}";
                     } else {
                         let msg = data.message || "{{ __('messages.validation_error') }}";
-                        if(data.errors) {
-                            msg = Object.values(data.errors)[0][0];
-                        }
+                        if(data.errors) msg = Object.values(data.errors)[0][0];
                         window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: msg } }));
                     }
                 } catch (e) { 
@@ -419,6 +419,7 @@
                 }
             },
 
+            // --- POLLING LOGIC ---
             startPolling() {
                 this.isPolling = true;
                 setInterval(async () => {
