@@ -498,3 +498,21 @@ Route::get('/test-image', function () {
 });
 
 // require __DIR__.'/auth.php'; // បិទចោលសិន កុំអោយជាន់គ្នាជាមួយ Custom Auth របស់យើង
+
+Route::get('/test-invoice/{order_id}', function ($order_id) {
+    $order = \App\Models\Order::with(['items.product', 'items.addons.addon', 'table', 'user'])->find($order_id);
+    $shop = \App\Models\ShopInfo::first();
+    
+    // បង្កើតទិន្នន័យបង់ប្រាក់សិប្បនិម្មិត (Mock Data) សម្រាប់តេស្ត
+    $paymentDetails = [
+        'received_amount' => $order->total_amount ?? 0,
+        'payment_method'  => 'cash',
+        'change_amount'   => 0,
+    ];
+
+    if (!$order) {
+        return "រកមិនឃើញ Order លេខ $order_id ទេ!";
+    }
+
+    return view('pos.invoice_receipt', compact('order', 'paymentDetails', 'shop'));
+});

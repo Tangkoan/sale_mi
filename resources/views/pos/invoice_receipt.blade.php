@@ -97,7 +97,7 @@
             </div>
             <div class="flex justify-between items-end">
                 <span>លេខតុ៖</span> 
-                <span class="font-bold text-[26px]">{{ $order->table->name ?? 'ទូទៅ' }}</span>
+                <span class="font-bold text-[26px]">{{ $order->merged_table_names ?: ($order->table->name ?? 'ទូទៅ') }}</span>
             </div>
             <!-- <div class="flex justify-between items-end">
                 <span>អ្នកគិតលុយ៖</span> 
