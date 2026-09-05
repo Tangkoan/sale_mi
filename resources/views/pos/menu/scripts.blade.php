@@ -26,13 +26,13 @@
 
             toggleAddonMode() {
                 this.isAddonMode = !this.isAddonMode;
-                window.dispatchEvent(new CustomEvent('pos-toggle-addon-mode', { detail: this.isAddonMode }));
                 
                 if (!this.isAddonMode) {
                     this.search = '';
-                    this.activeCategory = 'all';
-                    window.dispatchEvent(new CustomEvent('pos-category-changed', { detail: 'all' }));
+                    // លុបការបញ្ជូន pos-category-changed ចេញ ដើម្បីកុំឲ្យហៅ API ជាន់គ្នា២ដង
                 }
+                
+                window.dispatchEvent(new CustomEvent('pos-toggle-addon-mode', { detail: this.isAddonMode }));
             },
 
             async loadSystemRate() {
@@ -130,7 +130,7 @@
             isLoadingMore: false,
             isLoading: true, 
             searchTimeout: null,
-            scrollTimeout: null, // បន្ថែមដើម្បីទប់ស្កាត់ Scroll ជាន់គ្នា
+            scrollTimeout: null, 
             // ------------------------------------------
 
             cart: [],
@@ -147,7 +147,6 @@
 
                 this.startPolling();
                 
-                // ចាប់ Event ស្វែងរក (Debounce)
                 this.$watch('search', value => {
                     clearTimeout(this.searchTimeout);
                     this.searchTimeout = setTimeout(() => {
@@ -157,7 +156,13 @@
 
                 window.addEventListener('pos-category-changed', (e) => { this.selectCategory(e.detail); });
                 window.addEventListener('pos-search-changed', (e) => { this.search = e.detail; });
-                window.addEventListener('pos-toggle-addon-mode', (e) => { this.viewMode = e.detail ? 'addon' : 'menu'; });
+                window.addEventListener('pos-toggle-addon-mode', (e) => { 
+                    this.viewMode = e.detail ? 'addon' : 'menu'; 
+                    if (this.viewMode === 'menu') {
+                        this.activeCategory = 'all'; // កំណត់ត្រឡប់ទៅ all វិញនៅទីនេះដើម្បីកុំឲ្យរត់ជាន់គ្នា
+                    }
+                    this.resetAndLoadProducts(); 
+                });
                 window.addEventListener('pos-open-quick-addon', () => { this.openQuickAddon(); });
             },
 
@@ -180,7 +185,6 @@
             },
 
             async loadProducts() {
-                // បើកំពុង Load ឬ អស់ទំព័រហើយ មិនបាច់ធ្វើការទេ
                 if (!this.hasMorePages || this.isLoadingMore) return;
 
                 if (this.page === 1) {
@@ -190,32 +194,44 @@
                 }
 
                 try {
-                    let url = `{{ route('pos.products.paginated') }}?page=${this.page}&category_id=${this.activeCategory}`;
+                    let url = this.viewMode === 'menu' 
+                        ? `{{ route('pos.products.paginated') }}?page=${this.page}&category_id=${this.activeCategory}`
+                        : `{{ route('pos.addons.paginated') }}?page=${this.page}&category_id=${this.activeCategory}`;
+                    
                     if (this.search) url += `&search=${this.search}`;
 
                     const response = await fetch(url);
                     const data = await response.json();
-                    const incomingProducts = data.data || [];
+                    let incomingItems = data.data || [];
+
+                    if (this.viewMode === 'addon') {
+                        incomingItems = incomingItems.map(addon => ({
+                            id: addon.id, 
+                            name: addon.name, 
+                            price: addon.price,
+                            image: null, 
+                            category_id: 'addon', 
+                            is_active: addon.is_active, 
+                            type: 'addon_item' 
+                        }));
+                    }
 
                     if (this.page === 1) {
-                        this.products = incomingProducts;
+                        this.products = incomingItems;
                     } else {
-                        // ដំណោះស្រាយចម្បង: ទប់ស្កាត់ការបញ្ចូល Product ដែលមាន ID ជាន់គ្នា (Filter Duplicates)
-                        const newItems = incomingProducts.filter(newItem => 
+                        const newItems = incomingItems.filter(newItem => 
                             !this.products.some(existingItem => existingItem.id === newItem.id)
                         );
                         this.products = [...this.products, ...newItems];
                     }
 
-                    // ឆែកមើលថាតើនៅសល់ Page បន្តទៀតឬអត់
                     this.hasMorePages = data.current_page < data.last_page;
-                    
                     if (this.hasMorePages) {
                         this.page++;
                     }
 
                 } catch (error) {
-                    console.error("Load products error:", error);
+                    console.error("Load items error:", error);
                 } finally {
                     this.isLoading = false;
                     this.isLoadingMore = false;
@@ -223,7 +239,6 @@
             },
 
             handleScroll(e) {
-                // ទប់ស្កាត់ Scroll Event កុំអោយចាប់យកញឹកញាប់ពេក (Throttle)
                 if (this.scrollTimeout) return;
 
                 this.scrollTimeout = setTimeout(() => {
@@ -232,7 +247,7 @@
                         this.loadProducts();
                     }
                     this.scrollTimeout = null;
-                }, 150); // រង់ចាំ 150ms រាល់ការអូស ទើបមិនគាំង
+                }, 150); 
             },
             // --------------------------------------
 
@@ -246,27 +261,7 @@
                 return new Intl.NumberFormat('km-KH').format(num);
             },
 
-            // --- FILTER LOGIC ---
             get displayProducts() {
-                if (this.viewMode === 'addon') {
-                    let items = this.addons.filter(a => a.is_active == 1 || a.is_active == true);
-                    if (this.search) {
-                        items = items.filter(a => a.name.toLowerCase().includes(this.search.toLowerCase()));
-                    }
-                    if (this.activeCategory !== null && this.activeCategory !== 'all') {
-                        const selectedCat = this.categories.find(c => c.id == this.activeCategory);
-                        if (selectedCat && selectedCat.kitchen_destination_id) {
-                            items = items.filter(a => a.kitchen_destination_id == selectedCat.kitchen_destination_id);
-                        } else {
-                            items = items.filter(a => !a.kitchen_destination_id); 
-                        }
-                    }
-                    return items.map(addon => ({
-                        id: addon.id, name: addon.name, price: addon.price,
-                        image: null, category_id: 'addon', is_active: true, type: 'addon_item' 
-                    }));
-                }
-
                 return this.products;
             },
 
@@ -483,12 +478,16 @@
             startPolling() {
                 this.isPolling = true;
                 setInterval(async () => {
+                    // បិទមិនឲ្យ Polling Product Update លើទិន្នន័យ Addon ព្រោះជាន់ ID គ្នា
+                    if (this.viewMode === 'addon') return; 
+                    
                     try {
                         const response = await fetch("{{ route('pos.products.status') }}");
                         if (response.ok) {
                             const data = await response.json();
                             data.forEach(up => {
-                                const p = this.products.find(x => x.id == up.id);
+                                // បន្ថែម x.type !== 'addon_item' ការពារកុំឲ្យ Update ជាន់លើ Addon ពេល Search ចៃដន្យមានទិន្នន័យជាប់គ្នា
+                                const p = this.products.find(x => x.id == up.id && x.type !== 'addon_item');
                                 if(p) { p.is_active = up.is_active; p.price = up.price; }
                             });
                         }

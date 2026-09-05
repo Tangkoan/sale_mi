@@ -126,4 +126,32 @@ class PosController extends Controller
         $addons = Addon::select('id', 'is_active', 'price')->get();
         return response()->json($addons);
     }
+
+    public function fetchAddonsPaginated(Request $request)
+    {
+        // ទាញតែ Addon ណាដែល Active
+        $query = Addon::select('id', 'name', 'price', 'is_active', 'kitchen_destination_id')
+                      ->where('is_active', 1);
+
+        // បើមាន Search
+        if ($request->search) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        // បើមានរើស Category (យកតាមទីតាំងចង្ក្រាន Kitchen Destination)
+        if ($request->category_id && $request->category_id !== 'all') {
+            $category = Category::find($request->category_id);
+            if ($category && $category->kitchen_destination_id) {
+                $query->where('kitchen_destination_id', $category->kitchen_destination_id);
+            } else {
+                $query->whereNull('kitchen_destination_id');
+            }
+        }
+
+        // កាត់យកម្ដង 10
+        $addons = $query->paginate(10);
+
+        return response()->json($addons);
+    }
+    
 }

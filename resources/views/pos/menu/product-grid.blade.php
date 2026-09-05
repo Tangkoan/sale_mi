@@ -103,6 +103,13 @@
                 • អស់ទិន្នន័យត្រឹមនេះ •
             </div>
 
+            <div x-show="isLoadingMore && viewMode === 'menu'" class="w-full flex justify-center py-6 mt-2">
+                <div class="bg-white dark:bg-gray-800 px-4 py-2 rounded-full shadow-sm border border-gray-100 flex items-center gap-2">
+                    <i class="ri-loader-4-line animate-spin text-primary text-lg"></i>
+                    <span class="text-[12px] font-bold text-gray-500">កំពុងទាញបន្ថែម...</span>
+                </div>
+            </div>
+
             {{-- Empty State (គ្មានទិន្នន័យទាល់តែសោះ) --}}
             <div x-show="displayProducts.length === 0 && !isLoading" class="col-span-full py-16 text-center flex flex-col items-center justify-center text-gray-400 mt-4">
                 <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-3">
