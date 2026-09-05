@@ -1,112 +1,116 @@
-<div class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-5 pb-24 sm:pb-32 custom-scrollbar bg-gray-50 dark:bg-gray-900">
+<style>
+    /* លាក់ Scrollbar សម្រាប់ Category និង Product List ឲ្យមើលទៅដូច App */
+    .hide-scroll-bar::-webkit-scrollbar { display: none; }
+    .hide-scroll-bar { -ms-overflow-style: none; scrollbar-width: none; }
+</style>
+
+<div class="flex-1 flex flex-col h-full bg-[#F6F8FC] dark:bg-gray-900 overflow-hidden relative">
     
     {{-- ========================================================== --}}
-    {{-- COMPONENT 1: CATEGORY MENU (បង្ហាញដំបូងពេលចូលមកដល់) --}}
+    {{-- CATEGORY STRIP (STICKY TOP) - Mobile App Style --}}
     {{-- ========================================================== --}}
-    <div x-show="activeCategory === null && search === '' && viewMode === 'menu'" 
-         x-transition:enter="transition ease-out duration-300" 
-         x-transition:enter-start="opacity-0 translate-y-4" 
-         x-transition:enter-end="opacity-100 translate-y-0"
-         class="h-full">
-         
-        <div class="mb-5">
-            <h2 class="text-xl font-black text-gray-800 dark:text-white flex items-center gap-2">
-                <i class="ri-list-check text-primary"></i> ជ្រើសរើសប្រភេទម្ហូប
-            </h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">សូមជ្រើសរើសប្រភេទម្ហូបដែលលោកអ្នកចង់កុម្ម៉ង់</p>
-        </div>
-
-        {{-- Category Grid --}}
-        <div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+    <div x-show="viewMode === 'menu'" 
+         class="sticky top-0 z-20 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 py-2 px-3 overflow-x-auto hide-scroll-bar shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)]">
+        <div class="flex items-center gap-2 w-max">
+            {{-- ប៊ូតុង All --}}
+            <button @click="selectCategory('all')" 
+                    class="px-5 py-2 rounded-full text-[13px] font-bold whitespace-nowrap transition-all duration-200"
+                    :class="activeCategory === 'all' ? 'bg-primary text-white shadow-md shadow-primary/30' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200'">
+                ទាំងអស់ (All)
+            </button>
+            
+            {{-- ប៊ូតុង Category ផ្សេងៗ --}}
             <template x-for="cat in categories" :key="cat.id">
                 <button @click="selectCategory(cat.id)" 
-                        class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 flex flex-row sm:flex-col items-center justify-start sm:justify-center gap-4 hover:shadow-lg hover:border-primary/50 transition-all active:scale-95 group">
-                    
-                    <div class="w-14 h-14 rounded-full flex items-center justify-center shrink-0 text-primary bg-primary/10 group-hover:bg-primary group-hover:text-white transition-colors duration-300">
-                        <i class="ri-goblet-line text-3xl"></i>
-                    </div>
-                    
-                    <span class="font-bold text-base sm:text-sm text-gray-700 dark:text-gray-200 text-left sm:text-center line-clamp-2 leading-tight" x-text="cat.name"></span>
+                        class="px-5 py-2 rounded-full text-[13px] font-bold whitespace-nowrap transition-all duration-200"
+                        :class="activeCategory === cat.id ? 'bg-primary text-white shadow-md shadow-primary/30' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200'">
+                    <span x-text="cat.name"></span>
                 </button>
             </template>
         </div>
     </div>
 
     {{-- ========================================================== --}}
-    {{-- COMPONENT 2: PRODUCT LIST (បង្ហាញពេលចុចលើ Category ណាមួយ) --}}
+    {{-- PRODUCT LIST & INFINITE SCROLL --}}
     {{-- ========================================================== --}}
-    <div x-show="activeCategory !== null || search !== '' || viewMode === 'addon'" 
-         x-transition:enter="transition ease-out duration-300 delay-100" 
-         x-transition:enter-start="opacity-0 translate-x-4" 
-         x-transition:enter-end="opacity-100 translate-x-0" 
-         style="display: none;">
+    <div class="flex-1 overflow-y-auto overflow-x-hidden p-3 pb-28 hide-scroll-bar" 
+         id="scrollable-product-container"
+         @scroll="handleScroll($event)">
         
-        {{-- Toolbar: Back Button & Title --}}
-        <div class="flex items-center gap-3 mb-5 bg-white dark:bg-gray-800 p-3 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700" x-show="viewMode === 'menu'">
-            <button @click="backToCategories()" class="w-10 h-10 flex items-center justify-center bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-gray-600 dark:text-gray-300 active:scale-90">
-                <i class="ri-arrow-left-line text-xl"></i>
-            </button>
-            <div class="flex-1">
-                <h2 class="text-lg font-black text-gray-800 dark:text-white leading-tight" x-text="currentCategoryName"></h2>
-                {{-- ប្តូរអក្សរទៅជាកំពុងស្វែងរកពេល Loading --}}
-                <p class="text-xs text-primary font-bold" x-text="isLoading ? 'កំពុងស្វែងរក...' : filteredProducts.length + ' មុខ'"></p>
-            </div>
+        {{-- វិលៗ Loading ពេលទាញទិន្នន័យលើកដំបូង --}}
+        <div x-show="isLoading" class="flex flex-col items-center justify-center py-20">
+            <i class="ri-loader-4-line animate-spin text-primary text-4xl mb-3"></i>
+            <span class="text-gray-400 text-sm font-bold">កំពុងរៀបចំមុខម្ហូប...</span>
         </div>
 
-        {{-- វិលៗ Loading State (បង្ហាញតែពេល isLoading = true) --}}
-        <div x-show="isLoading" class="flex flex-col items-center justify-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
-            <svg class="animate-spin h-10 w-10 text-primary mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span class="text-gray-500 dark:text-gray-400 font-bold">កំពុងទាញទិន្នន័យ...</span>
-        </div>
-
-        {{-- Products Grid & Empty State (បង្ហាញតែពេល isLoading = false) --}}
+        {{-- Products Grid --}}
         <div x-show="!isLoading" style="display: none;">
-            
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
-                <template x-for="product in filteredProducts" :key="product.id">
+            {{-- ប្តូរគម្លាត gap ឲ្យតូចបន្តិច ដើម្បីសមនឹងទូរស័ព្ទ --}}
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                <template x-for="(product, index) in displayProducts" :key="product.id + '-' + index">
                     
-                    {{-- Product Card --}}
+                    {{-- Product Card - App Style Design --}}
                     <div @click="product.type === 'addon_item' ? addStandaloneAddon(product) : (product.is_active ? openProductModal(product) : null)" 
-                         class="group bg-white dark:bg-gray-800 rounded-2xl p-2.5 shadow-sm border border-gray-100 dark:border-gray-700 transition-all relative overflow-hidden"
-                         :class="product.is_active ? 'hover:shadow-xl cursor-pointer hover:-translate-y-1 active:scale-[0.97]' : 'cursor-not-allowed bg-gray-50 dark:bg-gray-900'">
+                         class="bg-white dark:bg-gray-800 rounded-[20px] p-2 flex flex-col relative transition-all duration-200"
+                         :class="product.is_active ? 'shadow-[0_2px_12px_-4px_rgba(0,0,0,0.08)] active:scale-[0.96] border border-transparent' : 'opacity-75 grayscale-[50%] bg-gray-50 border border-gray-200'">
                         
-                        {{-- Image --}}
-                        <div class="aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 relative mb-3">
-                            <div x-show="!product.is_active" class="absolute inset-0 z-20 flex items-center justify-center bg-white/60 dark:bg-gray-900/60 backdrop-blur-[2px]">
-                                 <div class="bg-red-500 text-white text-xs font-black px-2 py-1 rounded shadow-lg transform -rotate-12 border border-white">{{ __('messages.out_of_stock') }}</div>
+                        {{-- Image Area --}}
+                        <div class="aspect-square rounded-[16px] overflow-hidden bg-gray-100 dark:bg-gray-700 relative">
+                            {{-- Out of stock badge --}}
+                            <div x-show="!product.is_active" class="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                                 <div class="bg-red-500 text-white text-[10px] uppercase font-black px-2 py-1 rounded-md shadow-lg transform -rotate-12 border border-white/50">អស់ស្តុក</div>
                             </div>
+                            
                             <template x-if="product.image">
-                                <img :src="'/storage/' + product.image" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" :class="!product.is_active ? 'grayscale opacity-60' : ''">
+                                <img :src="'/storage/' + product.image" class="w-full h-full object-cover">
                             </template>
                             <template x-if="!product.image">
-                                <div class="w-full h-full flex items-center justify-center text-gray-300 dark:text-gray-600"><i class="ri-image-line text-3xl"></i></div>
+                                <div class="w-full h-full flex items-center justify-center text-gray-300 dark:text-gray-600">
+                                    <i class="ri-restaurant-line text-3xl"></i>
+                                </div>
                             </template>
-                            
-                            {{-- Add Icon --}}
-                            <div x-show="product.is_active" class="absolute bottom-2 right-2 bg-primary/95 backdrop-blur-sm rounded-lg w-8 h-8 flex items-center justify-center shadow-lg text-white opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
-                                <i class="ri-add-line font-bold text-lg"></i>
-                            </div>
                         </div>
 
-                        {{-- Text Info --}}
-                        <div class="px-1">
-                            <h3 class="font-bold text-sm leading-snug line-clamp-2 min-h-[2.5em]" :class="product.is_active ? 'text-gray-800 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'" x-text="product.name"></h3>
-                            <div class="mt-2 text-primary font-black text-base" x-text="formatNumber(product.price) + ' ៛'"></div>
+                        {{-- Text & Info Area --}}
+                        <div class="pt-2 px-1 pb-1 flex flex-col flex-1 justify-between gap-1">
+                            {{-- Product Name (តូចជាងមុនបន្តិច តែច្បាស់) --}}
+                            <h3 class="text-[13px] leading-[1.3] font-bold text-gray-800 dark:text-gray-100 line-clamp-2 h-[34px]" x-text="product.name"></h3>
+                            
+                            {{-- Price & Add Icon Row --}}
+                            <div class="flex items-center justify-between mt-1">
+                                <span class="text-primary font-black text-[14px]" x-text="formatNumber(product.price) + ' ៛'"></span>
+                                
+                                {{-- ប៊ូតុង (+) តូចស្ទីល App លោតចេញពេល Active --}}
+                                <div x-show="product.is_active" class="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                    <i class="ri-add-line font-black text-lg"></i>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </template>
+            </div>
 
-                {{-- Empty State (លោតចេញតែពេលទាញទិន្នន័យរួចរាល់ ហើយគ្មាន Product) --}}
-                <div x-show="filteredProducts.length === 0" class="col-span-full py-16 text-center text-gray-400 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
-                    <i class="ri-search-eye-line text-4xl mb-2"></i>
-                    <p class="font-bold text-lg">មិនមានទិន្នន័យ</p>
-                    <p class="text-sm mt-1">សូមសាកល្បងស្វែងរកឈ្មោះផ្សេង</p>
+            {{-- Loading បន្ថែមនៅពេលអូសចុះក្រោមដល់បាត --}}
+            <div x-show="isLoadingMore" class="w-full flex justify-center py-6 mt-2">
+                <div class="bg-white dark:bg-gray-800 px-4 py-2 rounded-full shadow-sm border border-gray-100 flex items-center gap-2">
+                    <i class="ri-loader-4-line animate-spin text-primary text-lg"></i>
+                    <span class="text-[12px] font-bold text-gray-500">កំពុងទាញបន្ថែម...</span>
                 </div>
             </div>
 
+            {{-- អស់ទិន្នន័យ --}}
+            <div x-show="!isLoadingMore && !hasMorePages && displayProducts.length > 0 && viewMode === 'menu'" class="w-full text-center py-6 text-gray-400 text-[12px] font-medium opacity-60">
+                • អស់ទិន្នន័យត្រឹមនេះ •
+            </div>
+
+            {{-- Empty State (គ្មានទិន្នន័យទាល់តែសោះ) --}}
+            <div x-show="displayProducts.length === 0 && !isLoading" class="col-span-full py-16 text-center flex flex-col items-center justify-center text-gray-400 mt-4">
+                <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-3">
+                    <i class="ri-search-eye-line text-2xl"></i>
+                </div>
+                <p class="font-bold text-sm">មិនមានទិន្នន័យ</p>
+                <p class="text-[12px] mt-1 opacity-70">សូមសាកល្បងស្វែងរកម្ដងទៀត</p>
+            </div>
         </div>
     </div>
 </div>

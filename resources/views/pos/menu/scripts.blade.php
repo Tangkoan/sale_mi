@@ -7,7 +7,7 @@
     function headerController() {
         return {
             search: '',
-            activeCategory: null, 
+            activeCategory: 'all', 
             isAddonMode: false,
             
             isExchangeModalOpen: false,
@@ -30,8 +30,8 @@
                 
                 if (!this.isAddonMode) {
                     this.search = '';
-                    this.activeCategory = null;
-                    window.dispatchEvent(new CustomEvent('pos-category-changed', { detail: null }));
+                    this.activeCategory = 'all';
+                    window.dispatchEvent(new CustomEvent('pos-category-changed', { detail: 'all' }));
                 }
             },
 
@@ -117,80 +117,139 @@
     function posMenu() {
         return {
             products: [],
-            categories: @json($categories ?? []), // Categories នៅរក្សាដដែលព្រោះយើងនៅតែបញ្ជូនវាពី Controller
+            categories: @json($categories ?? []).sort((a, b) => a.name.localeCompare(b.name, 'km')),
             addons: [],
             
-            activeCategory: null, 
+            activeCategory: 'all', 
             search: '',
             viewMode: 'menu', 
             
+            // --- State សម្រាប់ Lazy Load / Pagination ---
+            page: 1,
+            hasMorePages: true,
+            isLoadingMore: false,
+            isLoading: true, 
+            searchTimeout: null,
+            scrollTimeout: null, // បន្ថែមដើម្បីទប់ស្កាត់ Scroll ជាន់គ្នា
+            // ------------------------------------------
+
             cart: [],
             isCartOpen: false,
             isProductModalOpen: false,
             isSubmitting: false,
             isPolling: false,
-            isLoading: true, // បន្ថែម State Loading មួយដើម្បីដឹងថាកំពុងទាញទិន្នន័យ
             
             tempItem: { id: null, name: '', image: null, base_price: 0, qty: 1, note: '', selectedAddons: [], category_id: null },
 
             init() {
-                // ២. ហៅ function ទាញទិន្នន័យនៅពេលបើក POS ភ្លាម
                 this.fetchMenuData(); 
-                
+                this.loadProducts();  
+
                 this.startPolling();
-                window.addEventListener('pos-category-changed', (e) => { this.activeCategory = e.detail; });
+                
+                // ចាប់ Event ស្វែងរក (Debounce)
+                this.$watch('search', value => {
+                    clearTimeout(this.searchTimeout);
+                    this.searchTimeout = setTimeout(() => {
+                        this.resetAndLoadProducts();
+                    }, 500); 
+                });
+
+                window.addEventListener('pos-category-changed', (e) => { this.selectCategory(e.detail); });
                 window.addEventListener('pos-search-changed', (e) => { this.search = e.detail; });
                 window.addEventListener('pos-toggle-addon-mode', (e) => { this.viewMode = e.detail ? 'addon' : 'menu'; });
                 window.addEventListener('pos-open-quick-addon', () => { this.openQuickAddon(); });
             },
 
-            // ៣. បង្កើត Function ថ្មីសម្រាប់ទាញ Products និង Addons ពី Backend
             async fetchMenuData() {
-                this.isLoading = true;
                 try {
-                    const response = await fetch("{{ route('pos.menu.data') }}"); // ប្រើ Route ដែលបានបង្កើតនៅជំហានទី១
+                    const response = await fetch("{{ route('pos.menu.data') }}");
                     const data = await response.json();
-                    
-                    this.products = data.products || [];
                     this.addons = data.addons || [];
+                } catch (error) { 
+                    console.error("Failed to fetch addons data:", error); 
+                }
+            },
+
+            // --- FUNCTIONS សម្រាប់ LAZY LOAD ---
+            resetAndLoadProducts() {
+                this.products = [];
+                this.page = 1;
+                this.hasMorePages = true;
+                this.loadProducts();
+            },
+
+            async loadProducts() {
+                // បើកំពុង Load ឬ អស់ទំព័រហើយ មិនបាច់ធ្វើការទេ
+                if (!this.hasMorePages || this.isLoadingMore) return;
+
+                if (this.page === 1) {
+                    this.isLoading = true;
+                } else {
+                    this.isLoadingMore = true;
+                }
+
+                try {
+                    let url = `{{ route('pos.products.paginated') }}?page=${this.page}&category_id=${this.activeCategory}`;
+                    if (this.search) url += `&search=${this.search}`;
+
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    const incomingProducts = data.data || [];
+
+                    if (this.page === 1) {
+                        this.products = incomingProducts;
+                    } else {
+                        // ដំណោះស្រាយចម្បង: ទប់ស្កាត់ការបញ្ចូល Product ដែលមាន ID ជាន់គ្នា (Filter Duplicates)
+                        const newItems = incomingProducts.filter(newItem => 
+                            !this.products.some(existingItem => existingItem.id === newItem.id)
+                        );
+                        this.products = [...this.products, ...newItems];
+                    }
+
+                    // ឆែកមើលថាតើនៅសល់ Page បន្តទៀតឬអត់
+                    this.hasMorePages = data.current_page < data.last_page;
+                    
+                    if (this.hasMorePages) {
+                        this.page++;
+                    }
+
                 } catch (error) {
-                    console.error("Failed to fetch menu data:", error);
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'មិនអាចទាញយកបញ្ជីផលិតផលបានទេ!' } }));
+                    console.error("Load products error:", error);
                 } finally {
                     this.isLoading = false;
+                    this.isLoadingMore = false;
                 }
+            },
+
+            handleScroll(e) {
+                // ទប់ស្កាត់ Scroll Event កុំអោយចាប់យកញឹកញាប់ពេក (Throttle)
+                if (this.scrollTimeout) return;
+
+                this.scrollTimeout = setTimeout(() => {
+                    const el = e.target;
+                    if (el.scrollHeight - el.scrollTop <= el.clientHeight + 100) {
+                        this.loadProducts();
+                    }
+                    this.scrollTimeout = null;
+                }, 150); // រង់ចាំ 150ms រាល់ការអូស ទើបមិនគាំង
+            },
+            // --------------------------------------
+
+            selectCategory(id) {
+                this.activeCategory = id;
+                this.search = ''; 
+                this.resetAndLoadProducts(); 
             },
 
             formatNumber(num) {
                 return new Intl.NumberFormat('km-KH').format(num);
             },
 
-            // --- CATEGORY UX LOGIC ---
-            selectCategory(id) {
-                this.activeCategory = id;
-                this.search = ''; 
-            },
-
-            backToCategories() {
-                this.activeCategory = null;
-                this.search = '';
-            },
-
-            get currentCategoryName() {
-                if (this.search !== '') return 'លទ្ធផលស្វែងរក: ' + this.search;
-                if (this.activeCategory !== null) {
-                    let cat = this.categories.find(c => c.id == this.activeCategory);
-                    return cat ? cat.name : '';
-                }
-                return '';
-            },
-
             // --- FILTER LOGIC ---
-            get filteredProducts() {
-                let items = [];
-
+            get displayProducts() {
                 if (this.viewMode === 'addon') {
-                    items = this.addons.filter(a => a.is_active == 1 || a.is_active == true);
+                    let items = this.addons.filter(a => a.is_active == 1 || a.is_active == true);
                     if (this.search) {
                         items = items.filter(a => a.name.toLowerCase().includes(this.search.toLowerCase()));
                     }
@@ -208,20 +267,7 @@
                     }));
                 }
 
-                // បើអត់មាន Search ហើយអត់ទាន់រើស Category ទេ (បង្ហាញទំព័រ Category ដើម)
-                if (!this.search && this.activeCategory === null) {
-                    return [];
-                }
-
-                items = this.products;
-                
-                if (this.search) {
-                    items = items.filter(p => p.name.toLowerCase().includes(this.search.toLowerCase()));
-                } else if (this.activeCategory !== null) {
-                    items = items.filter(p => p.category_id == this.activeCategory);
-                }
-
-                return items.filter(p => !p.name.toLowerCase().includes('extra'));
+                return this.products;
             },
 
             // --- ADDON & MODAL LOGIC ---
@@ -229,20 +275,18 @@
                 if (this.tempItem.type === 'addon_item') return [];
                 if (!this.tempItem.id) return [];
                 if (this.tempItem.name === "Extra / Addon Only") return this.addons.filter(a => a.is_active);
+                
                 const product = this.products.find(p => p.id == this.tempItem.id);
                 if (product && product.addons) return product.addons.filter(a => a.is_active);
+                
                 return [];
             },
 
             addStandaloneAddon(addonItem) {
-                let wrapperProduct = this.products.find(p => p.name.toLowerCase().includes('extra'));
-                if (!wrapperProduct) {
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "{{ __('messages.system_error_extra') }}" } }));
-                    return;
-                }
+                let wrapperProductId = 999999; 
 
                 let cartItem = {
-                    product_id: wrapperProduct.id, 
+                    product_id: wrapperProductId, 
                     name: addonItem.name, 
                     image: null,
                     base_price: 0, 
@@ -269,14 +313,9 @@
             },
 
             openQuickAddon() {
-                let extraProduct = this.products.find(p => p.name.toLowerCase().includes('extra'));
-                if (!extraProduct) {
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "{{ __('messages.system_config_error_extra') }}" } }));
-                    return;
-                }
                 this.tempItem = {
-                    id: extraProduct.id, name: "Extra / Addon Only", image: null, base_price: parseFloat(extraProduct.price), 
-                    qty: 1, note: 'Addon Only', selectedAddons: [], category_id: extraProduct.category_id, category_name: "{{ __('messages.label_special') }}"
+                    id: 999999, name: "Extra / Addon Only", image: null, base_price: 0, 
+                    qty: 1, note: 'Addon Only', selectedAddons: [], category_id: null, category_name: "{{ __('messages.label_special') }}"
                 };
                 this.isProductModalOpen = true;
             },
@@ -315,7 +354,7 @@
                         note: this.tempItem.note || '', 
                         addons: finalAddons,
                         total_price_calculated: this.calculateItemTotal(),
-                        is_addon_item: (this.tempItem.type === 'addon_item')
+                        is_addon_item: (this.tempItem.type === 'addon_item' || this.tempItem.id === 999999)
                     };
 
                     const existingIndex = this.cart.findIndex(item => {

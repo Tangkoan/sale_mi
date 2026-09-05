@@ -88,6 +88,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('admin.dashboard')->middleware('permission:view_dashboard');
 
     Route::get('/pos/menu-data', [App\Http\Controllers\Pos\PosController::class, 'fetchMenuData'])->name('pos.menu.data');
+    Route::get('/pos/products/paginated', [App\Http\Controllers\Pos\PosController::class, 'fetchProductsPaginated'])->name('pos.products.paginated');
 
     // Logout
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');

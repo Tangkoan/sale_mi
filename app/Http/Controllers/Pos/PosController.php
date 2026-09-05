@@ -35,7 +35,7 @@ class PosController extends Controller
     public function menu($table_id)
     {
         $table = Table::findOrFail($table_id);
-        $categories = Category::select('id', 'name', 'kitchen_destination_id')->orderBy('id', 'asc')->get();
+        $categories = Category::select('id', 'name', 'kitchen_destination_id')->orderBy('name', 'asc')->get();
         
         $currentOrder = Order::where('table_id', $table_id)->where('status', 'pending')->first();
 
@@ -43,19 +43,38 @@ class PosController extends Controller
         return view('pos.menu', compact('table', 'categories', 'currentOrder'));
     }
 
-    // Function ថ្មីសម្រាប់ឲ្យ Javascript ហៅទាញទិន្នន័យពីក្រោយខ្នង
+    // កែប្រែ Function ចាស់អោយស្រាល ដោយលុបការទាញ Products ចេញ
     public function fetchMenuData()
     {
-        $products = Product::select('id', 'name', 'price', 'image', 'category_id', 'is_active', 'station_type')
-                           ->with(['addons'])
-                           ->get();
-                           
+        // ទុកតែ Addon ព្រោះ Product យើងទាញតាម Pagination វិញ
         $addons = Addon::select('id', 'name', 'price', 'is_active', 'kitchen_destination_id')->get();
 
         return response()->json([
-            'products' => $products,
             'addons' => $addons
         ]);
+    }
+
+    // បន្ថែម Function ថ្មីនេះសម្រាប់ Infinite Scroll
+    public function fetchProductsPaginated(Request $request)
+    {
+        $query = Product::select('id', 'name', 'price', 'image', 'category_id', 'is_active', 'station_type')
+                        ->where('name', 'not like', '%extra%')
+                        ->with(['addons']);
+
+        // បើមានរើស Category
+        if ($request->category_id &&$request->category_id !== 'all') {
+            $query->where('category_id',$request->category_id);
+        }
+
+        // បើមាន Search
+        if ($request->search) {
+            $query->where('name', 'like', '\%' .$request->search . '%');
+        }
+
+        // Pagination ម្ដង 10
+        $products =$query->paginate(10);
+
+        return response()->json($products);
     }
 
     public function getOrderDetails($table_id)
