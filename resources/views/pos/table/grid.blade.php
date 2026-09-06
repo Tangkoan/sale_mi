@@ -34,11 +34,13 @@
                         @endcan
                         
                         {{-- 🔥 ប៊ូតុងពណ៌ខៀវ (បានកែហៅ Function ថ្មី) --}}
-                        <button @click.prevent="openChangeItemList(table)"
-                                class="w-10 h-10 sm:w-12 sm:h-12 bg-card-bg text-blue-500 rounded-full shadow-lg hover:bg-blue-500 hover:text-white hover:scale-110 active:scale-90 transition-all flex items-center justify-center border border-blue-100 dark:border-blue-900"
-                                title="បញ្ជីម្ហូប / ប្ដូរម្ហូប">
-                            <i class="ri-edit-box-line text-xl sm:text-2xl"></i>
-                        </button>
+                        @can('pos-exchange-item')
+                            <button @click.prevent="openChangeItemList(table)"
+                                    class="w-10 h-10 sm:w-12 sm:h-12 bg-card-bg text-blue-500 rounded-full shadow-lg hover:bg-blue-500 hover:text-white hover:scale-110 active:scale-90 transition-all flex items-center justify-center border border-blue-100 dark:border-blue-900"
+                                    title="បញ្ជីម្ហូប / ប្ដូរម្ហូប">
+                                <i class="ri-edit-box-line text-xl sm:text-2xl"></i>
+                            </button>
+                        @endcan
                     </div>
                 </template>
             </div>

@@ -78,6 +78,16 @@ Route::middleware(['guest'])->group(function () {
 // ==========================
 Route::middleware('auth')->group(function () {
 
+    // Delivery Platforms Management
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::get('/delivery-platforms', [\App\Http\Controllers\Admin\DeliveryPlatformController::class, 'index'])->name('delivery_platforms.index');
+        Route::get('/delivery-platforms/fetch', [\App\Http\Controllers\Admin\DeliveryPlatformController::class, 'fetchPlatforms'])->name('delivery_platforms.fetch');
+        Route::post('/delivery-platforms', [\App\Http\Controllers\Admin\DeliveryPlatformController::class, 'store'])->name('delivery_platforms.store');
+        Route::post('/delivery-platforms/{id}', [\App\Http\Controllers\Admin\DeliveryPlatformController::class, 'update'])->name('delivery_platforms.update');
+        Route::delete('/delivery-platforms/{id}', [\App\Http\Controllers\Admin\DeliveryPlatformController::class, 'destroy'])->name('delivery_platforms.destroy');
+        Route::post('/delivery-platforms/{id}/toggle', [\App\Http\Controllers\Admin\DeliveryPlatformController::class, 'toggleStatus'])->name('delivery_platforms.toggle');
+    });
+
     // ======================
     // Admin Dashboard
     // ======================

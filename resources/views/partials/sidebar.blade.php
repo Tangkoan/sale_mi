@@ -183,7 +183,8 @@
                                 request()->routeIs('admin.tables.*') || 
                                 request()->routeIs('admin.addons.*') || 
                                 request()->routeIs('admin.products.*') ||
-                                request()->routeIs('admin.destinations.*'); // ✅ បន្ថែម Route ថ្មី
+                                request()->routeIs('admin.destinations.*') ||
+                                request()->routeIs('admin.delivery_platforms.*');
             @endphp 
 
             <div class="group relative">
@@ -269,6 +270,19 @@
                                     <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
                                                     {{ request()->routeIs('admin.products.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
                                     <span>{{ __('sidebar.product_list') }}</span>
+                                </a>
+                            </li>
+                        @endcan
+
+                        {{-- 6. Delivery Platforms --}}
+                        @can('delivery-platform-list') {{-- អាចដកចេញបើមិនទាន់មាន Permission នេះ --}}
+                            <li>
+                                <a href="{{ route('admin.delivery_platforms.index') }}"
+                                class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
+                                                {{ request()->routeIs('admin.delivery_platforms.*') ? 'text-primary font-bold' : 'opacity-80' }}">
+                                    <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
+                                                    {{ request()->routeIs('admin.delivery_platforms.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
+                                    <span>ដៃគូដឹកជញ្ជូន</span>
                                 </a>
                             </li>
                         @endcan
