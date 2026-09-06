@@ -273,6 +273,8 @@ class OrderController extends Controller
             'old_item_id'    => 'required|exists:order_items,id',
             'exchange_qty'   => 'required|integer|min:1',
             'new_product_id' => 'required|exists:products,id',
+            'new_qty'        => 'required|integer|min:1', // 🔥 ទទួលយកចំនួនម្ហូបថ្មី
+            'new_addons'     => 'nullable|array'
         ]);
 
         return DB::transaction(function () use ($request) {
@@ -294,16 +296,27 @@ class OrderController extends Controller
                 }
 
                 $newProduct = Product::find($request->new_product_id);
-                OrderItem::create([
+                $newItem = OrderItem::create([
                     'order_id'   => $order->id,
                     'product_id' => $newProduct->id,
-                    'quantity'   => $request->exchange_qty,
+                    'quantity'   => $request->new_qty, // 🔥 ប្រើប្រាស់ចំនួនថ្មី
                     'price'      => $newProduct->price,
                     'note'       => '🔄 ប្ដូរចេញពី: ' . $oldProductName,
                     'is_printed' => false,
                     'status'     => 'pending',
                     'created_by' => Auth::id(),
                 ]);
+
+                if (!empty($request->new_addons)) {
+                    foreach ($request->new_addons as $addon) {
+                        OrderItemAddon::create([
+                            'order_item_id' => $newItem->id,
+                            'addon_id'      => $addon['id'],
+                            'price'         => $addon['price'],
+                            'quantity'      => $addon['qty'] ?? 1
+                        ]);
+                    }
+                }
 
                 $newTotal = $this->recalculateOrderTotal($order->id);
                 PrintKitchenJob::dispatch($order->id);

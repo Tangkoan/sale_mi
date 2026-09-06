@@ -29,7 +29,6 @@
                 
                 if (!this.isAddonMode) {
                     this.search = '';
-                    // លុបការបញ្ជូន pos-category-changed ចេញ ដើម្បីកុំឲ្យហៅ API ជាន់គ្នា២ដង
                 }
                 
                 window.dispatchEvent(new CustomEvent('pos-toggle-addon-mode', { detail: this.isAddonMode }));
@@ -116,6 +115,11 @@
      */
     function posMenu() {
         return {
+            // 🔥 បន្ថែម State សម្រាប់មុខងារប្ដូរម្ហូប (Exchange Mode)
+            isExchangeMode: @json((bool)(request()->query('exchange_item_id'))),
+            exchangeItemId: @json(request()->query('exchange_item_id')),
+            exchangeQty: @json((int)(request()->query('exchange_qty') ?? 1)),
+
             products: [],
             categories: @json($categories ?? []).sort((a, b) => a.name.localeCompare(b.name, 'km')),
             addons: [],
@@ -159,7 +163,7 @@
                 window.addEventListener('pos-toggle-addon-mode', (e) => { 
                     this.viewMode = e.detail ? 'addon' : 'menu'; 
                     if (this.viewMode === 'menu') {
-                        this.activeCategory = 'all'; // កំណត់ត្រឡប់ទៅ all វិញនៅទីនេះដើម្បីកុំឲ្យរត់ជាន់គ្នា
+                        this.activeCategory = 'all'; 
                     }
                     this.resetAndLoadProducts(); 
                 });
@@ -261,6 +265,11 @@
                 return new Intl.NumberFormat('km-KH').format(num);
             },
 
+            // 🔥 បន្ថែមអនុគមន៍ formatRiel ដែលខ្វះ
+            formatRiel(amount) {
+                return new Intl.NumberFormat('km-KH').format(amount);
+            },
+
             get displayProducts() {
                 return this.products;
             },
@@ -335,7 +344,47 @@
             },
 
             // --- CART LOGIC ---
-            addToCart() {
+            async addToCart() {
+                // 🔥 ចំណុចចាប់ផ្ដើមនៃ Exchange Mode Logic
+                if (this.isExchangeMode) {
+                    if(!confirm(`តើអ្នកពិតជាចង់ប្ដូរម្ហូបចាស់ យក "${this.tempItem.name}" ចំនួន ${this.tempItem.qty} នេះមែនទេ?`)) return;
+                    
+                    this.isSubmitting = true;
+                    try {
+                        const res = await fetch('{{ route("pos.item.exchange") }}', {
+                            method: 'POST',
+                            headers: { 
+                                'Content-Type': 'application/json', 
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') 
+                            },
+                            body: JSON.stringify({
+                                old_item_id: this.exchangeItemId,
+                                exchange_qty: this.exchangeQty,     // ចំនួនម្ហូបចាស់ដែលត្រូវកាត់ចេញ
+                                new_product_id: this.tempItem.id,
+                                new_qty: this.tempItem.qty,         // ចំនួនម្ហូបថ្មីដែលរើសក្នុង Modal
+                                new_addons: this.tempItem.selectedAddons
+                            })
+                        });
+                        const data = await res.json();
+                        
+                        if(res.ok && data.status === 'success') {
+                            window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: "✅ បានប្ដូរមុខម្ហូបជោគជ័យ!" } }));
+                            this.closeProductModal();
+                            window.location.href = '/pos/tables'; // លោតត្រឡប់ទៅទំព័រតុវិញ
+                        } else { 
+                            let msg = data.message || 'មានបញ្ហាក្នុងការប្ដូរម្ហូប';
+                            window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: msg } })); 
+                        }
+                    } catch(e) { 
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Server Error សូមព្យាយាមម្ដងទៀត' } })); 
+                    } finally {
+                        this.isSubmitting = false;
+                    }
+                    return; // ផ្ដាច់មិនឲ្យវាដើរចូលកូដ Add to Cart ចាស់ខាងក្រោម
+                }
+
+                // ==========================================
+                // ទីនេះជាកូដ Add to Cart ចាស់របស់អ្នក (រត់ធម្មតាបើមិនមែនជាការប្ដូរម្ហូប)
                 try {
                     const finalAddons = this.tempItem.selectedAddons.map(ad => ({
                         id: ad.id, name: ad.name, price: ad.price, qty: ad.qty
@@ -431,7 +480,7 @@
                 this.isSubmitting = true;
                 
                 const payload = {
-                    table_id: {{ $table->id }},
+                    table_id: {{ $table->id ?? 'null' }},
                     exchange_rate: localStorage.getItem('pos_exchange_rate') || 4100, 
                     items: this.cart.map(item => ({
                         product_id: item.product_id, 

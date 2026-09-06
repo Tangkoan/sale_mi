@@ -372,27 +372,14 @@
                 this.changeItemData.new_product_id = product.id; 
             },
 
-            async submitChangeItem() {
-                if(!this.changeItemData.new_product_id) return;
-                this.isProcessing = true;
-                try {
-                    const res = await fetch('{{ route("pos.item.exchange") }}', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
-                        body: JSON.stringify({
-                            old_item_id: this.changeItemData.old_item_id,
-                            exchange_qty: this.changeItemData.exchange_qty,
-                            new_product_id: this.changeItemData.new_product_id
-                        })
-                    });
-                    const data = await res.json();
-                    if(res.ok && data.status === 'success') {
-                        this.showToast(data.message, 'success');
-                        this.isChangeItemModalOpen = false;
-                        this.openChangeItemList(this.selectedTable); // Refresh បញ្ជីឡើងវិញ
-                    } else { this.showToast(data.message, 'error'); }
-                } catch(e) { this.showToast('Server Error', 'error'); } 
-                finally { this.isProcessing = false; }
+            // ហៅពេលចុចប៊ូតុង "ជ្រើសរើសម្ហូបថ្មី"
+            goToMenuForExchange() {
+                let tableId = this.selectedTable.id;
+                let oldItemId = this.changeItemData.old_item_id;
+                let qty = this.changeItemData.exchange_qty;
+                
+                // លោតទៅកាន់ Menu ដោយភ្ជាប់ Parameter បញ្ជាក់ថាជាការប្ដូរម្ហូប
+                window.location.href = `/pos/menu/${tableId}?exchange_item_id=${oldItemId}&exchange_qty=${qty}`;
             },
             
             async submitMoveTable() {
