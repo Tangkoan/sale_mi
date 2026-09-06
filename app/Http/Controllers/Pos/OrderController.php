@@ -481,6 +481,7 @@ class OrderController extends Controller
 
         $tables = Table::where('status', 'busy')
                     ->where('id', '!=', $currentTableId)
+                    ->where('name', '!=', 'Delivery Table') // 🔥 លាក់ Delivery ចេញពីបញ្ជី Merge តុ
                     ->select('id', 'name')
                     ->orderBy('name', 'asc')
                     ->get();

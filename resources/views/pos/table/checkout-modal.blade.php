@@ -154,19 +154,7 @@
                 <h1 class="text-[20px] font-black text-primary tracking-tight" x-text="formatRiel(currentTotal) + ' ៛'"></h1>
             </div>
 
-            {{-- Delivery Platform Dropdown --}}
-            <div class="mb-3">
-                <label class="block text-[12px] font-bold text-gray-700 dark:text-gray-300 mb-1">ប្រភេទការកម្ម៉ង់ / ដឹកជញ្ជូន</label>
-                <select x-model="deliveryPlatform" class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white text-[13px] rounded-[10px] focus:ring-primary focus:border-primary block p-2.5">
-                    <option value="">-- ញ៉ាំនៅហាង / ខ្ចប់ធម្មតា --</option>
-                    <option value="Foodpanda">Foodpanda</option>
-                    <option value="WOWNOW">WOWNOW</option>
-                    <option value="Nham24">Nham24</option>
-                    <option value="E-Gets">E-Gets</option>
-                </select>
-            </div>
-
-            {{-- Total Payable Amount Block (1 Row Design) --}}
+            
             
         </div>
 
@@ -188,7 +176,95 @@
         </div>
     </div>
     
-    
+    {{-- MOVE TABLE MODAL (បន្ថែមចូលវិញ) --}}
+    <div x-show="isMoveModalOpen" 
+        style="display: none;"
+        class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-gray-900/80 backdrop-blur-sm"
+        x-cloak
+        x-transition:enter="transition ease-out duration-300" 
+        x-transition:enter-start="opacity-0 scale-95" 
+        x-transition:enter-end="opacity-100 scale-100"
+        x-transition:leave="transition ease-in duration-200" 
+        x-transition:leave-start="opacity-100 scale-100" 
+        x-transition:leave-end="opacity-0 scale-95">
+
+        <div class="bg-card-bg w-full max-w-md rounded-[24px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]" @click.away="isMoveModalOpen = false">
+            <div class="bg-blue-500/5 p-6 text-center border-b border-blue-500/10">
+                <h3 class="text-lg font-black text-gray-800 dark:text-white mb-4">{{ __('messages.move') }}</h3>
+                
+                <div class="flex items-center justify-between gap-2 bg-card-bg p-3 rounded-xl shadow-sm border border-blue-500/10">
+                    <div class="flex flex-col items-center w-1/3">
+                        <span class="text-[10px] text-gray-400 font-bold uppercase mb-1">{{ __('messages.now') }}</span>
+                        <div class="font-black text-gray-800 dark:text-white text-lg px-3 py-1 bg-input-bg rounded-lg w-full text-center border border-bor-color">
+                            <span x-text="selectedTable ? selectedTable.name : '...'"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="text-blue-500"><i class="ri-arrow-right-fill text-2xl"></i></div>
+                    
+                    <div class="flex flex-col items-center w-1/3">
+                        <span class="text-[10px] text-blue-500 font-bold uppercase mb-1">ទៅកាន់</span>
+                        <div class="font-black text-lg px-2 py-1 rounded-lg w-full text-center transition-all border-2 border-dashed flex items-center justify-center min-h-[40px]"
+                            :class="selectedTargetTable ? 'bg-blue-500 text-white border-blue-500 shadow-lg shadow-blue-500/30' : 'bg-card-bg text-gray-400 border-bor-color'">
+                            <span class="text-sm leading-tight" 
+                                  x-text="selectedTargetTable ? selectedTargetTable.name : '?'">
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 overflow-y-auto custom-scrollbar flex-1 bg-card-bg">
+                <div class="grid grid-cols-3 gap-3">
+                    {{-- 🔥 Filter លាក់ Delivery Table ចេញពីបញ្ជីប្ដូរតុ --}}
+                    <template x-for="table in availableTables.filter(t => t.name !== 'Delivery Table')" :key="table.id">
+                        <button @click="selectedTargetTable = table" 
+                                class="relative flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all duration-200 group"
+                                :class="selectedTargetTable && selectedTargetTable.id === table.id 
+                                    ? 'border-blue-500 bg-blue-500/5 ring-2 ring-blue-500/30' 
+                                    : 'border-bor-color bg-card-bg hover:border-blue-500/50 hover:bg-blue-500/5'">
+                            
+                            <div x-show="selectedTargetTable && selectedTargetTable.id === table.id" class="absolute top-2 right-2 text-blue-500 bg-card-bg rounded-full shadow-sm">
+                                <i class="ri-checkbox-circle-fill text-lg"></i>
+                            </div>
+                            
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center mb-1 transition-colors" 
+                                 :class="selectedTargetTable && selectedTargetTable.id === table.id ? 'bg-card-bg text-blue-500' : 'bg-input-bg text-gray-400'">
+                                <i class="ri-restaurant-fill text-lg"></i>
+                            </div>
+                            
+                            <span class="font-bold text-sm" 
+                                  :class="selectedTargetTable && selectedTargetTable.id === table.id ? 'text-blue-500' : 'text-gray-600 dark:text-gray-300'" 
+                                  x-text="table.name"></span>
+                        </button>
+                    </template>
+                </div>
+
+                <template x-if="availableTables.filter(t => t.name !== 'Delivery Table').length === 0">
+                    <div class="flex flex-col items-center justify-center py-10 text-center text-gray-400">
+                        <i class="ri-emotion-sad-line text-4xl mb-2 opacity-50"></i>
+                        <p class="text-sm">គ្មានតុទំនេរទេ</p>
+                    </div>
+                </template>
+            </div>
+
+            <div class="p-4 border-t border-bor-color bg-input-bg flex gap-3">
+                <button @click="isMoveModalOpen = false" 
+                        class="flex-1 py-3 rounded-xl border border-bor-color text-gray-600 dark:text-gray-300 font-bold text-sm hover:bg-card-bg transition">
+                    {{ __('messages.cancel') }}
+                </button>
+                
+                <button @click="submitMoveTable()" 
+                        :disabled="!selectedTargetTable || isProcessing" 
+                        class="flex-[2] py-3 rounded-xl text-white font-bold text-sm shadow-lg flex justify-center items-center gap-2 transition-all" 
+                        :class="!selectedTargetTable || isProcessing ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 active:scale-95'">
+                    
+                    <span x-show="!isProcessing">{{ __('messages.confirm') }}</span>
+                    <span x-show="isProcessing"><i class="ri-loader-4-line animate-spin"></i> កំពុងដំណើរការ...</span>
+                </button>
+            </div>
+        </div>
+    </div>
     
     {{-- MERGE TABLE MODAL --}}
     <div x-show="isMergeModalOpen" 
