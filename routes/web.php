@@ -88,6 +88,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/delivery-platforms/{id}/toggle', [\App\Http\Controllers\Admin\DeliveryPlatformController::class, 'toggleStatus'])->name('delivery_platforms.toggle');
     });
 
+    
+    Route::get('/pos/delivery-platforms/active', [\App\Http\Controllers\Pos\OrderController::class, 'getActivePlatforms']);
+    Route::get('/pos/menu/delivery', [\App\Http\Controllers\Pos\MenuController::class, 'deliveryMenu'])->name('pos.menu.delivery');
+    Route::get('/pos/delivery-table', [\App\Http\Controllers\Pos\OrderController::class, 'getDeliveryTable']);
+
     // ======================
     // Admin Dashboard
     // ======================

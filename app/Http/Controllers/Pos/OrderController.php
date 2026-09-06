@@ -28,14 +28,19 @@ use Mike42\Escpos\EscposImage;
 use Illuminate\Support\Facades\File;
 
 // Library សម្រាប់ថតរូបវិក្កយបត្រ
-use Spatie\Browsershot\Browsershot; 
+use Spatie\Browsershot\Browsershot;
+use App\Models\DeliveryPlatform;
 
 class OrderController extends Controller
 {
     public function store(Request $request)
     {
+        // ឆែកមើលតើវាជាការកុម្ម៉ង់បែប Delivery ឬអត់ (បោះពី Menu page មក)
+        $isDelivery = filter_var($request->is_delivery, FILTER_VALIDATE_BOOLEAN);
+
         $validator = Validator::make($request->all(), [
-            'table_id' => 'required',
+            // បើជា Delivery, table_id មិនបាច់ required ទេ
+            'table_id' => $isDelivery ? 'nullable' : 'required',
             'items'    => 'required|array|min:1',
             'items.*.product_id' => 'required',
             'items.*.qty'        => 'required|integer|min:1',
@@ -43,36 +48,45 @@ class OrderController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Validation Error',
-                'errors'  => $validator->errors()
-            ], 422);
+            return response()->json(['status' => 'error', 'message' => 'Validation Error', 'errors' => $validator->errors()], 422);
         }
 
-        return DB::transaction(function () use ($request) {
+        return DB::transaction(function () use ($request, $isDelivery) {
             try {
-                $order = Order::firstOrCreate(
-                    ['table_id' => $request->table_id, 'status' => 'pending'],
-                    [
-                        'invoice_number' => 'INV-' . time() . '-' . $request->table_id,
+                if ($isDelivery) {
+                    // បើជា Delivery គឺបង្កើត Order ថ្មីជានិច្ច និងដាក់ status 'completed'
+                    $order = Order::create([
+                        'table_id'       => $request->table_id, // អាចជា 0 ឬ null
+                        'status'         => 'completed',
+                        'invoice_number' => 'INV-DEL-' . time(),
                         'user_id'        => Auth::id(),
                         'total_amount'   => 0,
                         'check_in_time'  => now(),
-                    ]
-                );
+                        'check_out_time' => now(), // បញ្ចប់ភ្លាមៗ
+                        'note'           => $request->platform ? 'Delivery: ' . $request->platform : 'Delivery',
+                    ]);
+                } else {
+                    // ប្រតិបត្តិការតុធម្មតា (កូដចាស់)
+                    $order = Order::firstOrCreate(
+                        ['table_id' => $request->table_id, 'status' => 'pending'],
+                        [
+                            'invoice_number' => 'INV-' . time() . '-' . $request->table_id,
+                            'user_id'        => Auth::id(),
+                            'total_amount'   => 0,
+                            'check_in_time'  => now(),
+                        ]
+                    );
 
-                $table = Table::find($request->table_id);
-                if ($table) {
-                    $table->update(['status' => 'busy']);
+                    $table = Table::find($request->table_id);
+                    if ($table) {
+                        $table->update(['status' => 'busy']);
+                    }
                 }
 
+                // ផ្នែកបញ្ចូល Order Items (កូដចាស់របស់អ្នក រក្សាដដែល)
                 foreach ($request->items as $itemData) {
                     $product = Product::find($itemData['product_id']);
-                    
-                    if (!$product) {
-                        throw new \Exception("Product ID {$itemData['product_id']} not found.");
-                    }
+                    if (!$product) throw new \Exception("Product ID {$itemData['product_id']} not found.");
 
                     $orderItem = OrderItem::create([
                         'order_id'   => $order->id,
@@ -99,7 +113,7 @@ class OrderController extends Controller
                 
                 $this->recalculateOrderTotal($order->id);
 
-                // ✅ បញ្ជាឲ្យ Job ធ្វើការ Print ទៅចុងភៅនៅ Background ជំនួសការ Print ផ្ទាល់
+                // បញ្ជាឲ្យ Print ទៅចុងភៅនៅ Background ដដែល (ដើរជាធម្មតាទោះជា Delivery ក៏ដោយ)
                 PrintKitchenJob::dispatch($order->id);
 
                 return response()->json([
@@ -109,10 +123,7 @@ class OrderController extends Controller
                 ]);
 
             } catch (\Exception $e) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Server Error: ' . $e->getMessage()
-                ], 500);
+                return response()->json(['status' => 'error', 'message' => 'Server Error: ' . $e->getMessage()], 500);
             }
         });
     }
@@ -894,5 +905,38 @@ class OrderController extends Controller
                 try { $printer->close(); } catch (\Throwable $t) {}
             }
         }
+    }
+
+    /**
+     * 🔥 Function ថ្មីសម្រាប់ទាញយក Delivery Platform ដែល Active
+     */
+    public function getActivePlatforms()
+    {
+        try {
+            // ទាញយកតែ Platform ណាដែល status = active
+            $platforms = DeliveryPlatform::where('status', 'active')->get();
+            return response()->json($platforms, 200);
+        } catch (\Exception $e) {
+            // បើមាន Error បោះជា JSON វិញ មិនបោះជា HTML ទេ
+            return response()->json([
+                'status' => 'error', 
+                'message' => 'Server Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getDeliveryTable()
+    {
+        // ស្វែងរកតុឈ្មោះ 'Delivery Table' បើគ្មានទេ បង្កើតវាដោយស្វ័យប្រវត្តិ
+        $table = Table::where('name', 'Delivery Table')->first();
+        
+        if (!$table) {
+            $table = new Table();
+            $table->name = 'Delivery Table';
+            $table->status = 'available';
+            $table->save();
+        }
+        
+        return response()->json(['id' => $table->id]);
     }
 }

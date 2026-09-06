@@ -37,8 +37,6 @@
     // 2. POS LOGIC
     // ==========================================
     function posTables() {
-
-        
         return {
             searchQuery: '', 
             tables: [],
@@ -46,7 +44,6 @@
             interval: null,
             selectedTargetTable: null,
 
-            // 🔥 ដូរឈ្មោះអថេរទាំងអស់ទៅជា ChangeItem ដើម្បីកុំឲ្យជាន់ជាមួយ Exchange Rate
             isChangeItemListModalOpen: false,
             isLoadingChangeItemList: false,
             changeItemListItems: [],
@@ -80,12 +77,68 @@
             
             orderDetails: { id: null, table_id: null, items: [], total: 0, invoice_number: '', shop: null },
 
-            get filteredTables() {
-                if (this.searchQuery.trim() === '') {
-                    return this.tables;
+            // State សម្រាប់ Delivery
+            isDeliveryModalOpen: false,
+            deliveryPlatforms: [],
+            isLoadingPlatforms: false,
+
+            // Function បើក Modal និងទាញទិន្នន័យ Platform
+            async openDeliveryModal() {
+                this.isDeliveryModalOpen = true;
+                if (this.deliveryPlatforms.length === 0) {
+                    this.isLoadingPlatforms = true;
+                    try {
+                        const response = await fetch('/pos/delivery-platforms/active', {
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        
+                        this.deliveryPlatforms = await response.json();
+                    } catch (error) { 
+                        console.error("Error fetching platforms:", error); 
+                        this.showToast("មានបញ្ហាក្នុងការទាញយកទិន្នន័យ សូមពិនិត្យមើលបណ្ដាញ", "error");
+                    } finally { 
+                        this.isLoadingPlatforms = false; 
+                    }
                 }
+            },
+
+            // Function ពេលគេចុចយក Platform ណាមួយ
+            async selectDeliveryPlatform(platform) {
+                try {
+                    // ១. ទៅយក ID តុ Delivery (ពិតប្រាកដក្នុង DB) ដើម្បីកុំអោយលោត 404
+                    const res = await fetch('/pos/delivery-table', {
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    
+                    if (!res.ok) throw new Error("មិនអាចរៀបចំតុ Delivery បានទេ");
+                    
+                    const data = await res.json();
+                    
+                    // ២. បញ្ជូនទៅ Menu ដោយប្រើ ID តុពិត ព្រមទាំងភ្ជាប់ Parameter
+                    window.location.href = `/pos/menu/${data.id}?is_delivery=true&platform=${encodeURIComponent(platform.name)}`;
+                } catch (error) {
+                    this.showToast("មានបញ្ហាក្នុងការរៀបចំ Delivery Table សូមពិនិត្យមើល Route និង Controller", "error");
+                    console.error(error);
+                }
+            },
+
+            get filteredTables() {
+                // លាក់តុ Delivery កុំអោយបង្ហាញក្នុង Grid ធម្មតា
+                let normalTables = this.tables.filter(table => table.name !== 'Delivery Table');
+                
+                if (this.searchQuery.trim() === '') {
+                    return normalTables;
+                }
+                
                 let query = this.searchQuery.toLowerCase();
-                return this.tables.filter(table => {
+                return normalTables.filter(table => {
                     return table.name.toLowerCase().includes(query);
                 });
             },
@@ -106,7 +159,9 @@
             async fetchTables(silent = false) {
                 if (!silent) this.isLoading = true;
                 try {
-                    const response = await fetch("{{ route('pos.tables.fetch') }}");
+                    const response = await fetch("{{ route('pos.tables.fetch') }}", {
+                        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                    });
                     this.tables = await response.json();
                 } catch (error) { console.error(error); } 
                 finally { if (!silent) this.isLoading = false; }
@@ -146,7 +201,7 @@
                 this.selectedSplitItems = [];
                 this.confirmEmpty = false;
                 try {
-                    const response = await fetch(`/pos/order-details/${table.id}`);
+                    const response = await fetch(`/pos/order-details/${table.id}`, { headers: { 'Accept': 'application/json' }});
                     if (!response.ok) throw new Error("{{ __('messages.order_not_found') }}");
                     const data = await response.json();
                     
@@ -237,7 +292,11 @@
                 try {
                     const response = await fetch('/pos/checkout', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                        headers: { 
+                            'Content-Type': 'application/json', 
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content 
+                        },
                         body: JSON.stringify({
                             order_id: this.orderDetails.id, table_id: this.orderDetails.table_id,
                             received_amount: this.receivedAmount, payment_method: this.paymentMethod, items: this.orderDetails.items
@@ -257,7 +316,7 @@
                 if (!this.orderDetails.id) return;
                 this.selectedMergeTables = []; 
                 try {
-                    const res = await fetch(`/pos/tables/busy-list?current=${this.selectedTable.id}`);
+                    const res = await fetch(`/pos/tables/busy-list?current=${this.selectedTable.id}`, { headers: { 'Accept': 'application/json' }});
                     this.busyTables = await res.json();
                     if (this.busyTables.length === 0) this.showToast("{{ __('messages.no_busy_tables') }}", 'warning');
                     else this.isMergeModalOpen = true;
@@ -295,7 +354,7 @@
 
             async confirmMerge(targetTableId, autoClose = true) {
                 try {
-                    const response = await fetch(`/pos/order/items-for-merge/${targetTableId}`);
+                    const response = await fetch(`/pos/order/items-for-merge/${targetTableId}`, { headers: { 'Accept': 'application/json' }});
                     const data = await response.json();
                     
                     if (data.items && data.items.length > 0) {
@@ -326,13 +385,12 @@
                 this.isMoveModalOpen = true; 
             }, 
 
-            // 🔥 1. បើកបញ្ជីម្ហូបលើតុ (ប្ដូរទៅ ChangeItemList)
             async openChangeItemList(table) {
                 this.selectedTable = table;
                 this.isChangeItemListModalOpen = true;
                 this.isLoadingChangeItemList = true;
                 try {
-                    const response = await fetch(`/pos/order-details/${table.id}`);
+                    const response = await fetch(`/pos/order-details/${table.id}`, { headers: { 'Accept': 'application/json' }});
                     if (!response.ok) throw new Error("មិនមានទិន្នន័យ");
                     const data = await response.json();
                     this.changeItemListItems = data.items || [];
@@ -340,7 +398,6 @@
                 finally { this.isLoadingChangeItemList = false; }
             },
 
-            // 🔥 2. បើក Modal ប្ដូរម្ហូបពីក្នុងបញ្ជី (ប្ដូរទៅ ChangeItemModal)
             openChangeItemModal(item) {
                 this.changeItemData = {
                     old_item_id: item.id,
@@ -357,7 +414,7 @@
 
             async fetchChangeItemProducts() {
                 try {
-                    const res = await fetch(`/pos/products/paginated?search=${this.changeItemSearch}`);
+                    const res = await fetch(`/pos/products/paginated?search=${this.changeItemSearch}`, { headers: { 'Accept': 'application/json' }});
                     const data = await res.json();
                     this.changeItemProducts = data.data || data; 
                 } catch(e) {}
@@ -372,13 +429,11 @@
                 this.changeItemData.new_product_id = product.id; 
             },
 
-            // ហៅពេលចុចប៊ូតុង "ជ្រើសរើសម្ហូបថ្មី"
             goToMenuForExchange() {
                 let tableId = this.selectedTable.id;
                 let oldItemId = this.changeItemData.old_item_id;
                 let qty = this.changeItemData.exchange_qty;
                 
-                // លោតទៅកាន់ Menu ដោយភ្ជាប់ Parameter បញ្ជាក់ថាជាការប្ដូរម្ហូប
                 window.location.href = `/pos/menu/${tableId}?exchange_item_id=${oldItemId}&exchange_qty=${qty}`;
             },
             
@@ -390,6 +445,7 @@
                         method: 'POST',
                         headers: { 
                             'Content-Type': 'application/json', 
+                            'Accept': 'application/json',
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') 
                         },
                         body: JSON.stringify({ 
@@ -426,7 +482,11 @@
                 try {
                     const response = await fetch("{{ route('pos.order.split') }}", {
                         method: "POST",
-                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                        headers: { 
+                            'Content-Type': 'application/json', 
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content 
+                        },
                         body: JSON.stringify({
                             original_order_id: this.orderDetails.id, split_items: this.selectedSplitItems,
                             payment_method: this.paymentMethod, received_amount: this.receivedAmount
