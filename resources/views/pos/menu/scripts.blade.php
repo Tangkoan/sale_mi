@@ -115,10 +115,10 @@
      */
     function posMenu() {
         return {
-            // 🔥 បន្ថែម State សម្រាប់មុខងារប្ដូរម្ហូប (Exchange Mode)
-            isExchangeMode: @json((bool)(request()->query('exchange_item_id'))),
-            exchangeItemId: @json(request()->query('exchange_item_id')),
-            exchangeQty: @json((int)(request()->query('exchange_qty') ?? 1)),
+            // 🔥 State សម្រាប់ Exchange Mode
+            isExchangeMode: @json((bool)($exchangeItemId ?? request()->query('exchange_item_id'))),
+            exchangeItemId: @json($exchangeItemId ?? request()->query('exchange_item_id')),
+            exchangeQty: @json((int)($exchangeQty ?? request()->query('exchange_qty') ?? 1)),
 
             products: [],
             categories: @json($categories ?? []).sort((a, b) => a.name.localeCompare(b.name, 'km')),
@@ -135,7 +135,6 @@
             isLoading: true, 
             searchTimeout: null,
             scrollTimeout: null, 
-            // ------------------------------------------
 
             cart: [],
             isCartOpen: false,
@@ -180,7 +179,6 @@
                 }
             },
 
-            // --- FUNCTIONS សម្រាប់ LAZY LOAD ---
             resetAndLoadProducts() {
                 this.products = [];
                 this.page = 1;
@@ -244,7 +242,6 @@
 
             handleScroll(e) {
                 if (this.scrollTimeout) return;
-
                 this.scrollTimeout = setTimeout(() => {
                     const el = e.target;
                     if (el.scrollHeight - el.scrollTop <= el.clientHeight + 100) {
@@ -253,7 +250,6 @@
                     this.scrollTimeout = null;
                 }, 150); 
             },
-            // --------------------------------------
 
             selectCategory(id) {
                 this.activeCategory = id;
@@ -261,20 +257,11 @@
                 this.resetAndLoadProducts(); 
             },
 
-            formatNumber(num) {
-                return new Intl.NumberFormat('km-KH').format(num);
-            },
+            formatNumber(num) { return new Intl.NumberFormat('km-KH').format(num); },
+            formatRiel(amount) { return new Intl.NumberFormat('km-KH').format(amount); },
 
-            // 🔥 បន្ថែមអនុគមន៍ formatRiel ដែលខ្វះ
-            formatRiel(amount) {
-                return new Intl.NumberFormat('km-KH').format(amount);
-            },
+            get displayProducts() { return this.products; },
 
-            get displayProducts() {
-                return this.products;
-            },
-
-            // --- ADDON & MODAL LOGIC ---
             get availableAddons() {
                 if (this.tempItem.type === 'addon_item') return [];
                 if (!this.tempItem.id) return [];
@@ -282,22 +269,14 @@
                 
                 const product = this.products.find(p => p.id == this.tempItem.id);
                 if (product && product.addons) return product.addons.filter(a => a.is_active);
-                
                 return [];
             },
 
             addStandaloneAddon(addonItem) {
                 let wrapperProductId = 999999; 
-
                 let cartItem = {
-                    product_id: wrapperProductId, 
-                    name: addonItem.name, 
-                    image: null,
-                    base_price: 0, 
-                    qty: 1,
-                    note: '',
-                    is_addon_item: true, 
-                    addons: [{ id: addonItem.id, name: addonItem.name, price: parseFloat(addonItem.price), qty: 1 }],
+                    product_id: wrapperProductId, name: addonItem.name, image: null, base_price: 0, qty: 1, note: '',
+                    is_addon_item: true, addons: [{ id: addonItem.id, name: addonItem.name, price: parseFloat(addonItem.price), qty: 1 }],
                     total_price_calculated: parseFloat(addonItem.price) 
                 };
                 this.cart.push(cartItem);
@@ -343,9 +322,8 @@
                 return main + ads;
             },
 
-            // --- CART LOGIC ---
+            // --- CART LOGIC & EXCHANGE LOGIC ---
             async addToCart() {
-                // 🔥 ចំណុចចាប់ផ្ដើមនៃ Exchange Mode Logic
                 if (this.isExchangeMode) {
                     if(!confirm(`តើអ្នកពិតជាចង់ប្ដូរម្ហូបចាស់ យក "${this.tempItem.name}" ចំនួន ${this.tempItem.qty} នេះមែនទេ?`)) return;
                     
@@ -354,37 +332,41 @@
                         const res = await fetch('{{ route("pos.item.exchange") }}', {
                             method: 'POST',
                             headers: { 
-                                'Content-Type': 'application/json', 
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
                                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') 
                             },
                             body: JSON.stringify({
-                                old_item_id: this.exchangeItemId,
-                                exchange_qty: this.exchangeQty,     // ចំនួនម្ហូបចាស់ដែលត្រូវកាត់ចេញ
+                                old_item_id: this.exchangeItemId, // ត្រូវតែជា old_item_id ឲ្យដូចក្នុង Request Validate របស់ Controller
+                                exchange_qty: this.exchangeQty,     
                                 new_product_id: this.tempItem.id,
-                                new_qty: this.tempItem.qty,         // ចំនួនម្ហូបថ្មីដែលរើសក្នុង Modal
+                                new_qty: this.tempItem.qty,         
                                 new_addons: this.tempItem.selectedAddons
                             })
                         });
+                        
                         const data = await res.json();
                         
                         if(res.ok && data.status === 'success') {
                             window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: "✅ បានប្ដូរមុខម្ហូបជោគជ័យ!" } }));
                             this.closeProductModal();
-                            window.location.href = '/pos/tables'; // លោតត្រឡប់ទៅទំព័រតុវិញ
+                            window.location.href = '/pos/tables'; 
                         } else { 
-                            let msg = data.message || 'មានបញ្ហាក្នុងការប្ដូរម្ហូប';
+                            let msg = data.message || 'មានបញ្ហាក្នុងการប្ដូរម្ហូប';
+                            if (data.errors) msg = Object.values(data.errors)[0][0];
                             window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: msg } })); 
                         }
                     } catch(e) { 
+                        console.error(e);
                         window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Server Error សូមព្យាយាមម្ដងទៀត' } })); 
                     } finally {
                         this.isSubmitting = false;
                     }
-                    return; // ផ្ដាច់មិនឲ្យវាដើរចូលកូដ Add to Cart ចាស់ខាងក្រោម
+                    return;
                 }
 
                 // ==========================================
-                // ទីនេះជាកូដ Add to Cart ចាស់របស់អ្នក (រត់ធម្មតាបើមិនមែនជាការប្ដូរម្ហូប)
+                // កូដ Add to Cart ចាស់របស់អ្នក (រត់ធម្មតាបើមិនមែនជាការប្ដូរម្ហូប)
                 try {
                     const finalAddons = this.tempItem.selectedAddons.map(ad => ({
                         id: ad.id, name: ad.name, price: ad.price, qty: ad.qty
@@ -474,6 +456,11 @@
                 return this.cart.reduce((sum, item) => sum + (item.total_price_calculated || 0), 0);
             },
 
+            // 🔥 បន្ថែម Getter នេះដើម្បីបំបាត់ Error cartTotalQty
+            get cartTotalQty() {
+                return this.cart.reduce((sum, item) => sum + (item.qty || 0), 0);
+            },
+
             // --- SUBMIT ORDER LOGIC ---
             async submitOrder() {
                 if (this.cart.length === 0) return;
@@ -527,7 +514,6 @@
             startPolling() {
                 this.isPolling = true;
                 setInterval(async () => {
-                    // បិទមិនឲ្យ Polling Product Update លើទិន្នន័យ Addon ព្រោះជាន់ ID គ្នា
                     if (this.viewMode === 'addon') return; 
                     
                     try {
@@ -535,7 +521,6 @@
                         if (response.ok) {
                             const data = await response.json();
                             data.forEach(up => {
-                                // បន្ថែម x.type !== 'addon_item' ការពារកុំឲ្យ Update ជាន់លើ Addon ពេល Search ចៃដន្យមានទិន្នន័យជាប់គ្នា
                                 const p = this.products.find(x => x.id == up.id && x.type !== 'addon_item');
                                 if(p) { p.is_active = up.is_active; p.price = up.price; }
                             });

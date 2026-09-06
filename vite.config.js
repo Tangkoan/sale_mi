@@ -24,7 +24,7 @@ export default defineConfig({
     // បន្ថែមផ្នែក server នេះចូល
     server: {
         host: '0.0.0.0',
-        port: 5173,
+        cors: true,
         hmr: {
             host: '192.168.1.2', // ដាក់ IP កុំព្យូទ័ររបស់អ្នកនៅទីនេះ
         },

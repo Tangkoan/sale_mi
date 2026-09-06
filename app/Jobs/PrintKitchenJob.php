@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 
 use App\Models\Order;
 use App\Models\OrderItem;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
 use Spatie\Browsershot\Browsershot;
 use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
@@ -101,10 +102,10 @@ class PrintKitchenJob implements ShouldQueue
             $imagePath = null;
 
             try {
-                // ចំណុចឆ្លាតវៃទី១៖ បង្ខំឲ្យការភ្ជាប់កាត់ផ្ដាច់ត្រឹម ១វិនាទី
+                // ចំណុចឆ្លាតវៃទី១៖ បង្ខំឲ្យការភ្ជាប់កាត់ផ្ដាច់ត្រឹម ១វិនាទី (ការពារមិនឲ្យគាំង Queue ដល់ ២១វិនាទី)
                 ini_set('default_socket_timeout', 1);
 
-                // ចំណុចឆ្លាតវៃទី២៖ សាកភ្ជាប់ទៅ Printer មុនគេបង្អស់ 
+                // ចំណុចឆ្លាតវៃទី២៖ សាកភ្ជាប់ទៅ Printer មុនគេបង្អស់ បើដាច់ Network វានឹង Error លោតរំលងភ្លាមៗ មិនខាតពេលបើក Chrome គូររូប
                 $connector = new NetworkPrintConnector($ipAddress, 9100, 1);
                 $printer = new Printer($connector);
 
@@ -134,11 +135,12 @@ class PrintKitchenJob implements ShouldQueue
                 sleep(1); 
 
             } catch (Throwable $e) {
-                // រំលង Printer ខូចដោយស្ងាត់ៗ មិនបញ្ចេញសារចូល Log
+                // ប្រសិនបើម៉ាស៊ីនណាដាច់ វាចូលមកទីនេះ ហើយរំលងទៅព្រីនម៉ាស៊ីនបន្ទាប់ដែលកំពុងដើរ ក្នុងល្បឿនផ្លេកបន្ទោរ
+                Log::warning("⚠️ រំលង Printer ខូច/រវល់ (IP: {$ipAddress}) - ទៅព្រីនម៉ាស៊ីនបន្ទាប់...");
                 $hasError = true;
                 continue; 
             } finally {
-                // បង្វិល Timeout មកដើមវិញ
+                // បង្វិល Timeout មកដើមវិញ ដើម្បីកុំឲ្យប៉ះពាល់ការងារផ្សេងទៀតរបស់ Laravel
                 ini_set('default_socket_timeout', 60);
                 
                 if ($printer !== null) {

@@ -223,14 +223,27 @@ class OrderController extends Controller
         ]);
 
         return DB::transaction(function () use ($request) {
-            $item = OrderItem::with('addons')->findOrFail($request->item_id);
+            $item = OrderItem::with(['addons', 'product.category.kitchenDestination', 'order.table'])->findOrFail($request->item_id);
+            $order = clone $item->order;
+            
+            // ទាញយក Printer ចង្ក្រានចាស់ទុកសិន ក្រែងលោគេលុបវាចោល
+            $destination = $item->product && $item->product->category ? $item->product->category->kitchenDestination : null;
+            $tableName = $order->table ? $order->table->name : 'ទូទៅ';
             
             if ($request->action === 'remove') {
                 OrderItemAddon::where('order_item_id', $item->id)->delete();
                 $item->delete();
+                
+                // ព្រីន Cancel ទៅចង្ក្រាន
+                if ($item->is_printed && $destination && $destination->is_active && !empty($destination->printnode_id)) {
+                    \App\Jobs\PrintCancelKitchenJob::dispatch([
+                        'table_name' => $tableName, 'product_name' => $item->product->name ?? 'ម្ហូប',
+                        'cancel_qty' => $item->quantity, 'printer_ip' => $destination->printnode_id,
+                        'reason' => 'ភ្ញៀវលុបចោល'
+                    ]);
+                }
             } 
             elseif ($request->action === 'increase') {
-                // 🔥 ចំណុចសំខាន់៖ បើព្រីនរួច បង្កើត Row ថ្មី!
                 if ($item->is_printed) {
                     $newItem = $item->replicate();
                     $newItem->quantity = 1;
@@ -249,45 +262,62 @@ class OrderController extends Controller
             elseif ($request->action === 'decrease') {
                 if ($item->quantity > 1) {
                     $item->decrement('quantity');
+                    
+                    // ព្រីន Cancel បន្ថយចំនួន
+                    if ($item->is_printed && $destination && $destination->is_active && !empty($destination->printnode_id)) {
+                        \App\Jobs\PrintCancelKitchenJob::dispatch([
+                            'table_name' => $tableName, 'product_name' => $item->product->name ?? 'ម្ហូប',
+                            'cancel_qty' => 1, 'printer_ip' => $destination->printnode_id,
+                            'reason' => 'ភ្ញៀវបន្ថយចំនួន'
+                        ]);
+                    }
                 } else {
                     OrderItemAddon::where('order_item_id', $item->id)->delete();
                     $item->delete();
+                    
+                    if ($item->is_printed && $destination && $destination->is_active && !empty($destination->printnode_id)) {
+                        \App\Jobs\PrintCancelKitchenJob::dispatch([
+                            'table_name' => $tableName, 'product_name' => $item->product->name ?? 'ម្ហូប',
+                            'cancel_qty' => 1, 'printer_ip' => $destination->printnode_id,
+                            'reason' => 'ភ្ញៀវលុបចោល'
+                        ]);
+                    }
                 }
             }
             
             $newTotal = $this->recalculateOrderTotal($item->order_id);
-
-            // បញ្ជាព្រីនសម្រាប់មុខម្ហូបដែលបន្ថែមថ្មី (is_printed = false)
-            if ($request->action === 'increase') {
-                PrintKitchenJob::dispatch($item->order_id);
-            }
+            if ($request->action === 'increase') { PrintKitchenJob::dispatch($item->order_id); }
 
             return response()->json(['status' => 'success', 'total' => $newTotal]);
         });
     }
 
-    // 🔥 FUNCTION ថ្មីសម្រាប់ប្ដូរម្ហូប
     public function exchangeItem(Request $request)
     {
         $request->validate([
             'old_item_id'    => 'required|exists:order_items,id',
             'exchange_qty'   => 'required|integer|min:1',
             'new_product_id' => 'required|exists:products,id',
-            'new_qty'        => 'required|integer|min:1', // 🔥 ទទួលយកចំនួនម្ហូបថ្មី
-            'new_addons'     => 'nullable|array'
+            'new_qty'        => 'required|integer|min:1',
         ]);
 
-        return DB::transaction(function () use ($request) {
-            try {
-                $oldItem = OrderItem::with('product', 'addons')->findOrFail($request->old_item_id);
-                $order = Order::findOrFail($oldItem->order_id);
+        try {
+            return DB::transaction(function () use ($request) {
+                $oldItem = OrderItem::with(['product.category.kitchenDestination', 'addons', 'order.table'])->findOrFail($request->old_item_id);
+                $order = $oldItem->order;
 
                 if ($request->exchange_qty > $oldItem->quantity) {
-                    throw new \Exception("ចំនួនដែលចង់ប្ដូរ ធំជាងចំនួនដែលមានស្រាប់!");
+                    return response()->json(['status' => 'error', 'message' => 'ចំនួនដែលចង់ប្ដូរ ធំជាងចំនួនដែលមានស្រាប់!'], 422);
                 }
 
                 $oldProductName = $oldItem->product ? $oldItem->product->name : 'ម្ហូបចាស់';
+                $isOldItemPrinted = $oldItem->is_printed;
+                $oldDestination = $oldItem->product && $oldItem->product->category ? $oldItem->product->category->kitchenDestination : null;
+                $tableName = $order->table ? $order->table->name : 'ទូទៅ';
 
+                $newProduct = Product::find($request->new_product_id);
+
+                // កាត់បន្ថយ ឬលុបម្ហូបចាស់
                 if ($request->exchange_qty == $oldItem->quantity) {
                     OrderItemAddon::where('order_item_id', $oldItem->id)->delete();
                     $oldItem->delete();
@@ -295,11 +325,11 @@ class OrderController extends Controller
                     $oldItem->decrement('quantity', $request->exchange_qty);
                 }
 
-                $newProduct = Product::find($request->new_product_id);
+                // បង្កើតម្ហូបថ្មី
                 $newItem = OrderItem::create([
                     'order_id'   => $order->id,
                     'product_id' => $newProduct->id,
-                    'quantity'   => $request->new_qty, // 🔥 ប្រើប្រាស់ចំនួនថ្មី
+                    'quantity'   => $request->new_qty,
                     'price'      => $newProduct->price,
                     'note'       => '🔄 ប្ដូរចេញពី: ' . $oldProductName,
                     'is_printed' => false,
@@ -307,18 +337,36 @@ class OrderController extends Controller
                     'created_by' => Auth::id(),
                 ]);
 
+                // បញ្ចូល Add-ons ថ្មី (បើមាន)
                 if (!empty($request->new_addons)) {
                     foreach ($request->new_addons as $addon) {
                         OrderItemAddon::create([
-                            'order_item_id' => $newItem->id,
+                            'order_item_id' => $newItem->id, 
                             'addon_id'      => $addon['id'],
-                            'price'         => $addon['price'],
+                            'price'         => $addon['price'], 
                             'quantity'      => $addon['qty'] ?? 1
                         ]);
                     }
                 }
 
                 $newTotal = $this->recalculateOrderTotal($order->id);
+
+                // ព្រីន Cancel ទៅចង្ក្រានចាស់ (ដាក់ក្នុង try-catch ដាច់ដោយឡែក ដើម្បីការពារកុំឲ្យរអាក់រអួលដល់ការប្ដូរទិន្នន័យ)
+                try {
+                    if ($isOldItemPrinted && $oldDestination && $oldDestination->is_active && !empty($oldDestination->printnode_id)) {
+                        \App\Jobs\PrintCancelKitchenJob::dispatch([
+                            'table_name'   => $tableName,
+                            'product_name' => $oldProductName,
+                            'cancel_qty'   => $request->exchange_qty,
+                            'printer_ip'   => $oldDestination->printnode_id,
+                            'reason'       => 'ភ្ញៀវប្ដូរយក: ' . $newProduct->name
+                        ]);
+                    }
+                } catch (\Exception $printEx) {
+                    Log::error("Print Cancel Job Error: " . $printEx->getMessage());
+                }
+
+                // ព្រីនម្ហូបថ្មីទៅចង្ក្រាន
                 PrintKitchenJob::dispatch($order->id);
 
                 return response()->json([
@@ -326,11 +374,15 @@ class OrderController extends Controller
                     'message'   => 'បានប្ដូរមុខម្ហូបជោគជ័យ!',
                     'new_total' => $newTotal
                 ]);
+            });
 
-            } catch (\Exception $e) {
-                return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
-            }
-        });
+        } catch (\Exception $e) {
+            // បង្ហាញ Error ចំៗមកក្រៅ (ជំនួសឱ្យការចេញ 500 ស្ងៀមៗ)
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Server Error: ' . $e->getMessage() . ' at line ' . $e->getLine()
+            ], 500);
+        }
     }
 
     public function getItemsForMerge($tableId)
