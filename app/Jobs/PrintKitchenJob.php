@@ -3,21 +3,21 @@
 namespace App\Jobs;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Str; 
 
 use App\Models\Order;
 use App\Models\OrderItem;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
 use Spatie\Browsershot\Browsershot;
 use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
 use Mike42\Escpos\Printer;
 use Mike42\Escpos\EscposImage;
 use Exception;
+use Throwable;
 
 class PrintKitchenJob implements ShouldQueue
 {
@@ -25,21 +25,17 @@ class PrintKitchenJob implements ShouldQueue
 
     public $orderId;
     
-    // បើ Print មិនចេញ ឲ្យព្យាយាមម្ដងទៀត ៥ ដង
-    // public $tries = 5; 
-    
-    // សម្រាក ៣០ វិនាទី មុននឹងព្យាយាម Print ម្ដងទៀត
-    public $backoff = 30; 
+    // បង្កើន Tries ដើម្បីឲ្យវាអាចវិលឆែក ៣វិនាទីម្ដង បានរហូតដល់ផុតកំណត់១០នាទី
+    public $tries = 200; 
+    public $backoff = 3; 
 
     public function __construct($orderId)
     {
         $this->orderId = $orderId;
     }
 
-    // បន្ថែមអនុគមន៍នេះ ដើម្បីកំណត់ពេលផុតកំណត់
     public function retryUntil()
     {
-        // ព្យាយាមព្រីនរហូតដល់ ១០ នាទី ក្រោយពេលអតិថិជនកម្ម៉ង់
         return now()->addMinutes(10); 
     }
 
@@ -51,7 +47,7 @@ class PrintKitchenJob implements ShouldQueue
                 'order.table' 
             ])
             ->where('order_id', $this->orderId)
-            ->where('is_printed', false) // ទាញយកតែអាហារដែលមិនទាន់ព្រីន
+            ->where('is_printed', false) 
             ->get();
 
         if ($itemsToPrint->isEmpty()) { return; }
@@ -66,7 +62,6 @@ class PrintKitchenJob implements ShouldQueue
                     if (!$destination) {
                         $destination = $item->product?->category?->kitchenDestination;
                     }
-
                     if (!$destination || !$destination->is_active) { continue; }
                     
                     $batchKey = $destination->id;
@@ -76,10 +71,8 @@ class PrintKitchenJob implements ShouldQueue
 
                     $fakeItem = clone $item;
                     $fakeItem->quantity = floatval($item->quantity) * floatval($addon->quantity ?? 1);
-                    
                     $fakeProduct = clone $item->product;
                     $fakeProduct->name = $addon->addon->name ?? $addon->name ?? 'Addon'; 
-                    
                     $fakeItem->setRelation('product', $fakeProduct);
                     $fakeItem->setRelation('addons', collect()); 
                     
@@ -97,61 +90,69 @@ class PrintKitchenJob implements ShouldQueue
             }
         }
 
-        // អថេរសម្រាប់កត់ចំណាំថា តើមាន Printer ណាមួយ Error ដែរឬទេ?
         $hasError = false;
 
         foreach ($kitchenBatches as $batchKey => $batch) {
             $printerInfo = $batch['info'];
             $items       = $batch['items'];
             $ipAddress   = $printerInfo->printnode_id; 
+            
+            $printer = null;
+            $imagePath = null;
 
             try {
+                // ចំណុចឆ្លាតវៃទី១៖ បង្ខំឲ្យការភ្ជាប់កាត់ផ្ដាច់ត្រឹម ១វិនាទី
+                ini_set('default_socket_timeout', 1);
+
+                // ចំណុចឆ្លាតវៃទី២៖ សាកភ្ជាប់ទៅ Printer មុនគេបង្អស់ 
+                $connector = new NetworkPrintConnector($ipAddress, 9100, 1);
+                $printer = new Printer($connector);
+
+                // ភ្ជាប់ជោគជ័យ ទើបអនុញ្ញាតឲ្យធ្វើការ Render រូបភាព
                 $firstItem = $items[0];
                 $tableName = $firstItem->order->table->name ?? ('Table: ' . $firstItem->order->table_id);
 
                 $html = View::make('pos.kitchen_receipt', compact('printerInfo', 'items', 'tableName'))->render();
-                $imagePath = storage_path('app/kitchen_receipt_' . uniqid() . '.png');
+                $imagePath = storage_path('app/kitchen_receipt_' . Str::uuid()->toString() . '.png');
                 $chromePath = env('CHROME_PATH', 'C:\Program Files\Google\Chrome\Application\chrome.exe');
 
                 Browsershot::html($html)
                     ->setChromePath($chromePath)
                     ->windowSize(576, 100)
-                    ->fullPage()           
+                    ->fullPage()          
                     ->save($imagePath);
-
-                $connector = new NetworkPrintConnector($ipAddress, 9100, 3);
-                $printer = new Printer($connector);
 
                 $image = EscposImage::load($imagePath, false);
                 $printer->bitImageColumnFormat($image);
-                
                 $printer->feed(1);
                 $printer->cut();
-                $printer->close();
 
-                if (file_exists($imagePath)) { unlink($imagePath); }
-
-                // ប្រសិនបើព្រីនជោគជ័យ ទើប Update is_printed = true
                 foreach ($items as $item) {
                     $item->update(['is_printed' => true]);
                 }
                 
-            } catch (Exception $e) {
-                // កត់ត្រា Error ទុក
-                Log::error("❌ Print Error (Kitchen IP: {$ipAddress}): " . $e->getMessage());
-                
-                // កំណត់ថាមាន Error តែមិនទាន់បញ្ឈប់ការងារទេ (មិនប្រើ throw ទីនេះទេ)
+                sleep(1); 
+
+            } catch (Throwable $e) {
+                // រំលង Printer ខូចដោយស្ងាត់ៗ មិនបញ្ចេញសារចូល Log
                 $hasError = true;
-                
-                // បន្តទៅកាន់ Printer បន្ទាប់ទៀត (រំលងអាមួយដែលខូចនេះសិន)
                 continue; 
+            } finally {
+                // បង្វិល Timeout មកដើមវិញ
+                ini_set('default_socket_timeout', 60);
+                
+                if ($printer !== null) {
+                    try { $printer->close(); } catch (Throwable $t) {}
+                }
+                if ($imagePath && file_exists($imagePath)) {
+                    unlink($imagePath);
+                }
             }
         }
 
-        // បន្ទាប់ពី Loop ព្រីនគ្រប់ Printer អស់ហើយ បើមាន Printer ណាខូច យើងទើបបោះ Error
-        // ដើម្បីឱ្យ Laravel យក Job នេះទៅ Retry ម្ដងទៀត (វានឹងទាញយកតែទំនិញដែលមិនទាន់ព្រីន មកព្រីនម្ដងទៀត)
         if ($hasError) {
-            throw new Exception("មាន Printer ផ្ទះបាយខ្លះមានបញ្ហាមិនអាចព្រីនចេញ។ ប្រព័ន្ធនឹងព្យាយាមព្រីនសារជាថ្មីដោយស្វ័យប្រវត្តិ។");
+            // ចំណុចឆ្លាតវៃទី៣៖ ម៉ាស៊ីនខូច នឹងត្រូវយកទៅតម្រង់ជួររង់ចាំ ៣វិនាទីសិន ទើបសាកម្ដងទៀត
+            return $this->release(3);
         }
     }
 }

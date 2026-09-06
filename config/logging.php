@@ -69,8 +69,7 @@ return [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
-            'days' => env('LOG_DAILY_DAYS', 14),
-            'replace_placeholders' => true,
+            'days' => 1, // រក្សាទុកត្រឹម ៣ថ្ងៃ (File ចាស់ជាងនេះនឹងត្រូវលុបចោលស្វ័យប្រវត្តិ)
         ],
 
         'slack' => [
