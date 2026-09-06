@@ -90,6 +90,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/pos/menu-data', [App\Http\Controllers\Pos\PosController::class, 'fetchMenuData'])->name('pos.menu.data');
     Route::get('/pos/products/paginated', [App\Http\Controllers\Pos\PosController::class, 'fetchProductsPaginated'])->name('pos.products.paginated');
     Route::get('/pos/addons/paginated', [App\Http\Controllers\Pos\PosController::class, 'fetchAddonsPaginated'])->name('pos.addons.paginated');
+    Route::post('/pos/item/exchange', [App\Http\Controllers\Pos\OrderController::class, 'exchangeItem'])->name('pos.item.exchange');
+    
 
     // Logout
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');

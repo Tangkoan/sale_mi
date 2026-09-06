@@ -153,6 +153,20 @@
                 <span class="text-[13px] font-bold text-gray-600 dark:text-gray-400">ទឹកប្រាក់ត្រូវទូទាត់សរុប៖</span>
                 <h1 class="text-[20px] font-black text-primary tracking-tight" x-text="formatRiel(currentTotal) + ' ៛'"></h1>
             </div>
+
+            {{-- Delivery Platform Dropdown --}}
+            <div class="mb-3">
+                <label class="block text-[12px] font-bold text-gray-700 dark:text-gray-300 mb-1">ប្រភេទការកម្ម៉ង់ / ដឹកជញ្ជូន</label>
+                <select x-model="deliveryPlatform" class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white text-[13px] rounded-[10px] focus:ring-primary focus:border-primary block p-2.5">
+                    <option value="">-- ញ៉ាំនៅហាង / ខ្ចប់ធម្មតា --</option>
+                    <option value="Foodpanda">Foodpanda</option>
+                    <option value="WOWNOW">WOWNOW</option>
+                    <option value="Nham24">Nham24</option>
+                    <option value="E-Gets">E-Gets</option>
+                </select>
+            </div>
+
+            {{-- Total Payable Amount Block (1 Row Design) --}}
             
         </div>
 

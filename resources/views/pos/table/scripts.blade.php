@@ -1,6 +1,6 @@
 <script>
     // ==========================================
-    // 1. RECEIPT PRINTER LOGIC (ទុកសម្រាប់មើលកូដចាស់ តែលែងប្រើសម្រាប់ព្រីនវិក្កយបត្រហើយ)
+    // 1. RECEIPT PRINTER LOGIC
     // ==========================================
     function receiptPrinter() {
         return {
@@ -37,14 +37,25 @@
     // 2. POS LOGIC
     // ==========================================
     function posTables() {
-        return {
-            // 🔥 បន្ថែមអថេរសម្រាប់ទទួលពាក្យ Search ពី Header
-            searchQuery: '', 
 
+        
+        return {
+            searchQuery: '', 
             tables: [],
             isLoading: false,
             interval: null,
             selectedTargetTable: null,
+
+            // 🔥 ដូរឈ្មោះអថេរទាំងអស់ទៅជា ChangeItem ដើម្បីកុំឲ្យជាន់ជាមួយ Exchange Rate
+            isChangeItemListModalOpen: false,
+            isLoadingChangeItemList: false,
+            changeItemListItems: [],
+
+            isChangeItemModalOpen: false,
+            changeItemSearch: '',
+            searchTimeout: null,
+            changeItemProducts: [],
+            changeItemData: { old_item_id: null, old_item_name: '', max_qty: 1, exchange_qty: 1, new_product_id: null },
             
             // Checkout States
             isCheckoutModalOpen: false,
@@ -69,7 +80,6 @@
             
             orderDetails: { id: null, table_id: null, items: [], total: 0, invoice_number: '', shop: null },
 
-            // 🔥 បន្ថែម Getter នេះដើម្បី Filter តុពេលយើងវាយអក្សរ Search
             get filteredTables() {
                 if (this.searchQuery.trim() === '') {
                     return this.tables;
@@ -235,7 +245,6 @@
                     });
                     const data = await response.json();
                     if (response.ok && data.status === 'success') {
-                        // ✅ បិទ Modal និងបង្ហាញសារជោគជ័យ (Controller ព្រីនឲ្យរួចហើយ)
                         this.finishTransaction(data);
                     } else {
                         this.showToast(data.message || "{{ __('messages.payment_failed') }}", 'error');
@@ -316,6 +325,75 @@
                 this.selectedTargetTable = null; 
                 this.isMoveModalOpen = true; 
             }, 
+
+            // 🔥 1. បើកបញ្ជីម្ហូបលើតុ (ប្ដូរទៅ ChangeItemList)
+            async openChangeItemList(table) {
+                this.selectedTable = table;
+                this.isChangeItemListModalOpen = true;
+                this.isLoadingChangeItemList = true;
+                try {
+                    const response = await fetch(`/pos/order-details/${table.id}`);
+                    if (!response.ok) throw new Error("មិនមានទិន្នន័យ");
+                    const data = await response.json();
+                    this.changeItemListItems = data.items || [];
+                } catch (error) { this.changeItemListItems = []; }
+                finally { this.isLoadingChangeItemList = false; }
+            },
+
+            // 🔥 2. បើក Modal ប្ដូរម្ហូបពីក្នុងបញ្ជី (ប្ដូរទៅ ChangeItemModal)
+            openChangeItemModal(item) {
+                this.changeItemData = {
+                    old_item_id: item.id,
+                    old_item_name: item.product ? item.product.name : 'មុខម្ហូប',
+                    max_qty: item.quantity,
+                    exchange_qty: 1,
+                    new_product_id: null
+                };
+                this.changeItemSearch = '';
+                this.changeItemProducts = [];
+                this.isChangeItemModalOpen = true;
+                this.fetchChangeItemProducts(); 
+            },
+
+            async fetchChangeItemProducts() {
+                try {
+                    const res = await fetch(`/pos/products/paginated?search=${this.changeItemSearch}`);
+                    const data = await res.json();
+                    this.changeItemProducts = data.data || data; 
+                } catch(e) {}
+            },
+
+            debounceChangeItemSearch() {
+                clearTimeout(this.searchTimeout);
+                this.searchTimeout = setTimeout(() => { this.fetchChangeItemProducts(); }, 400);
+            },
+
+            selectNewChangeItemProduct(product) { 
+                this.changeItemData.new_product_id = product.id; 
+            },
+
+            async submitChangeItem() {
+                if(!this.changeItemData.new_product_id) return;
+                this.isProcessing = true;
+                try {
+                    const res = await fetch('{{ route("pos.item.exchange") }}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
+                        body: JSON.stringify({
+                            old_item_id: this.changeItemData.old_item_id,
+                            exchange_qty: this.changeItemData.exchange_qty,
+                            new_product_id: this.changeItemData.new_product_id
+                        })
+                    });
+                    const data = await res.json();
+                    if(res.ok && data.status === 'success') {
+                        this.showToast(data.message, 'success');
+                        this.isChangeItemModalOpen = false;
+                        this.openChangeItemList(this.selectedTable); // Refresh បញ្ជីឡើងវិញ
+                    } else { this.showToast(data.message, 'error'); }
+                } catch(e) { this.showToast('Server Error', 'error'); } 
+                finally { this.isProcessing = false; }
+            },
             
             async submitMoveTable() {
                 if (!this.selectedTargetTable) { return this.showToast("{{ __('messages.select_new_table_first') }}", 'warning'); }
@@ -371,7 +449,6 @@
                     if (response.ok) {
                         this.showToast("{{ __('messages.split_bill_success') }}", 'success');
                         
-                        // ✅ បិទ Modal ឬបើក Order ដែលសល់ (Controller ព្រីនឲ្យរួចហើយ)
                         if(data.remaining_items_count > 0) this.openQuickCheckout(this.selectedTable);
                         else { this.isCheckoutModalOpen = false; this.fetchTables(); }
                     } else this.showToast(data.message, 'error');

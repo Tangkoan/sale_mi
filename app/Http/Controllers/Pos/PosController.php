@@ -32,15 +32,17 @@ class PosController extends Controller
     // =================================================================
     // 🔥 កន្លែងដែលត្រូវកែគឺនៅត្រង់នេះ (FUNCTION MENU)
     // =================================================================
-    public function menu($table_id)
+    public function menu(Request $request, $table_id) // បន្ថែម Request $request
     {
         $table = Table::findOrFail($table_id);
         $categories = Category::select('id', 'name', 'kitchen_destination_id')->orderBy('name', 'asc')->get();
-        
         $currentOrder = Order::where('table_id', $table_id)->where('status', 'pending')->first();
 
-        // មិនបាច់បញ្ជូន products និង addons ទៅទៀតទេ ទុកឲ្យទំព័រស្រាលបំផុត!
-        return view('pos.menu', compact('table', 'categories', 'currentOrder'));
+        // ចាប់យកតម្លៃបើមានការប្ដូរម្ហូប
+        $exchangeItemId = $request->query('exchange_item_id');
+        $exchangeQty = $request->query('exchange_qty');
+
+        return view('pos.menu', compact('table', 'categories', 'currentOrder', 'exchangeItemId', 'exchangeQty'));
     }
 
     // កែប្រែ Function ចាស់អោយស្រាល ដោយលុបការទាញ Products ចេញ

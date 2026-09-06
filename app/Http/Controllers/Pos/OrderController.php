@@ -230,7 +230,21 @@ class OrderController extends Controller
                 $item->delete();
             } 
             elseif ($request->action === 'increase') {
-                $item->increment('quantity');
+                // 🔥 ចំណុចសំខាន់៖ បើព្រីនរួច បង្កើត Row ថ្មី!
+                if ($item->is_printed) {
+                    $newItem = $item->replicate();
+                    $newItem->quantity = 1;
+                    $newItem->is_printed = false;
+                    $newItem->save();
+
+                    foreach ($item->addons as $addon) {
+                        $newAddon = $addon->replicate();
+                        $newAddon->order_item_id = $newItem->id;
+                        $newAddon->save();
+                    }
+                } else {
+                    $item->increment('quantity');
+                }
             } 
             elseif ($request->action === 'decrease') {
                 if ($item->quantity > 1) {
@@ -240,8 +254,69 @@ class OrderController extends Controller
                     $item->delete();
                 }
             }
+            
             $newTotal = $this->recalculateOrderTotal($item->order_id);
+
+            // បញ្ជាព្រីនសម្រាប់មុខម្ហូបដែលបន្ថែមថ្មី (is_printed = false)
+            if ($request->action === 'increase') {
+                PrintKitchenJob::dispatch($item->order_id);
+            }
+
             return response()->json(['status' => 'success', 'total' => $newTotal]);
+        });
+    }
+
+    // 🔥 FUNCTION ថ្មីសម្រាប់ប្ដូរម្ហូប
+    public function exchangeItem(Request $request)
+    {
+        $request->validate([
+            'old_item_id'    => 'required|exists:order_items,id',
+            'exchange_qty'   => 'required|integer|min:1',
+            'new_product_id' => 'required|exists:products,id',
+        ]);
+
+        return DB::transaction(function () use ($request) {
+            try {
+                $oldItem = OrderItem::with('product', 'addons')->findOrFail($request->old_item_id);
+                $order = Order::findOrFail($oldItem->order_id);
+
+                if ($request->exchange_qty > $oldItem->quantity) {
+                    throw new \Exception("ចំនួនដែលចង់ប្ដូរ ធំជាងចំនួនដែលមានស្រាប់!");
+                }
+
+                $oldProductName = $oldItem->product ? $oldItem->product->name : 'ម្ហូបចាស់';
+
+                if ($request->exchange_qty == $oldItem->quantity) {
+                    OrderItemAddon::where('order_item_id', $oldItem->id)->delete();
+                    $oldItem->delete();
+                } else {
+                    $oldItem->decrement('quantity', $request->exchange_qty);
+                }
+
+                $newProduct = Product::find($request->new_product_id);
+                OrderItem::create([
+                    'order_id'   => $order->id,
+                    'product_id' => $newProduct->id,
+                    'quantity'   => $request->exchange_qty,
+                    'price'      => $newProduct->price,
+                    'note'       => '🔄 ប្ដូរចេញពី: ' . $oldProductName,
+                    'is_printed' => false,
+                    'status'     => 'pending',
+                    'created_by' => Auth::id(),
+                ]);
+
+                $newTotal = $this->recalculateOrderTotal($order->id);
+                PrintKitchenJob::dispatch($order->id);
+
+                return response()->json([
+                    'status'    => 'success',
+                    'message'   => 'បានប្ដូរមុខម្ហូបជោគជ័យ!',
+                    'new_total' => $newTotal
+                ]);
+
+            } catch (\Exception $e) {
+                return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+            }
         });
     }
 
@@ -502,6 +577,7 @@ class OrderController extends Controller
             }
 
             $mainOrder->update([
+                'note' => $request->delivery_platform ? 'Delivery: ' . $request->delivery_platform : null,
                 'status'             => 'completed',
                 'total_amount'       => $totalAmount,
                 'payment_method'     => $request->payment_method,
