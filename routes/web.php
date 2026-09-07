@@ -33,6 +33,7 @@ use Symfony\Component\HttpFoundation\Response;
 use App\Http\Controllers\Admin\SaleReportController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\BlockedIpController;
+use App\Http\Controllers\Admin\OrderHistoryController;
 
 use Illuminate\Support\Facades\Session;
 
@@ -86,7 +87,20 @@ Route::middleware('auth')->group(function () {
         Route::post('/delivery-platforms/{id}', [\App\Http\Controllers\Admin\DeliveryPlatformController::class, 'update'])->name('delivery_platforms.update');
         Route::delete('/delivery-platforms/{id}', [\App\Http\Controllers\Admin\DeliveryPlatformController::class, 'destroy'])->name('delivery_platforms.destroy');
         Route::post('/delivery-platforms/{id}/toggle', [\App\Http\Controllers\Admin\DeliveryPlatformController::class, 'toggleStatus'])->name('delivery_platforms.toggle');
+
     });
+
+    // Order History Routes
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::get('/orders-history', [OrderHistoryController::class, 'index'])->name('orders.index');
+        Route::get('/orders-history/fetch', [OrderHistoryController::class, 'fetchOrders'])->name('orders.fetch');
+        Route::get('/orders/{id}/details', [OrderHistoryController::class, 'getOrderDetails'])->name('orders.details');
+        Route::post('/orders/{id}/reprint', [OrderHistoryController::class, 'reprintInvoice'])->name('orders.reprint');
+    });
+
+    
+        
+
 
     // Modifier Groups Management
     Route::prefix('admin')->name('admin.')->group(function () {

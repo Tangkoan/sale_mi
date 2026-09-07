@@ -431,6 +431,32 @@
             </div>
         @endif
 
+
+        {{-- ============================================================== --}}
+        {{-- ORDER HISTORY SECTION                                          --}}
+        {{-- ============================================================== --}}
+
+        @if(auth()->user()->can('order-history-list') || auth()->user()->hasRole('Super Admin'))
+            <div class="px-4 mt-6 mb-2 sidebar-text">
+                <span class="text-[11px] font-bold opacity-50 uppercase tracking-wider">ការលក់ (Sales)</span>
+            </div>
+
+            <div class="group relative mb-1">
+                <a href="{{ route('admin.orders.index') }}" 
+                   class="sidebar-item w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer select-none menu-item-content
+                          {{ request()->routeIs('admin.orders.*') ? 'bg-black/5 dark:bg-white/10 text-primary font-bold' : '' }}">
+                    <div class="flex items-center">
+                        <i class="ri-history-line text-[20px]"></i>
+                        <span class="sidebar-text font-medium px-2">ប្រវត្តិការកម្ម៉ង់</span>
+                    </div>
+                </a>
+                
+                {{-- Tooltip សម្រាប់ពេលបិទ Sidebar ឲ្យតូច --}}
+                <div class="tooltip hidden absolute left-[100%] top-2 ml-4 bg-gray-900 text-white text-xs px-3 py-2 rounded shadow-xl z-50 whitespace-nowrap">
+                    ប្រវត្តិការកម្ម៉ង់
+                </div>
+            </div>
+        @endif
     </nav>
 
     
