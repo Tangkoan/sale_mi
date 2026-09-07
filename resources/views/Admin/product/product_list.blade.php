@@ -146,7 +146,8 @@
             products: [],
             categories: @json($categories), 
             allAddons: @json($addons),      
-            visibleAddons: [],              
+            visibleAddons: [],    
+            allModifierGroups: @json($modifierGroups), // ✅ ទទួលទិន្នន័យពី Controller          
             
             search: '',
             filterCategory: '',
@@ -169,7 +170,7 @@
             sequenceQueue: [],
             currentSeqIndex: 0,
 
-            form: { id: null, name: '', category_id: '', price: '', image: null, addons: [] },
+            form: { id: null, name: '', category_id: '', price: '', image: null, addons: [], modifier_groups: [] },
             imagePreview: null,
             errors: {},
 
@@ -282,7 +283,8 @@
                     category_id: item.category_id,
                     price: item.price,
                     image: null,
-                    addons: item.addons ? item.addons.map(a => a.id) : [] 
+                    addons: item.addons ? item.addons.map(a => a.id) : [],
+                    modifier_groups: item.modifier_groups ? item.modifier_groups.map(g => g.id) : []
                 };
                 this.imagePreview = item.image ? '/storage/' + item.image : null;
             },
@@ -321,6 +323,12 @@
                     this.form.addons.forEach((id, index) => { formData.append(`addons[${index}]`, id); });
                 }
                 if (this.form.image instanceof File) formData.append('image', this.form.image);
+                // ✅ Append ទិន្នន័យ Modifier Groups ចូលទៅក្នុង Request បាញ់ទៅកាន់ Server
+                if(this.form.modifier_groups && this.form.modifier_groups.length > 0) {
+                    this.form.modifier_groups.forEach((id, index) => { 
+                        formData.append(`modifier_groups[${index}]`, id); 
+                    });
+                }
                 
                 let url = "{{ route('admin.products.store') }}";
                 if (this.editMode) {

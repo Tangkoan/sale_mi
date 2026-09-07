@@ -20,6 +20,7 @@ class ProductController extends Controller
     {
         $categories = Category::with('destination')->select('id', 'name', 'kitchen_destination_id')->get();
         $addons = Addon::select('id', 'name', 'price', 'kitchen_destination_id')->where('is_active', true)->get();
+        $modifierGroups = \App\Models\ModifierGroup::where('is_active', true)->get();
         
         // ✅ កែត្រង់នេះ៖ ថែម where('name', '!=', 'អ្នកគិតលុយ') ដើម្បីលាក់វាពី Dropdown
         $destinations = DB::table('kitchen_destinations')
@@ -27,7 +28,7 @@ class ProductController extends Controller
             ->where('name', '!=', 'អ្នកគិតលុយ') // ដកអ្នកគិតលុយចេញ
             ->get();
 
-        return view('admin.product.product_list', compact('categories', 'addons', 'destinations'));
+        return view('admin.product.product_list', compact('categories', 'addons', 'destinations', 'modifierGroups'));
     }
 
     // Function សម្រាប់ Duplicate Product
@@ -78,7 +79,7 @@ class ProductController extends Controller
 
     public function fetchProducts(Request $request)
     {
-        $query = Product::with(['category.destination', 'addons']);
+        $query = Product::with(['category.destination', 'addons', 'modifierGroups']);
 
         // 1. លក្ខខណ្ឌស្វែងរកតាមឈ្មោះ
         if ($request->keyword) {
@@ -223,6 +224,7 @@ class ProductController extends Controller
 
             $product->save();
             $product->addons()->sync($request->addons ?? []);
+            $product->modifierGroups()->sync($request->modifier_groups ?? []);
 
             if(function_exists('activity')) {
                 activity()->causedBy(auth()->user())->performedOn($product)->log('updated product');

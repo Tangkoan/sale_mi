@@ -86,6 +86,26 @@
                 </div>
             </div>
 
+            {{-- MODIFIER GROUPS SELECTION --}}
+            <div class="border-t border-border-color pt-4" x-show="allModifierGroups.length > 0">
+                <div class="mb-2">
+                    <label class="block text-sm font-bold text-text-color">ជ្រើសរើស ក្រុមជម្រើស (Modifiers)</label>
+                    <p class="text-xs text-secondary">ឧទាហរណ៍៖ បើផលិតផលនេះជាកាហ្វេ សូមធីកយក "កម្រិតជាតិស្ករ" និង "កម្រិតទឹកកក"</p>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-40 overflow-y-auto p-2 bg-page-bg/50 rounded-lg border border-input-border custom-scrollbar">
+                    <template x-for="group in allModifierGroups" :key="'mg-'+group.id">
+                        <label class="flex items-center gap-2 cursor-pointer hover:bg-white dark:hover:bg-white/5 p-2 rounded transition-colors border border-transparent hover:border-input-border shadow-sm bg-card-bg">
+                            <input type="checkbox" :value="group.id" x-model="form.modifier_groups" class="rounded border-input-border text-primary focus:ring-primary h-4 w-4">
+                            <div class="text-xs">
+                                <span class="font-bold text-text-color block" x-text="group.name"></span>
+                                <span class="text-secondary" x-text="group.type === 'single' ? 'រើសបានតែ ១' : 'រើសបានច្រើន'"></span>
+                            </div>
+                        </label>
+                    </template>
+                </div>
+            </div>
+
             {{-- ADDONS SELECTION --}}
             <div class="border-t border-border-color pt-4" x-show="visibleAddons.length > 0">
                 <div class="flex justify-between items-center mb-2">

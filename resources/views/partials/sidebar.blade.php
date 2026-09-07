@@ -165,12 +165,14 @@
         {{-- PRODUCT MANAGEMENT SECTION                                     --}}
         {{-- ============================================================== --}}
 
-        {{-- ពិនិត្យមើលសិនថា តើ User មានសិទ្ធិមើល Menu ណាមួយក្នុង Group នេះឬអត់? --}}
         @if(auth()->user()->can('category-list') || 
             auth()->user()->can('table-list') || 
             auth()->user()->can('addon-list') || 
             auth()->user()->can('product-list') || 
-            auth()->user()->can('destination-list') || // ✅ បន្ថែម Permission ថ្មី
+            auth()->user()->can('destination-list') ||
+            auth()->user()->can('delivery-platform-list') ||
+            auth()->user()->can('modifier-group-list') || 
+            auth()->user()->can('modifier-list') || // ✅ បន្ថែម Permission សម្រាប់ Modifiers
             auth()->user()->hasRole('Super Admin'))
 
             <div class="px-4 mt-6 mb-2 sidebar-text">
@@ -184,7 +186,9 @@
                                 request()->routeIs('admin.addons.*') || 
                                 request()->routeIs('admin.products.*') ||
                                 request()->routeIs('admin.destinations.*') ||
-                                request()->routeIs('admin.delivery_platforms.*');
+                                request()->routeIs('admin.delivery_platforms.*') ||
+                                request()->routeIs('admin.modifier_groups.*') ||
+                                request()->routeIs('admin.modifiers.*'); // ✅ បន្ថែមនៅទីនេះ
             @endphp 
 
             <div class="group relative">
@@ -192,7 +196,6 @@
                         class="sidebar-item w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer select-none menu-item-content
                             {{ $isProductActive ? 'bg-black/5 dark:bg-white/10' : '' }}">
                     <div class="flex items-center">
-                        {{-- Icon: Store / Shop --}}
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016c.896 0 1.7-.393 2.25-1.015a3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19A1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72m-13.5 8.65h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .415.336.75.75.75Z" />
                         </svg>
@@ -206,82 +209,75 @@
                     <div class="tree-line absolute left-[26px] top-0 bottom-2 w-px bg-custom-border opacity-50"></div>
                     <ul class="space-y-1 mt-1">
 
-                        {{-- 1. Destination (New) --}}
-                        {{-- ✅ បន្ថែមថ្មី៖ Destination Management --}}
                         @can('destination-list') 
                             <li>
-                                <a href="{{ route('admin.destinations.index') }}" 
-                                class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
-                                                {{ request()->routeIs('admin.destinations.*') ? 'text-primary font-bold' : 'opacity-80' }}">
-                                    <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
-                                                    {{ request()->routeIs('admin.destinations.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
+                                <a href="{{ route('admin.destinations.index') }}" class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4 {{ request()->routeIs('admin.destinations.*') ? 'text-primary font-bold' : 'opacity-80' }}">
+                                    <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg {{ request()->routeIs('admin.destinations.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
                                     <span>{{ __('sidebar.kitchen_destinations') }}</span>
                                 </a>
                             </li>
                         @endcan
                         
-                        {{-- 2. Category --}}
                         @can('category-list')
                             <li>
-                                <a href="{{ route('admin.categories.index') }}" 
-                                class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
-                                                {{ request()->routeIs('admin.categories.*') ? 'text-primary font-bold' : 'opacity-80' }}">
-                                    <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
-                                                    {{ request()->routeIs('admin.categories.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
+                                <a href="{{ route('admin.categories.index') }}" class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4 {{ request()->routeIs('admin.categories.*') ? 'text-primary font-bold' : 'opacity-80' }}">
+                                    <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg {{ request()->routeIs('admin.categories.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
                                     <span>{{ __('sidebar.category_list') }}</span>
                                 </a>
                             </li>
                         @endcan
 
-                        
-
-                        {{-- 3. Table --}}
                         @can('table-list')
                             <li>
-                                <a href="{{ route('admin.tables.index') }}" 
-                                class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
-                                                {{ request()->routeIs('admin.tables.*') ? 'text-primary font-bold' : 'opacity-80' }}">
-                                    <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
-                                                    {{ request()->routeIs('admin.tables.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
+                                <a href="{{ route('admin.tables.index') }}" class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4 {{ request()->routeIs('admin.tables.*') ? 'text-primary font-bold' : 'opacity-80' }}">
+                                    <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg {{ request()->routeIs('admin.tables.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
                                     <span>{{ __('sidebar.table_list') }}</span>
                                 </a>
                             </li>
                         @endcan
 
-                        {{-- 4. Addon --}}
                         @can('addon-list')
                             <li>
-                                <a href="{{ route('admin.addons.index') }}"
-                                class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
-                                                {{ request()->routeIs('admin.addons.*') ? 'text-primary font-bold' : 'opacity-80' }}">
-                                    <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
-                                                    {{ request()->routeIs('admin.addons.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
+                                <a href="{{ route('admin.addons.index') }}" class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4 {{ request()->routeIs('admin.addons.*') ? 'text-primary font-bold' : 'opacity-80' }}">
+                                    <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg {{ request()->routeIs('admin.addons.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
                                     <span>{{ __('sidebar.addon_list') }}</span>
                                 </a>
                             </li>
                         @endcan
 
-                        {{-- 5. Product --}}
+                        {{-- ក្រុមជម្រើស (Modifier Groups) --}}
+                        @can('modifier-group-list')
+                            <li>
+                                <a href="{{ route('admin.modifier_groups.index') }}" class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4 {{ request()->routeIs('admin.modifier_groups.*') ? 'text-primary font-bold' : 'opacity-80' }}">
+                                    <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg {{ request()->routeIs('admin.modifier_groups.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
+                                    <span>ក្រុមជម្រើស (Modifiers)</span>
+                                </a>
+                            </li>
+                        @endcan
+
+                        {{-- ✅ បន្ថែមថ្មី៖ ជម្រើសលម្អិត (Modifiers) --}}
+                        @can('modifier-list')
+                            <li>
+                                <a href="{{ route('admin.modifiers.index') }}" class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4 {{ request()->routeIs('admin.modifiers.*') ? 'text-primary font-bold' : 'opacity-80' }}">
+                                    <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg {{ request()->routeIs('admin.modifiers.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
+                                    <span>ជម្រើសលម្អិត (Options)</span>
+                                </a>
+                            </li>
+                        @endcan
+
                         @can('product-list')
                             <li>
-                                <a href="{{ route('admin.products.index') }}"
-                                class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
-                                                {{ request()->routeIs('admin.products.*') ? 'text-primary font-bold' : 'opacity-80' }}">
-                                    <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
-                                                    {{ request()->routeIs('admin.products.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
+                                <a href="{{ route('admin.products.index') }}" class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4 {{ request()->routeIs('admin.products.*') ? 'text-primary font-bold' : 'opacity-80' }}">
+                                    <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg {{ request()->routeIs('admin.products.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
                                     <span>{{ __('sidebar.product_list') }}</span>
                                 </a>
                             </li>
                         @endcan
 
-                        {{-- 6. Delivery Platforms --}}
-                        @can('delivery-platform-list') {{-- អាចដកចេញបើមិនទាន់មាន Permission នេះ --}}
+                        @can('delivery-platform-list') 
                             <li>
-                                <a href="{{ route('admin.delivery_platforms.index') }}"
-                                class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4
-                                                {{ request()->routeIs('admin.delivery_platforms.*') ? 'text-primary font-bold' : 'opacity-80' }}">
-                                    <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg 
-                                                    {{ request()->routeIs('admin.delivery_platforms.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
+                                <a href="{{ route('admin.delivery_platforms.index') }}" class="sidebar-item relative flex items-center py-2.5 rounded-lg text-sm transition-all duration-200 pl-12 pr-4 {{ request()->routeIs('admin.delivery_platforms.*') ? 'text-primary font-bold' : 'opacity-80' }}">
+                                    <span class="tree-line absolute left-[22px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border-2 border-sidebar-bg {{ request()->routeIs('admin.delivery_platforms.*') ? 'bg-primary' : 'bg-gray-400' }}"></span>
                                     <span>ដៃគូដឹកជញ្ជូន</span>
                                 </a>
                             </li>

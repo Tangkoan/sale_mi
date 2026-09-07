@@ -88,6 +88,28 @@ Route::middleware('auth')->group(function () {
         Route::post('/delivery-platforms/{id}/toggle', [\App\Http\Controllers\Admin\DeliveryPlatformController::class, 'toggleStatus'])->name('delivery_platforms.toggle');
     });
 
+    // Modifier Groups Management
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::get('/modifier-groups', [\App\Http\Controllers\Admin\ModifierGroupController::class, 'index'])->name('modifier_groups.index');
+        Route::get('/modifier-groups/fetch', [\App\Http\Controllers\Admin\ModifierGroupController::class, 'fetchGroups'])->name('modifier_groups.fetch');
+        Route::post('/modifier-groups', [\App\Http\Controllers\Admin\ModifierGroupController::class, 'store'])->name('modifier_groups.store');
+        Route::post('/modifier-groups/{id}', [\App\Http\Controllers\Admin\ModifierGroupController::class, 'update'])->name('modifier_groups.update');
+        Route::delete('/modifier-groups/{id}', [\App\Http\Controllers\Admin\ModifierGroupController::class, 'destroy'])->name('modifier_groups.destroy');
+        Route::post('/modifier-groups/bulk-delete', [\App\Http\Controllers\Admin\ModifierGroupController::class, 'bulkDelete'])->name('modifier_groups.bulk_delete');
+        Route::post('/modifier-groups/{id}/toggle', [\App\Http\Controllers\Admin\ModifierGroupController::class, 'toggleStatus'])->name('modifier_groups.toggle');
+    });
+
+    // Modifiers Management
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::get('/modifiers', [\App\Http\Controllers\Admin\ModifierController::class, 'index'])->name('modifiers.index');
+        Route::get('/modifiers/fetch', [\App\Http\Controllers\Admin\ModifierController::class, 'fetchModifiers'])->name('modifiers.fetch');
+        Route::post('/modifiers', [\App\Http\Controllers\Admin\ModifierController::class, 'store'])->name('modifiers.store');
+        Route::post('/modifiers/{id}', [\App\Http\Controllers\Admin\ModifierController::class, 'update'])->name('modifiers.update');
+        Route::delete('/modifiers/{id}', [\App\Http\Controllers\Admin\ModifierController::class, 'destroy'])->name('modifiers.destroy');
+        Route::post('/modifiers/bulk-delete', [\App\Http\Controllers\Admin\ModifierController::class, 'bulkDelete'])->name('modifiers.bulk_delete');
+        Route::post('/modifiers/{id}/toggle', [\App\Http\Controllers\Admin\ModifierController::class, 'toggleStatus'])->name('modifiers.toggle');
+    });
+
     
     Route::get('/pos/delivery-platforms/active', [\App\Http\Controllers\Pos\OrderController::class, 'getActivePlatforms']);
     Route::get('/pos/menu/delivery', [\App\Http\Controllers\Pos\MenuController::class, 'deliveryMenu'])->name('pos.menu.delivery');

@@ -1,0 +1,254 @@
+@extends('admin.dashboard')
+
+@section('title', 'គ្រប់គ្រងក្រុមជម្រើស (Modifier Groups)')
+
+@section('content')
+
+<div class="w-full h-full px-2 py-2 sm:px-4 sm:py-4" x-data="modifierGroupManagement()">
+    
+    @include('admin.modifier_group.partials.header')
+
+    <div class="hidden md:block">
+        @include('admin.modifier_group.partials.table')
+    </div>
+
+    <div class="md:hidden">
+        @include('admin.modifier_group.partials.mobile_card')
+    </div>
+    
+    @include('admin.modifier_group.partials.pagination')
+
+    @include('admin.modifier_group.partials.modal')
+
+</div>
+
+<script>
+    function modifierGroupManagement() {
+        return {
+            groups: [],
+            search: '',
+            perPage: '10',
+            currentPage: 1, 
+            pagination: { last_page: 1, total: 0 }, 
+            
+            isModalOpen: false,
+            editMode: false,
+            isLoading: false,
+            
+            selectedIds: [],
+            selectAll: false,
+
+            sortBy: 'created_at',
+            sortDir: 'desc',
+
+            isSequenceMode: false,
+            sequenceQueue: [],
+            currentSeqIndex: 0,
+
+            form: { id: null, name: '', type: 'single', is_required: false },
+            errors: {},
+
+            init() { 
+                this.fetchGroups(); 
+            },
+
+            get visiblePages() {
+                const total = this.pagination.last_page;
+                const current = this.currentPage;
+                const delta = 2;
+                let pages = [];
+                if (total <= 7) { for (let i = 1; i <= total; i++) pages.push(i); return pages; }
+                pages.push(1);
+                if (current > delta + 2) pages.push('...');
+                let start = Math.max(2, current - delta);
+                let end = Math.min(total - 1, current + delta);
+                for (let i = start; i <= end; i++) pages.push(i);
+                if (current < total - delta - 1) pages.push('...');
+                if (total > 1) pages.push(total);
+                return pages;
+            },
+
+            async fetchGroups() {
+                let url = "{{ route('admin.modifier_groups.fetch') }}";
+                const params = new URLSearchParams({
+                    keyword: this.search,
+                    per_page: this.perPage,
+                    page: this.currentPage,
+                    sort_by: this.sortBy,
+                    sort_dir: this.sortDir
+                });
+                this.isLoading = true;
+                try {
+                    const response = await fetch(`${url}?${params}`);
+                    const data = await response.json();
+                    this.groups = data.data;
+                    this.pagination = data; 
+                    this.currentPage = data.current_page;
+                    this.selectAll = false; 
+                } catch (error) { console.error(error); } 
+                finally { this.isLoading = false; }
+            },
+
+            sort(col) { 
+                if (this.sortBy === col) this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc'; 
+                else { this.sortBy = col; this.sortDir = 'desc'; } 
+                this.fetchGroups(); 
+            },
+            
+            gotoPage(page) { 
+                if(page === '...') return; 
+                this.currentPage = page; 
+                this.fetchGroups(); 
+            },
+            
+            toggleSelectAll() { 
+                this.selectedIds = this.selectAll ? this.groups.map(g => g.id) : []; 
+            },
+
+            startSequentialEdit() {
+                const selectedIdsString = this.selectedIds.map(id => String(id));
+                this.sequenceQueue = this.groups.filter(item => selectedIdsString.includes(String(item.id)));
+                if (this.sequenceQueue.length === 0) {
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: "សូមជ្រើសរើសទិន្នន័យជាមុនសិន" } })); 
+                    return;
+                }
+                this.isSequenceMode = true;
+                this.currentSeqIndex = 0;
+                this.loadDataToForm(this.sequenceQueue[0]);
+                this.isModalOpen = true;
+            },
+            
+            nextInSequence() {
+                this.currentSeqIndex++;
+                if (this.currentSeqIndex < this.sequenceQueue.length) {
+                    this.loadDataToForm(this.sequenceQueue[this.currentSeqIndex]);
+                } else {
+                    this.closeModal(true); 
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: "បានបញ្ចប់ការកែប្រែទាំងអស់" } }));
+                }
+            },
+
+            loadDataToForm(item) {
+                this.editMode = true;
+                this.errors = {};
+                this.form = { 
+                    id: item.id,
+                    name: item.name,
+                    type: item.type,
+                    is_required: item.is_required ? true : false,
+                };
+            },
+
+            openModal(mode, item = null) {
+                this.isSequenceMode = false;
+                this.isModalOpen = true;
+                this.errors = {};
+                if (mode === 'edit') {
+                    this.loadDataToForm(item);
+                } else {
+                    this.editMode = false;
+                    this.form = { id: null, name: '', type: 'single', is_required: false };
+                }
+            },
+
+            closeModal(force = false) {
+                if (!force && this.isSequenceMode && !confirm("តើអ្នកពិតជាចង់បោះបង់ការកែប្រែបន្តបន្ទាប់មែនទេ?")) return;
+                this.isModalOpen = false;
+                this.isSequenceMode = false;
+                this.selectedIds = [];
+                this.selectAll = false;
+                this.fetchGroups(); 
+            },
+
+            async submitForm() {
+                this.isLoading = true;
+                this.errors = {};
+                
+                let formData = new FormData();
+                formData.append('name', this.form.name);
+                formData.append('type', this.form.type);
+                formData.append('is_required', this.form.is_required ? 1 : 0);
+                
+                let url = "{{ route('admin.modifier_groups.store') }}";
+                if (this.editMode) {
+                    url = `/admin/modifier-groups/${this.form.id}`;
+                    formData.append('_method', 'POST'); 
+                }
+                
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
+                        body: formData
+                    });
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        if (response.status === 422) {
+                            this.errors = data.errors;
+                            window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'សូមពិនិត្យទិន្នន័យឡើងវិញ' } }));
+                        } else {
+                            window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: data.message || 'Error' } }));
+                        }
+                    } else {
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: data.message } }));
+                        if (this.isSequenceMode) { this.nextInSequence(); } else { this.closeModal(); this.fetchGroups(); }
+                    }
+                } catch (error) { console.error(error); } 
+                finally { this.isLoading = false; }
+            },
+
+            async confirmDelete(id) { 
+                if(confirm("តើអ្នកពិតជាចង់លុបទិន្នន័យនេះមែនទេ?")) { 
+                    await this.performDelete([id]); 
+                }
+            },
+            
+            async confirmBulkDelete() { 
+                if (this.selectedIds.length === 0) return; 
+                if(confirm("តើអ្នកពិតជាចង់លុបទិន្នន័យដែលបានជ្រើសរើសមែនទេ?")) { 
+                    await this.performDelete(this.selectedIds, true); 
+                }
+            },
+
+            async performDelete(ids, isBulk = false) {
+                let url = isBulk ? "{{ route('admin.modifier_groups.bulk_delete') }}" : `/admin/modifier-groups/${ids[0]}`;
+                let method = isBulk ? 'POST' : 'DELETE';
+                let body = isBulk ? JSON.stringify({ ids: ids }) : null;
+                
+                try {
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
+                        body: body
+                    });
+                    const data = await response.json();
+                    
+                    if(response.ok) {
+                        this.selectedIds = [];
+                        this.selectAll = false;
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: data.message } }));
+                        this.fetchGroups();
+                    } else {
+                        // ✅ បន្ថែម Else ត្រង់នេះ ដើម្បីចាប់យក Error Message បង្ហាញលើអេក្រង់
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: data.message || 'មានបញ្ហាក្នុងការលុបទិន្នន័យ!' } }));
+                    }
+                } catch(e) { 
+                    console.error(e); 
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'បរាជ័យក្នុងការភ្ជាប់ទៅកាន់ Server!' } }));
+                }
+            },
+
+            async toggleStatus(id) {
+                try {
+                    await fetch(`/admin/modifier-groups/${id}/toggle`, {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }
+                    });
+                    this.fetchGroups();
+                } catch(e) { console.error(e); }
+            }
+        }
+    }
+</script>
+@endsection
