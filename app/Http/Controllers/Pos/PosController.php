@@ -71,7 +71,7 @@ class PosController extends Controller
 
         // បើមាន Search
         if ($request->search) {
-            $query->where('name', 'like', '\%' .$request->search . '%');
+            $query->where('name', 'like', '%' . $request->search . '%');
         }
 
         // Pagination ម្ដង 10
@@ -136,7 +136,7 @@ class PosController extends Controller
         $query = Addon::select('id', 'name', 'price', 'is_active', 'kitchen_destination_id')
                       ->where('is_active', 1);
 
-        // បើមាន Search
+
         if ($request->search) {
             $query->where('name', 'like', '%' . $request->search . '%');
         }

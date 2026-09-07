@@ -206,7 +206,7 @@
                         ? `{{ route('pos.products.paginated') }}?page=${this.page}&category_id=${this.activeCategory}`
                         : `{{ route('pos.addons.paginated') }}?page=${this.page}&category_id=${this.activeCategory}`;
                     
-                    if (this.search) url += `&search=${this.search}`;
+                    if (this.search) url += `&search=${encodeURIComponent(this.search)}`;
 
                     const response = await fetch(url);
                     const data = await response.json();
