@@ -94,6 +94,9 @@ class OrderController extends Controller
                         'quantity'   => $itemData['qty'],
                         'price'      => $itemData['price'],
                         'note'       => $itemData['note'] ?? null,
+                        'modifiers' => isset($itemData['modifiers']) 
+                        ? (is_string($itemData['modifiers']) ? json_decode($itemData['modifiers'], true) : $itemData['modifiers']) 
+                        : null,
                         'is_printed' => false, 
                         'status'     => 'pending',
                         'created_by' => Auth::id(),

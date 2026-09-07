@@ -43,13 +43,13 @@ class PrintKitchenJob implements ShouldQueue
     public function handle()
     {
         $itemsToPrint = OrderItem::with([
-                'product.category.kitchenDestination', 
-                'addons.addon.kitchenDestination', 
-                'order.table' 
-            ])
-            ->where('order_id', $this->orderId)
-            ->where('is_printed', false) 
-            ->get();
+            'product.category.kitchenDestination', 
+            'addons.addon.kitchenDestination', 
+            'order.table' 
+        ])
+        ->where('order_id', $this->orderId) // 🚨 កន្លែងនេះសំខាន់បំផុត ហាមភ្លេច!
+        ->where('is_printed', false)
+        ->get();
 
         if ($itemsToPrint->isEmpty()) { return; }
 
@@ -128,8 +128,11 @@ class PrintKitchenJob implements ShouldQueue
                 $printer->feed(1);
                 $printer->cut();
 
-                foreach ($items as $item) {
-                    $item->update(['is_printed' => true]);
+                // ទាញយកតែ ID របស់ម្ហូប ដើម្បីធ្វើការ Update ផ្ទាល់ទៅ Database (ការពារបញ្ហាពីការ Clone Object)
+                $itemIds = collect($items)->pluck('id')->filter()->toArray();
+
+                if (!empty($itemIds)) {
+                    OrderItem::whereIn('id', $itemIds)->update(['is_printed' => true]);
                 }
                 
                 sleep(1); 

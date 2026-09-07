@@ -292,20 +292,25 @@
            openProductModal(product) {
                 if(!product.is_active) return;
                 
-                // ✅ រៀបចំ State សម្រាប់ Modifiers
-                let initialModifiers = {};
+                // ✅ Filter យកតែ Group ណាដែលមិនជាន់គ្នា (Unique by ID)
+                let uniqueGroups = [];
                 if (product.modifier_groups) {
-                    product.modifier_groups.forEach(g => {
-                        initialModifiers[g.id] = g.type === 'single' ? null : []; // null សម្រាប់ Radio, [] សម្រាប់ Checkbox
-                    });
+                    const map = new Map();
+                    product.modifier_groups.forEach(item => map.set(item.id, item));
+                    uniqueGroups = [...map.values()];
                 }
+
+                let initialModifiers = {};
+                uniqueGroups.forEach(g => {
+                    initialModifiers[g.id] = g.type === 'single' ? null : []; 
+                });
 
                 this.tempItem = {
                     id: product.id, name: product.name, image: product.image,
                     base_price: parseFloat(product.price), qty: 1, note: '', 
                     selectedAddons: [], 
-                    modifierGroups: product.modifier_groups || [], // ✅ បញ្ចូលទិន្នន័យ
-                    selectedModifiers: initialModifiers, // ✅ បញ្ចូល State ទទេ
+                    modifierGroups: uniqueGroups, // ប្រើប្រាស់ Group ដែលបាន Filter រួច
+                    selectedModifiers: initialModifiers, 
                     category_id: product.category_id,
                     type: product.type || 'product',
                     category_name: (product.type === 'addon_item') ? "{{ __('messages.label_addon') }}" : (product.category ? product.category.name : "{{ __('messages.label_item') }}")
@@ -544,10 +549,14 @@
 
             // --- SUBMIT ORDER LOGIC ---
             async submitOrder() {
-                if (this.cart.length === 0) return;
-                this.isSubmitting = true;
-                
-                const payload = {
+                    if (this.cart.length === 0) return;
+                    
+                    // 🚨 បន្ថែមបន្ទាត់នេះ ដើម្បីការពារអតិថិជនចុចប៊ូតុង Submit ផ្ទួនៗគ្នា (Double Click)
+                    if (this.isSubmitting) return; 
+
+                    this.isSubmitting = true;
+                    
+                    const payload = {
                     table_id: {{ $table->id ?? 'null' }},
                     exchange_rate: localStorage.getItem('pos_exchange_rate') || 4100, 
                     items: this.cart.map(item => ({
@@ -556,6 +565,7 @@
                         price: item.base_price, 
                         note: item.note, 
                         addons: item.addons, 
+                        modifiers: item.modifiers,
                         is_addon: item.is_addon_item
                     }))
                 };

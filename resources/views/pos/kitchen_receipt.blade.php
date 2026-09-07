@@ -77,6 +77,7 @@
         <div class="solid-line"></div>
 
         {{-- បញ្ជីមុខម្ហូប --}}
+        {{-- បញ្ជីមុខម្ហូប --}}
         <table class="w-full text-[24px] leading-tight mt-2">
             <tbody class="align-top">
                 @foreach($items as $item)
@@ -106,6 +107,30 @@
                                         </div>
                                     @endforeach
                                 </div>
+                            @endif
+
+                            {{-- 🔥 ផ្នែកបន្ថែម៖ បង្ហាញកម្រិតស្ករ ឬ Modifiers ដែលបាន Save ចូល Database --}}
+                            @if(!empty($item->modifiers))
+                                @php
+                                    $modifiersList = $item->modifiers;
+                                    // ការពារករណីទិន្នន័យជាប់ជា string json ពីរដង
+                                    if (is_string($modifiersList)) {
+                                        $modifiersList = json_decode($modifiersList, true);
+                                        if (is_string($modifiersList)) {
+                                            $modifiersList = json_decode($modifiersList, true);
+                                        }
+                                    }
+                                @endphp
+
+                                @if(is_array($modifiersList) && count($modifiersList) > 0)
+                                    <div class="mt-2 space-y-1">
+                                        @foreach($modifiersList as $mod)
+                                            <div class="text-[20px] text-gray-800 pl-2 font-bold">
+                                                <span>⚙️ {{ $mod['group_name'] ?? 'ជម្រើស' }}: <strong>{{ $mod['name'] ?? '' }}</strong></span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
                             @endif
                         </td>
                         

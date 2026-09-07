@@ -11,6 +11,12 @@ class OrderItem extends Model
 
     protected $guarded = []; // អនុញ្ញាតអោយកែគ្រប់ field
 
+
+    protected $casts = [
+        'is_printed' => 'boolean',
+        'modifiers' => 'array', // ✅ បំប្លែងវាទៅជា Array ពេលទាញយកមកប្រើ
+    ];
+
     // ទំនាក់ទំនង៖ មុខម្ហូបនេះស្ថិតក្នុង Order ណា
     public function order()
     {
