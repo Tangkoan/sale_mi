@@ -61,7 +61,8 @@ class PosController extends Controller
     {
         $query = Product::select('id', 'name', 'price', 'image', 'category_id', 'is_active', 'station_type')
                         ->where('name', 'not like', '%extra%')
-                        ->with(['addons']);
+                        // ✅ កែត្រង់នេះ បន្ថែម 'modifierGroups.modifiers' 
+                        ->with(['addons', 'modifierGroups.modifiers']);
 
         // បើមានរើស Category
         if ($request->category_id &&$request->category_id !== 'all') {

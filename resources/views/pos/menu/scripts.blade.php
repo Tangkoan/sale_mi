@@ -142,7 +142,13 @@
             isSubmitting: false,
             isPolling: false,
             
-            tempItem: { id: null, name: '', image: null, base_price: 0, qty: 1, note: '', selectedAddons: [], category_id: null },
+            tempItem: { 
+                id: null, name: '', image: null, base_price: 0, qty: 1, note: '', 
+                selectedAddons: [], 
+                modifierGroups: [], // ✅ សម្រាប់ផ្ទុក Group របស់ Product នោះ
+                selectedModifiers: {}, // ✅ សម្រាប់ផ្ទុកជម្រើសដែលបានរើស
+                category_id: null 
+            },
 
             init() {
                 this.fetchMenuData(); 
@@ -283,12 +289,24 @@
                 window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: "{{ __('messages.added_prefix') }}" + addonItem.name } }));
             },
 
-            openProductModal(product) {
+           openProductModal(product) {
                 if(!product.is_active) return;
+                
+                // ✅ រៀបចំ State សម្រាប់ Modifiers
+                let initialModifiers = {};
+                if (product.modifier_groups) {
+                    product.modifier_groups.forEach(g => {
+                        initialModifiers[g.id] = g.type === 'single' ? null : []; // null សម្រាប់ Radio, [] សម្រាប់ Checkbox
+                    });
+                }
+
                 this.tempItem = {
                     id: product.id, name: product.name, image: product.image,
                     base_price: parseFloat(product.price), qty: 1, note: '', 
-                    selectedAddons: [], category_id: product.category_id,
+                    selectedAddons: [], 
+                    modifierGroups: product.modifier_groups || [], // ✅ បញ្ចូលទិន្នន័យ
+                    selectedModifiers: initialModifiers, // ✅ បញ្ចូល State ទទេ
+                    category_id: product.category_id,
                     type: product.type || 'product',
                     category_name: (product.type === 'addon_item') ? "{{ __('messages.label_addon') }}" : (product.category ? product.category.name : "{{ __('messages.label_item') }}")
                 };
@@ -319,7 +337,28 @@
             calculateItemTotal() {
                 let main = parseFloat(this.tempItem.base_price) * parseInt(this.tempItem.qty);
                 let ads = 0; this.tempItem.selectedAddons.forEach(ad => ads += (ad.price * ad.qty));
-                return main + ads;
+                
+                // ✅ បូកតម្លៃ Modifiers 
+                let modPrice = 0;
+                this.tempItem.modifierGroups.forEach(group => {
+                    let selection = this.tempItem.selectedModifiers[group.id];
+                    if (selection) {
+                        if (group.type === 'single') {
+                            let mod = group.modifiers.find(m => m.id == selection);
+                            if (mod) modPrice += parseFloat(mod.price);
+                        } else if (group.type === 'multiple' && Array.isArray(selection)) {
+                            selection.forEach(modId => {
+                                let mod = group.modifiers.find(m => m.id == modId);
+                                if (mod) modPrice += parseFloat(mod.price);
+                            });
+                        }
+                    }
+                });
+                
+                // តម្លៃ Modifier ត្រូវគុណនឹងចំនួនកែវ (ឧទាហរណ៍ យកកែវធំ +2000៛ ទិញ២កែវ ត្រូវ +4000៛)
+                let totalModPrice = modPrice * parseInt(this.tempItem.qty);
+
+                return main + ads + totalModPrice;
             },
 
             // --- CART LOGIC & EXCHANGE LOGIC ---
@@ -367,10 +406,44 @@
 
                 // ==========================================
                 // កូដ Add to Cart ចាស់របស់អ្នក (រត់ធម្មតាបើមិនមែនជាការប្ដូរម្ហូប)
+                // ==========================================
+                // ✅ 1. ឆែកមើលថាតើភ្ញៀវបានរើសជម្រើសដែល "ចាំបាច់(Required)" គ្រប់អស់ឬនៅ?
+                let missingRequired = false;
+                for (let group of this.tempItem.modifierGroups) {
+                    if (group.is_required) {
+                        let sel = this.tempItem.selectedModifiers[group.id];
+                        if (!sel || (Array.isArray(sel) && sel.length === 0)) {
+                            missingRequired = true;
+                            break;
+                        }
+                    }
+                }
+                if (missingRequired) {
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'warning', message: 'សូមជ្រើសរើសជម្រើសដែលចាំបាច់ (*) ជាមុនសិន!' } }));
+                    return; // បញ្ឈប់ការ Add To cart
+                }
+
                 try {
                     const finalAddons = this.tempItem.selectedAddons.map(ad => ({
                         id: ad.id, name: ad.name, price: ad.price, qty: ad.qty
                     })).sort((a, b) => a.id - b.id);
+
+                    // ✅ 2. ចងក្រងទិន្នន័យ Modifiers ដែលភ្ញៀវបានរើស
+                    let finalModifiers = [];
+                    this.tempItem.modifierGroups.forEach(group => {
+                        let selection = this.tempItem.selectedModifiers[group.id];
+                        if (selection) {
+                            if (group.type === 'single') {
+                                let mod = group.modifiers.find(m => m.id == selection);
+                                if (mod) finalModifiers.push({ id: mod.id, group_name: group.name, name: mod.name, price: parseFloat(mod.price) });
+                            } else if (group.type === 'multiple' && Array.isArray(selection)) {
+                                selection.forEach(modId => {
+                                    let mod = group.modifiers.find(m => m.id == modId);
+                                    if (mod) finalModifiers.push({ id: mod.id, group_name: group.name, name: mod.name, price: parseFloat(mod.price) });
+                                });
+                            }
+                        }
+                    });
 
                     const newItem = {
                         product_id: this.tempItem.id,
@@ -379,6 +452,7 @@
                         qty: parseInt(this.tempItem.qty),
                         note: this.tempItem.note || '', 
                         addons: finalAddons,
+                        modifiers: finalModifiers, // ✅ បញ្ចូលចូលក្នុងកន្ត្រក
                         total_price_calculated: this.calculateItemTotal(),
                         is_addon_item: (this.tempItem.type === 'addon_item' || this.tempItem.id === 999999)
                     };
@@ -386,7 +460,8 @@
                     const existingIndex = this.cart.findIndex(item => {
                         return item.product_id === newItem.product_id && 
                             (item.note || '') === newItem.note &&
-                            JSON.stringify(item.addons) === JSON.stringify(newItem.addons);
+                            JSON.stringify(item.addons) === JSON.stringify(newItem.addons) &&
+                            JSON.stringify(item.modifiers) === JSON.stringify(newItem.modifiers); // ✅ ឆែក Modifiers ដូចគ្នាឬអត់
                     });
 
                     if (existingIndex !== -1) {
@@ -443,11 +518,17 @@
                 let item = this.cart[index];
                 let baseTotal = parseFloat(item.base_price) * parseInt(item.qty);
                 let addonsTotal = 0;
+                let modifiersTotal = 0; // ✅ បូកបញ្ជូល Modifier ក្នុង Cart
 
                 if (item.addons && item.addons.length > 0) {
                     item.addons.forEach(ad => { addonsTotal += (parseFloat(ad.price) * parseInt(ad.qty)); });
                 }
-                item.total_price_calculated = baseTotal + addonsTotal;
+                
+                if (item.modifiers && item.modifiers.length > 0) {
+                    item.modifiers.forEach(mod => { modifiersTotal += parseFloat(mod.price); });
+                }
+
+                item.total_price_calculated = baseTotal + addonsTotal + (modifiersTotal * parseInt(item.qty));
             },
 
             removeFromCart(index) { this.cart.splice(index, 1); if(this.cart.length === 0) this.isCartOpen = false; },

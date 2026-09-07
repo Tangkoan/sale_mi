@@ -57,6 +57,21 @@
                         </div>
                     </div>
 
+                    {{-- ✅ បង្ហាញជម្រើស Modifiers លម្អិត (កម្រិតស្ករ ទឹកកក) --}}
+                    <template x-if="item.modifiers && item.modifiers.length > 0">
+                        <div class="mt-1 space-y-1">
+                            <template x-for="(mod, modIndex) in item.modifiers" :key="'mod'+modIndex">
+                                <div class="flex items-center justify-between text-xs text-gray-500 pl-1">
+                                    <div class="flex items-center gap-1.5">
+                                        <i class="ri-corner-down-right-line"></i>
+                                        <span x-text="mod.group_name + ': ' + mod.name"></span>
+                                    </div>
+                                    <span x-show="mod.price > 0" class="font-medium" x-text="'+ ' + formatNumber(mod.price * item.qty) + ' ៛'"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
                     {{-- ផ្នែកខាងក្រោម៖ Addons List --}}
                     <template x-if="item.addons && item.addons.length > 0">
                         <div class="border-t border-dashed border-gray-200 dark:border-gray-700 pt-2 mt-1 space-y-2">

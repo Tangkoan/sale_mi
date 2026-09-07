@@ -84,6 +84,38 @@
                 </div>
             </div>
 
+
+            {{-- ✅ ថែមថ្មី: Modifier Groups (ជម្រើសកម្រិតស្ករ, ទឹកកក...) --}}
+            <div x-show="tempItem.modifierGroups && tempItem.modifierGroups.length > 0">
+                <template x-for="group in tempItem.modifierGroups" :key="group.id">
+                    <div class="mb-4 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-2xl border border-gray-100 dark:border-gray-700">
+                        <h3 class="text-[13px] font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                            <span x-text="group.name"></span>
+                            <span x-show="group.is_required" class="text-red-500 text-[10px] bg-red-100 px-1.5 py-0.5 rounded font-black">* ចាំបាច់</span>
+                        </h3>
+                        
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                            <template x-for="mod in group.modifiers" :key="mod.id">
+                                <label class="flex items-center gap-2 cursor-pointer p-2.5 border rounded-xl transition-all select-none bg-white dark:bg-gray-900"
+                                       :class="(group.type === 'single' ? tempItem.selectedModifiers[group.id] === mod.id : tempItem.selectedModifiers[group.id].includes(mod.id)) ? 'border-primary shadow-sm ring-1 ring-primary/20' : 'border-gray-200 dark:border-gray-700'">
+                                    
+                                    {{-- Radio សម្រាប់តែមួយ --}}
+                                    <input x-show="group.type === 'single'" type="radio" :name="'mod_group_'+group.id" :value="mod.id" x-model="tempItem.selectedModifiers[group.id]" class="text-primary focus:ring-primary h-4 w-4 cursor-pointer">
+                                    
+                                    {{-- Checkbox សម្រាប់ច្រើន --}}
+                                    <input x-show="group.type === 'multiple'" type="checkbox" :value="mod.id" x-model="tempItem.selectedModifiers[group.id]" class="text-primary focus:ring-primary h-4 w-4 rounded cursor-pointer">
+                                    
+                                    <div class="flex flex-col">
+                                        <span class="text-[13px] font-medium text-gray-800 dark:text-gray-200" x-text="mod.name"></span>
+                                        <span x-show="parseFloat(mod.price) > 0" class="text-[11px] text-primary font-bold" x-text="'+ ' + formatNumber(mod.price) + ' ៛'"></span>
+                                    </div>
+                                </label>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
             <div class="h-px bg-gray-100 dark:bg-gray-800 w-full"></div>
 
             {{-- Addons List --}}
