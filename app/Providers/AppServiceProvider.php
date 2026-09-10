@@ -40,7 +40,7 @@ class AppServiceProvider extends ServiceProvider
         // ចែករំលែកទិន្នន័យ $shop ទៅគ្រប់ View ទាំងអស់
         View::composer('*', function ($view) {
             // យកទិន្នន័យជួរទី១ មកបង្ហាញ (first record)
-            $shop = ShopInfo::first(); 
+            $shop = ShopInfo::first();
             $view->with('shop', $shop);
         });
     }
