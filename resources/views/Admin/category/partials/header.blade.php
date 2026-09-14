@@ -63,6 +63,10 @@
                                 <input type="checkbox" x-model="showCols.created_at" class="rounded text-primary focus:ring-primary border-input-border">
                                 <span class="text-sm text-text-color">{{ __('messages.created_at') }}</span>
                             </label>
+                            <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer select-none">
+                                <input type="checkbox" x-model="showCols.sort" class="rounded text-primary focus:ring-primary border-input-border">
+                                <span class="text-sm text-text-color">លេខរៀង (Sort)</span> <!-- ប្ដូរភាសាបានបើមាន __('messages.sort') -->
+                            </label>
                         </div>
                     </div>
                 </div>

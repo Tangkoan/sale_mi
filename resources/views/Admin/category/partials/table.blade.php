@@ -14,6 +14,11 @@
                     <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" @click="sort('created_at')" x-show="showCols.created_at">
                         <div class="flex items-center gap-1">{{ __('messages.created_at') }} <i class="ri-arrow-up-down-fill text-[10px] opacity-50 group-hover:opacity-100"></i></div>
                     </th>
+
+                    <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" @click="sort('sort')" x-show="showCols.sort">
+                        <div class="flex items-center gap-1">លេខរៀង <i class="ri-arrow-up-down-fill text-[10px] opacity-50 group-hover:opacity-100"></i></div>
+                    </th>
+
                     <th class="px-6 py-4 font-bold text-right">{{ __('messages.actions') }}</th>
                 </tr>
             </thead>
@@ -36,6 +41,7 @@
                             </span>
                             <span x-show="!item.destination" class="text-xs text-secondary italic">{{ __('messages.not_assigned') }}</span>
                         </td>
+                        <td class="px-6 py-4 font-bold text-text-color" x-show="showCols.sort" x-text="item.sort"></td>
                         <td class="px-6 py-4 text-secondary text-sm" x-show="showCols.created_at" x-text="new Date(item.created_at).toLocaleDateString()"></td>
                         <td class="px-6 py-4 text-right">
                             <div class="flex justify-end gap-2 relative z-10">

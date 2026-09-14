@@ -26,6 +26,12 @@
                 <p x-show="errors.name" x-text="errors.name" class="text-red-500 text-xs mt-1"></p>
             </div>
 
+            <div>
+                <label class="block text-sm font-bold text-text-color mb-1">លេខរៀងបញ្ចាំង (Sort Order)</label>
+                <input type="number" x-model="form.sort" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
+                <p x-show="errors.sort" x-text="errors.sort" class="text-red-500 text-xs mt-1"></p>
+            </div>
+
             {{-- Destination --}}
             <div>
                 <label class="block text-sm font-bold text-text-color mb-1">{{ __('messages.destination') }}</label>

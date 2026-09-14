@@ -50,17 +50,20 @@
             showCols: JSON.parse(localStorage.getItem('category_table_cols')) || { 
                 image: true, 
                 destination: true, 
+                sort: true, // ✅ បន្ថែម
                 created_at: true 
             },
 
-            sortBy: 'created_at',
-            sortDir: 'desc',
+            sortBy: 'sort', // ✅ ប្ដូរ Default មកតាម sort
+            sortDir: 'asc', // ✅ ប្ដូរទៅជា asc វិញដើម្បីអោយលេខតូចៗនៅលើយកមកប្រើមុន
+            
 
             isSequenceMode: false,
             sequenceQueue: [],
             currentSeqIndex: 0,
 
-            form: { id: null, name: '', kitchen_destination_id: '', image: null },
+            form: { id: null, name: '', kitchen_destination_id: '', image: null, sort: 0 }, // ✅ បន្ថែម sort
+
             imagePreview: null,
             errors: {},
 
@@ -163,7 +166,8 @@
                 this.form = { 
                     ...item, 
                     image: null, 
-                    kitchen_destination_id: item.kitchen_destination_id || '' 
+                    kitchen_destination_id: item.kitchen_destination_id || '',
+                    sort: item.sort || 0 // ✅ បញ្ចូលទិន្នន័យ sort
                 };
                 this.imagePreview = item.image ? '/storage/' + item.image : null;
             },
@@ -179,7 +183,7 @@
                     this.loadCategoryToForm(item);
                 } else {
                     this.editMode = false;
-                    this.form = { id: null, name: '', kitchen_destination_id: '', image: null };
+                    this.form = { id: null, name: '', kitchen_destination_id: '', image: null, sort: 0 }; // ✅
                 }
             },
 
@@ -199,6 +203,7 @@
                 let formData = new FormData();
                 formData.append('name', this.form.name);
                 formData.append('kitchen_destination_id', this.form.kitchen_destination_id);
+                formData.append('sort', this.form.sort);
                 if (this.form.image instanceof File) {
                     formData.append('image', this.form.image);
                 }

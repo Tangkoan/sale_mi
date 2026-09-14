@@ -5,61 +5,42 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Category;
-use App\Models\KitchenDestination; // ✅ Import Model ថ្មី
+use App\Models\KitchenDestination;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
-use App\Models\Product; // ✅ បន្ថែមបន្ទាត់នេះ
+use App\Models\Product;
 
 class CategoryController extends Controller
 {
     public function index()
     {
-        // យក Destinations ទាំងអស់មកប្រើក្នុង Dropdown ប៉ុន្តែ "មិនយក" អ្នកគិតលុយ (Cashier) ទេ
-        
-        // ជម្រើសទី១៖ ប្រសិនបើឈ្មោះក្នុង DB ដាក់ថា 'Cashier' ឬ 'អ្នកគិតលុយ' ចំៗ
         $destinations = KitchenDestination::select('id', 'name')
             ->where('name', 'NOT LIKE', '%Cashier%') 
             ->where('name', 'NOT LIKE', '%អ្នកគិតលុយ%')
             ->get();
-
-        /* 
-        // ជម្រើសទី២៖ ប្រសិនបើអ្នកស្គាល់ ID របស់អ្នកគិតលុយ (ឧទាហរណ៍ ID = 1 គឺ Cashier)
-        $destinations = KitchenDestination::select('id', 'name')
-            ->where('id', '!=', 1) 
-            ->get();
-        */
 
         return view('admin.category.category_list', compact('destinations'));
     }
 
     public function fetchCategories(Request $request)
     {
-        // ✅ កែសម្រួល៖ Eager Load 'destination' relationship
-        // ដើម្បីឱ្យ Frontend អាចហៅ item.destination.name បាន
         $query = Category::with('destination'); 
 
-        // 1. Search Keyword
         if ($request->keyword) {
             $query->where('name', 'like', '%' . $request->keyword . '%');
         }
         
-        // 2. Filter Destination (បើមាន)
         if ($request->destination) {
-            // Filter តាម relationship ឬ column ID ផ្ទាល់
-            // បើ $request->destination គឺជា ID (លេខ):
             $query->where('kitchen_destination_id', $request->destination);
         }
 
-        // 3. Handle Sorting
-        $sortBy = $request->input('sort_by', 'created_at');
-        $sortDir = $request->input('sort_dir', 'desc');
+        // ✅ ប្ដូរ default sort មកតាម sort field វិញ
+        $sortBy = $request->input('sort_by', 'sort'); 
+        $sortDir = $request->input('sort_dir', 'asc');
         
-        // បើ Sort តាម destination name (មិនមែន ID) អាចនឹងត្រូវការ join table
-        // ប៉ុន្តែសម្រាប់ពេលនេះ sort តាម ID ឬ column ធម្មតាសិន
         $query->orderBy($sortBy, $sortDir);
 
-        // 4. Pagination
         $perPage = $request->input('per_page', 10);
         
         $categories = ($perPage === 'all') 
@@ -73,8 +54,8 @@ class CategoryController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name'                   => 'required|string|max:255',
-            // ✅ Validate foreign key
-            'kitchen_destination_id' => 'required|exists:kitchen_destinations,id', 
+            'kitchen_destination_id' => 'required|exists:kitchen_destinations,id',
+            'sort'                   => 'nullable|integer', // ✅ បន្ថែម Validation សម្រាប់ sort
             'image'                  => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ], [
             'required' => __('messages.field_required'),
@@ -93,7 +74,8 @@ class CategoryController extends Controller
         return DB::transaction(function () use ($request) {
             $data = [
                 'name'                   => $request->name,
-                'kitchen_destination_id' => $request->kitchen_destination_id, // ✅ Save ID
+                'kitchen_destination_id' => $request->kitchen_destination_id,
+                'sort'                   => $request->sort ?? 0, // ✅ បញ្ចូលទិន្នន័យ sort
             ];
 
             if ($request->hasFile('image')) {
@@ -123,6 +105,7 @@ class CategoryController extends Controller
         $validator = Validator::make($request->all(), [
             'name'                   => 'required|string|max:255',
             'kitchen_destination_id' => 'required|exists:kitchen_destinations,id',
+            'sort'                   => 'nullable|integer', // ✅ បន្ថែម Validation សម្រាប់ sort
             'image'                  => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
@@ -136,7 +119,8 @@ class CategoryController extends Controller
 
         return DB::transaction(function () use ($request, $category) {
             $category->name = $request->name;
-            $category->kitchen_destination_id = $request->kitchen_destination_id; // ✅ Update ID
+            $category->kitchen_destination_id = $request->kitchen_destination_id;
+            $category->sort = $request->sort ?? 0; // ✅ ធ្វើបច្ចុប្បន្នភាពទិន្នន័យ sort
 
             if ($request->hasFile('image')) {
                 if ($category->image && Storage::disk('public')->exists($category->image)) {
