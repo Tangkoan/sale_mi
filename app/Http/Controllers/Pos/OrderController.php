@@ -617,7 +617,7 @@ class OrderController extends Controller
             }
 
             // =========================================================
-            // 🔥 កូដថ្មីបន្ថែមនៅទីនេះ សម្រាប់ចាប់យកឈ្មោះតុដែលបាន Merge
+            // ចាប់យកឈ្មោះតុដែលបាន Merge
             // =========================================================
             $otherOrderIds = array_unique(array_diff($affectedOrderIds, [$mainOrder->id]));
             $mergedTablesList = []; 
@@ -665,26 +665,28 @@ class OrderController extends Controller
                 'change_amount'      => $change,
                 'paid_at'            => now(),
                 'check_out_time'     => now(), 
-                'merged_table_names' => $mergedNames // 🔥 Save ឈ្មោះតុដែលជាប់គ្នាចូល Database
+                'merged_table_names' => $mergedNames // Save ឈ្មោះតុដែលជាប់គ្នាចូល Database
             ]);
 
             if ($mainOrder->table_id) {
                 Table::where('id', $mainOrder->table_id)->update(['status' => 'available']);
             }
 
-            $shouldPrint = filter_var($request->print_invoice, FILTER_VALIDATE_BOOLEAN);
             $paymentDetails = [
                 'received_amount' => $request->received_amount,
                 'payment_method'  => $request->payment_method,
                 'change_amount'   => $change,
             ];
 
+            // =========================================================
+            // 🔥 ការកំណត់លក្ខខណ្ឌបញ្ជា Print វិក្កយបត្រ (Invoice)
+            // =========================================================
+            $shouldPrint = $request->boolean('print_invoice', true);
+
             if ($shouldPrint) {
                 PrintInvoiceJob::dispatch($mainOrder->id, $paymentDetails);
             }
-
-            // បញ្ជាឲ្យ Job ធ្វើការ Print វិក្កយបត្រ (Invoice) នៅ Background
-            PrintInvoiceJob::dispatch($mainOrder->id, $paymentDetails);
+            // =========================================================
 
             return response()->json([
                 'status'   => 'success',
@@ -755,21 +757,21 @@ class OrderController extends Controller
                 Table::where('id', $originalOrder->table_id)->update(['status' => 'available']);
             }
 
-            $shouldPrint = filter_var($request->print_invoice, FILTER_VALIDATE_BOOLEAN);
-
             $paymentDetails = [
                 'received_amount' => $request->received_amount,
                 'payment_method'  => $request->payment_method,
                 'change_amount'   => $change,
             ];
 
-            // 🔥 លក្ខខណ្ឌ៖ បើ user ធិចយកព្រីន ទើបឲ្យ Job ធ្វើការ
+            // =========================================================
+            // 🔥 ការកំណត់លក្ខខណ្ឌបញ្ជា Print វិក្កយបត្របំបែក (Split Invoice)
+            // =========================================================
+            $shouldPrint = $request->boolean('print_invoice', true);
+
             if ($shouldPrint) {
                 PrintInvoiceJob::dispatch($splitOrder->id, $paymentDetails);
             }
-
-            // ✅ បញ្ជាឲ្យ Job ធ្វើការ Print វិក្កយបត្របំបែក (Split Invoice) នៅ Background
-            PrintInvoiceJob::dispatch($splitOrder->id, $paymentDetails);
+            // =========================================================
 
             return response()->json([
                 'status' => 'success',
@@ -781,6 +783,7 @@ class OrderController extends Controller
         });
     }
 
+   
     /**
      * 🔥 FUNCTION: បោះវិក្កយបត្រទៅ Network Printer 
      */
