@@ -672,11 +672,16 @@ class OrderController extends Controller
                 Table::where('id', $mainOrder->table_id)->update(['status' => 'available']);
             }
 
+            $shouldPrint = filter_var($request->print_invoice, FILTER_VALIDATE_BOOLEAN);
             $paymentDetails = [
                 'received_amount' => $request->received_amount,
                 'payment_method'  => $request->payment_method,
                 'change_amount'   => $change,
             ];
+
+            if ($shouldPrint) {
+                PrintInvoiceJob::dispatch($mainOrder->id, $paymentDetails);
+            }
 
             // បញ្ជាឲ្យ Job ធ្វើការ Print វិក្កយបត្រ (Invoice) នៅ Background
             PrintInvoiceJob::dispatch($mainOrder->id, $paymentDetails);
@@ -750,11 +755,18 @@ class OrderController extends Controller
                 Table::where('id', $originalOrder->table_id)->update(['status' => 'available']);
             }
 
+            $shouldPrint = filter_var($request->print_invoice, FILTER_VALIDATE_BOOLEAN);
+
             $paymentDetails = [
                 'received_amount' => $request->received_amount,
                 'payment_method'  => $request->payment_method,
                 'change_amount'   => $change,
             ];
+
+            // 🔥 លក្ខខណ្ឌ៖ បើ user ធិចយកព្រីន ទើបឲ្យ Job ធ្វើការ
+            if ($shouldPrint) {
+                PrintInvoiceJob::dispatch($splitOrder->id, $paymentDetails);
+            }
 
             // ✅ បញ្ជាឲ្យ Job ធ្វើការ Print វិក្កយបត្របំបែក (Split Invoice) នៅ Background
             PrintInvoiceJob::dispatch($splitOrder->id, $paymentDetails);

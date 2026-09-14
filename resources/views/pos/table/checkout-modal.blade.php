@@ -158,8 +158,17 @@
             
         </div>
 
-             {{-- Sticky Bottom Action Buttons (ប៊ូតុងខ្លីល្មម) --}}
-             <div class="p-3 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0 pb-4 sm:pb-3">
+             {{-- Sticky Bottom Action Buttons --}}
+            <div class="p-3 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0 pb-4 sm:pb-3">
+                
+                {{-- 🔥 ថែម Checkbox ត្រង់នេះ --}}
+                <div class="flex items-center justify-end gap-2 mb-3 px-1">
+                    <input type="checkbox" id="printInvoiceToggle" x-model="isPrintEnabled" class="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary dark:bg-gray-700 dark:border-gray-600">
+                    <label for="printInvoiceToggle" class="text-[13px] font-bold text-gray-700 dark:text-gray-300 cursor-pointer">
+                        បោះពុម្ពវិក្កយបត្រ (Print Receipt)
+                    </label>
+                </div>
+
                 <div class="flex gap-2.5">
                     <button @click="isCheckoutModalOpen = false" 
                             class="w-[35%] h-11 rounded-[12px] border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-bold text-[13px] hover:bg-gray-50 dark:hover:bg-gray-700 active:scale-95 transition-all">
@@ -168,8 +177,10 @@
                     <button @click="confirmPayment()" :disabled="isProcessing" 
                             class="flex-1 h-11 rounded-[12px] text-white font-bold text-[13px] shadow-md shadow-gray-900/10 flex justify-center items-center gap-2 active:scale-95 transition-all"
                             :class="isProcessing ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 dark:bg-gray-100 dark:text-gray-900'">
-                        <i class="ri-printer-line text-[16px]" x-show="!isProcessing"></i>
-                        <span x-text="isProcessing ? 'កំពុងដំណើរការ...' : 'បញ្ជាក់ និងបោះពុម្ព'"></span>
+                        <i class="ri-printer-line text-[16px]" x-show="!isProcessing && isPrintEnabled"></i>
+                        <i class="ri-check-line text-[16px]" x-show="!isProcessing && !isPrintEnabled"></i>
+                        {{-- 🔥 ប្ដូរអក្សរតាមការចុច Checkbox --}}
+                        <span x-text="isProcessing ? 'កំពុងដំណើរការ...' : (isPrintEnabled ? 'បញ្ជាក់ និងបោះពុម្ព' : 'បញ្ជាក់ការទូទាត់ (មិនព្រីន)')"></span>
                     </button>
                 </div>
             </div>

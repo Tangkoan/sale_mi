@@ -74,6 +74,7 @@
             paymentMethod: 'cash',
             receivedAmount: '',
             confirmEmpty: false, 
+            isPrintEnabled: true,
             
             orderDetails: { id: null, table_id: null, items: [], total: 0, invoice_number: '', shop: null },
 
@@ -284,10 +285,7 @@
             async confirmPayment() {
                 if (this.isSplitMode) { await this.processSplitPayment(); return; }
                 if (this.paymentMethod === 'cash' && (parseFloat(this.receivedAmount || 0) < this.currentTotal)) { return this.showToast("{{ __('messages.insufficient_amount') }}", 'error'); }
-                if (this.orderDetails.items.length === 0) {
-                     if(!confirm("{{ __('messages.confirm_cancel_empty_order') }}")) return;
-                     this.confirmEmpty = true;
-                }
+                
                 this.isProcessing = true;
                 try {
                     const response = await fetch('/pos/checkout', {
@@ -298,8 +296,12 @@
                             'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content 
                         },
                         body: JSON.stringify({
-                            order_id: this.orderDetails.id, table_id: this.orderDetails.table_id,
-                            received_amount: this.receivedAmount, payment_method: this.paymentMethod, items: this.orderDetails.items
+                            order_id: this.orderDetails.id, 
+                            table_id: this.orderDetails.table_id,
+                            received_amount: this.receivedAmount, 
+                            payment_method: this.paymentMethod, 
+                            items: this.orderDetails.items,
+                            print_invoice: this.isPrintEnabled // 🔥 បោះតម្លៃនេះទៅ Backend
                         })
                     });
                     const data = await response.json();
