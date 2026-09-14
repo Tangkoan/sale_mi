@@ -121,7 +121,7 @@
             exchangeQty: @json((int)($exchangeQty ?? request()->query('exchange_qty') ?? 1)),
 
             products: [],
-            categories: @json($categories ?? []).sort((a, b) => a.name.localeCompare(b.name, 'km')),
+            categories: @json($categories ?? []),
             addons: [],
             
             activeCategory: 'all', 

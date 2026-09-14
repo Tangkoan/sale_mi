@@ -35,7 +35,8 @@ class PosController extends Controller
     public function menu(Request $request, $table_id) // បន្ថែម Request $request
     {
         $table = Table::findOrFail($table_id);
-        $categories = Category::select('id', 'name', 'kitchen_destination_id')->orderBy('name', 'asc')->get();
+        // $categories = Category::select('id', 'name', 'kitchen_destination_id')->orderBy('name', 'asc')->get();
+        $categories = Category::select('id', 'name', 'kitchen_destination_id')->orderBy('sort', 'asc')->get();
         $currentOrder = Order::where('table_id', $table_id)->where('status', 'pending')->first();
 
         // ចាប់យកតម្លៃបើមានការប្ដូរម្ហូប
