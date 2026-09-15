@@ -63,7 +63,7 @@ class OrderController extends Controller
                         'total_amount'   => 0,
                         'check_in_time'  => now(),
                         'check_out_time' => now(), // បញ្ចប់ភ្លាមៗ
-                        'note'           => $request->platform ? 'Delivery: ' . $request->platform : 'Delivery',
+                        'note' => $request->platform ? 'Delivery: ' . $request->platform : 'Delivery',
                     ]);
                 } else {
                     // ប្រតិបត្តិការតុធម្មតា (កូដចាស់)

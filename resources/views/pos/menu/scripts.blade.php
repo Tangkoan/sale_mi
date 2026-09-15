@@ -548,6 +548,7 @@
             },
 
             // --- SUBMIT ORDER LOGIC ---
+            // --- SUBMIT ORDER LOGIC ---
             async submitOrder() {
                     if (this.cart.length === 0) return;
                     
@@ -555,10 +556,17 @@
                     if (this.isSubmitting) return; 
 
                     this.isSubmitting = true;
+
+                    // ✅ ១. ចាប់យកទិន្នន័យពី URL ដើម្បីដឹងថាជា Delivery នឹងឈ្មោះ Platform អ្វី
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const isDelivery = urlParams.get('is_delivery') === 'true';
+                    const platformName = urlParams.get('platform') || '';
                     
                     const payload = {
                     table_id: {{ $table->id ?? 'null' }},
                     exchange_rate: localStorage.getItem('pos_exchange_rate') || 4100, 
+                    is_delivery: isDelivery, // ✅ ២. បោះប្រាប់ Controller ថាជា Delivery
+                    platform: platformName,  // ✅ ៣. បោះឈ្មោះ Platform ទៅ (ឧ. wownow)
                     items: this.cart.map(item => ({
                         product_id: item.product_id, 
                         qty: item.qty, 

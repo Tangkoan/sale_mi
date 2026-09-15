@@ -111,7 +111,13 @@ class PrintKitchenJob implements ShouldQueue
 
                 // ភ្ជាប់ជោគជ័យ ទើបអនុញ្ញាតឲ្យធ្វើការ Render រូបភាព
                 $firstItem = $items[0];
+
+                // ✅ កែប្រែកន្លែងចាប់ឈ្មោះតុត្រង់នេះ
                 $tableName = $firstItem->order->table->name ?? ('Table: ' . $firstItem->order->table_id);
+                if ($tableName === 'Delivery Table' && !empty($firstItem->order->note)) {
+                    // ប្រសិនបើជា Delivery Table យើងយក note មកបង្ហាញ (ព្រោះ note បានរក្សាទុក Delivery Platform Name)
+                    $tableName = $firstItem->order->note; 
+                }
 
                 $html = View::make('pos.kitchen_receipt', compact('printerInfo', 'items', 'tableName'))->render();
                 $imagePath = storage_path('app/kitchen_receipt_' . Str::uuid()->toString() . '.png');

@@ -575,3 +575,39 @@ Route::get('/test-invoice/{order_id}', function ($order_id) {
 
     return view('pos.invoice_receipt', compact('order', 'paymentDetails', 'shop'));
 });
+
+Route::get('/test-kitchen-receipt/{order_id}', function ($order_id) {
+    // ទាញយកទិន្នន័យដូចដែល PrintKitchenJob ធ្វើ
+    $itemsToPrint = \App\Models\OrderItem::with([
+            'product.category.kitchenDestination', 
+            'addons.addon.kitchenDestination', 
+            'order.table' 
+        ])
+        ->where('order_id', $order_id)
+        ->get();
+
+    if ($itemsToPrint->isEmpty()) {
+        return "រកមិនឃើញមុខម្ហូបសម្រាប់ Order លេខ $order_id ទេ!";
+    }
+
+    $firstItem = $itemsToPrint[0];
+    
+    // ⭐️ កំណត់ឈ្មោះតុឱ្យដូចទៅនឹង PrintKitchenJob
+    $tableName = $firstItem->order->table->name ?? ('Table: ' . $firstItem->order->table_id);
+    if ($tableName === 'Delivery Table' && !empty($firstItem->order->note)) {
+        $tableName = $firstItem->order->note; // ឧទាហរណ៍វានឹងលោត "Delivery: wownow"
+    }
+
+    // ទិន្នន័យក្លែងក្លាយសម្រាប់ printerInfo 
+    $printerInfo = (object)[
+        'name' => 'តេស្តចង្ក្រាន (Test Kitchen)',
+        'printnode_id' => '127.0.0.1'
+    ];
+
+    // បោះទិន្នន័យទៅកាន់ View របស់ផ្ទះបាយ
+    return view('pos.kitchen_receipt', [
+        'printerInfo' => $printerInfo,
+        'items' => $itemsToPrint,
+        'tableName' => $tableName
+    ]);
+});
