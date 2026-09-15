@@ -9,7 +9,7 @@ class Table extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'status']; // status: available, busy
+    protected $guarded = [];
 
     // ទំនាក់ទំនង៖ 1 Table អាចមាន Orders ច្រើន (តាមប្រវត្តិ)
     public function orders()

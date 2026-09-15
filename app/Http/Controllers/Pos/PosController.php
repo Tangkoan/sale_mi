@@ -20,7 +20,8 @@ class PosController extends Controller
 
     public function fetchTables()
     {
-        $tables = Table::orderBy('name', 'asc')->get();
+        // $tables = Table::orderBy('name', 'asc')->get();
+        $tables = Table::orderBy('sort', 'asc')->get();
         return response()->json($tables);
     }
 

@@ -44,6 +44,13 @@
                 <p x-show="errors.status" x-text="errors.status" class="text-red-500 text-xs mt-1"></p>
             </div>
 
+            {{-- ✅ Sort Order --}}
+            <div>
+                <label class="block text-sm font-bold text-text-color mb-1">លេខរៀងបញ្ចាំង (Sort Order)</label>
+                <input type="number" x-model="form.sort" class="w-full px-4 py-2.5 rounded-lg border border-input-border bg-input-bg text-text-color focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
+                <p x-show="errors.sort" x-text="errors.sort" class="text-red-500 text-xs mt-1"></p>
+            </div>
+
             <div class="pt-4 flex justify-between items-center border-t border-border-color mt-2">
                 <button type="button" x-show="isSequenceMode" @click="nextInSequence()" class="text-secondary hover:text-text-color text-sm font-bold px-2">
                     {{ __('messages.skip_this_user') }} <i class="ri-arrow-right-line align-middle"></i>

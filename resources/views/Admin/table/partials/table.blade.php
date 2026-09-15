@@ -12,6 +12,10 @@
                     <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" @click="sort('status')" x-show="showCols.status">
                         <div class="flex items-center gap-1">{{ __('messages.status') }} <i class="ri-arrow-up-down-fill text-[10px] opacity-50 group-hover:opacity-100"></i></div>
                     </th>
+                    {{-- ✅ បន្ថែម Sort Column Header --}}
+                    <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" @click="sort('sort')" x-show="showCols.sort">
+                        <div class="flex items-center gap-1">លេខរៀង <i class="ri-arrow-up-down-fill text-[10px] opacity-50 group-hover:opacity-100"></i></div>
+                    </th>
                     <th class="px-6 py-4 font-bold cursor-pointer hover:text-primary transition-colors group" @click="sort('created_at')" x-show="showCols.created_at">
                         <div class="flex items-center gap-1">{{ __('messages.created_at') }} <i class="ri-arrow-up-down-fill text-[10px] opacity-50 group-hover:opacity-100"></i></div>
                     </th>
@@ -26,7 +30,6 @@
                         </td>
                         <td class="px-6 py-4 font-bold text-text-color" x-text="item.name" x-show="showCols.name"></td>
                         
-                        {{-- ជួរឈរ ស្ថានភាព (Toggle Button & Text) --}}
                         <td class="px-6 py-4" x-show="showCols.status">
                             <div class="flex items-center gap-2">
                                 @can('table-edit')
@@ -37,13 +40,15 @@
                                 <span class="w-3 h-3 rounded-full" :class="item.status === 'available' ? 'bg-green-500' : 'bg-red-500'"></span>
                                 @endcan
                                 
-                                {{-- បង្ហាញភាសាខ្មែរ/អង់គ្លេស --}}
                                 <span class="text-xs font-bold uppercase tracking-wider" 
                                       :class="item.status === 'available' ? 'text-green-600' : 'text-red-600'" 
                                       x-text="item.status === 'available' ? '{{ __('messages.available') }}' : '{{ __('messages.busy') }}'"></span>
                             </div>
                         </td>
 
+                        {{-- ✅ បង្ហាញលេខរៀង --}}
+                        <td class="px-6 py-4 font-bold text-text-color" x-show="showCols.sort" x-text="item.sort"></td>
+                        
                         <td class="px-6 py-4 text-secondary text-sm" x-text="new Date(item.created_at).toLocaleDateString()" x-show="showCols.created_at"></td>
                         <td class="px-6 py-4 text-right">
                             <div class="flex justify-end gap-2 relative z-10">

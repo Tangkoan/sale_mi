@@ -27,12 +27,12 @@ class TableController extends Controller
             $query->where('status', $request->status);
         }
 
-        // 2. Sorting (កូដថ្មី)
-        $sortBy  = $request->input('sort_by', 'created_at'); // យកតាមអ្វីដែលផ្ញើមក ឬយក created_at ជាគោល
-        $sortDir = $request->input('sort_dir', 'desc');      // asc ឬ desc
+        // 2. Sorting (✅ កែប្រែ Default ទៅជា sort)
+        $sortBy  = $request->input('sort_by', 'sort'); 
+        $sortDir = $request->input('sort_dir', 'asc');      
 
         // ការពារកុំឱ្យគេបោះឈ្មោះ Column ផ្ដេសផ្ដាស (Security)
-        $allowedSorts = ['name', 'status', 'created_at'];
+        $allowedSorts = ['name', 'status', 'created_at', 'sort']; // ✅ បន្ថែម sort
         
         if (in_array($sortBy, $allowedSorts)) {
             $query->orderBy($sortBy, $sortDir);
@@ -51,8 +51,9 @@ class TableController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name'   => 'required|string|max:255|unique:tables,name', // ឈ្មោះតុមិនគួរជាន់គ្នាទេ
+            'name'   => 'required|string|max:255|unique:tables,name', 
             'status' => 'required|in:available,busy',
+            'sort'   => 'nullable|integer', // ✅ បន្ថែម Validate សម្រាប់ sort
         ], [
             'required'    => __('messages.field_required'),
             'name.unique' => __('messages.table_name_exist'),
@@ -65,6 +66,7 @@ class TableController extends Controller
         $table = Table::create([
             'name'   => $request->name,
             'status' => $request->status,
+            'sort'   => $request->sort ?? 0, // ✅ បញ្ចូលទិន្នន័យ sort
         ]);
 
         if(function_exists('activity')) {
@@ -81,6 +83,7 @@ class TableController extends Controller
         $validator = Validator::make($request->all(), [
             'name'   => 'required|string|max:255|unique:tables,name,' . $id,
             'status' => 'required|in:available,busy',
+            'sort'   => 'nullable|integer', // ✅ បន្ថែម Validate សម្រាប់ sort
         ]);
 
         if ($validator->fails()) {
@@ -90,6 +93,7 @@ class TableController extends Controller
         $table->update([
             'name'   => $request->name,
             'status' => $request->status,
+            'sort'   => $request->sort ?? 0, // ✅ Update ទិន្នន័យ sort
         ]);
 
         if(function_exists('activity')) {
@@ -130,17 +134,10 @@ class TableController extends Controller
         ]);
     }
 
-    /**
-     * បន្ថែមថ្មី: សម្រាប់ប្តូរ Status (Available <-> Busy) ភ្លាមៗពីតារាង
-     */
     public function toggleStatus($id)
     {
-        // ប្រសិនបើអ្នកមានការឆែកសិទ្ធិ (Permission) អាចដាក់នៅទីនេះ
-        // if (!auth()->user()->can('table-edit')) { ... }
-
         $table = Table::findOrFail($id);
         
-        // ប្ដូរពី available ទៅ busy និង ពី busy ទៅ available
         $table->status = ($table->status === 'available') ? 'busy' : 'available';
         $table->save();
 

@@ -45,17 +45,18 @@
             showCols: JSON.parse(localStorage.getItem('table_table_cols')) || { 
                 name: true, 
                 status: true, 
+                sort: true, // ✅ បន្ថែម sort 
                 created_at: true 
             },
 
-            sortBy: 'created_at',
-            sortDir: 'desc',
+            sortBy: 'sort', // ✅ ប្ដូរទៅ sort ជា default
+            sortDir: 'asc', // ✅ ប្ដូរទៅ asc
 
             isSequenceMode: false,
             sequenceQueue: [],
             currentSeqIndex: 0,
 
-            form: { id: null, name: '', status: 'available' },
+            form: { id: null, name: '', status: 'available', sort: 0 }, // ✅ បន្ថែម sort ចូល form
             errors: {},
 
             init() { 
@@ -118,12 +119,10 @@
             },
 
             // ================= TOGGLE STATUS =================
-            // អនុគមន៍សម្រាប់ប្តូរ Status (Available <-> Busy)
             async toggleStatus(id) {
                 const index = this.tables.findIndex(t => t.id === id);
                 if (index === -1) return;
 
-                // Optimistic UI Update (ប្ដូរលើអេក្រង់ភ្លាមៗកុំឱ្យចាំយូរ)
                 const originalStatus = this.tables[index].status;
                 this.tables[index].status = originalStatus === 'available' ? 'busy' : 'available';
 
@@ -141,7 +140,6 @@
                     window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: data.message } }));
                 } catch(e) { 
                     console.error(e); 
-                    // បើ Error ប្ដូរទៅ Status ដើមវិញ
                     this.tables[index].status = originalStatus;
                     window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'មិនអាចប្ដូរស្ថានភាពបានទេ!' } }));
                 }
@@ -151,7 +149,7 @@
             loadDataToForm(item) {
                 this.editMode = true;
                 this.errors = {};
-                this.form = { ...item };
+                this.form = { ...item, sort: item.sort || 0 }; // ✅ ដាក់ sort បញ្ចូល
             },
 
             openModal(mode, item = null) {
@@ -162,7 +160,7 @@
                     this.loadDataToForm(item);
                 } else {
                     this.editMode = false;
-                    this.form = { id: null, name: '', status: 'available' };
+                    this.form = { id: null, name: '', status: 'available', sort: 0 }; // ✅ ដាក់ sort ពេល add
                 }
             },
 

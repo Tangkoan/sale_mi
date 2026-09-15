@@ -19,7 +19,7 @@
                 <div class="flex justify-between items-start">
                     <h3 class="font-extrabold text-text-color text-base" x-text="item.name"></h3>
                     
-                    {{-- Status Badge សម្រាប់ Mobile (គ្មាន Toggle) --}}
+                    {{-- Status Badge សម្រាប់ Mobile --}}
                     <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-sm"
                           :class="item.status === 'available' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'">
                         <span class="w-1.5 h-1.5 rounded-full" :class="item.status === 'available' ? 'bg-green-600' : 'bg-red-600'"></span>
@@ -28,7 +28,11 @@
                 </div>
                 
                 <div class="flex items-center justify-between mt-2 pt-3 border-t border-dashed border-border-color">
-                    <span class="text-xs font-semibold text-secondary flex items-center gap-1"><i class="ri-calendar-line"></i> <span x-text="new Date(item.created_at).toLocaleDateString()"></span></span>
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-semibold text-secondary flex items-center gap-1"><i class="ri-calendar-line"></i> <span x-text="new Date(item.created_at).toLocaleDateString()"></span></span>
+                        {{-- ✅ បង្ហាញ Sort --}}
+                        <span class="text-xs font-semibold text-secondary flex items-center gap-1" x-show="showCols.sort"><i class="ri-list-ordered"></i> <span x-text="item.sort"></span></span>
+                    </div>
                     <div class="flex gap-2 relative z-30">
                         @can('table-edit')
                         <button type="button" @click="openModal('edit', item)" class="h-8 w-8 rounded-full flex items-center justify-center bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100 active:scale-95 transition-transform cursor-pointer shadow-sm"><i class="ri-pencil-fill"></i></button>
